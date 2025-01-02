@@ -5,11 +5,13 @@ Dass die Weiterentwicklung parallel laufen kann, finden wir gut; wir hätten tat
 
 ![Screenshot](spezifikation-numbercards2-img.png)
 
-- den Färben-Button hattest du ja schon angesprochen. Falls die Form dieser Farbpalette zu blöd ist, mit Cindy selbst zu machen, wären wir natürlich auch offen für alternativ-Vorschläge. Spontan könnte ich mir auch einen quadratischen Button mit so einem Farbverlauf o.ä. vorstellen.
+- *DONE*: 
+den Färben-Button hattest du ja schon angesprochen. Falls die Form dieser Farbpalette zu blöd ist, mit Cindy selbst zu machen, wären wir natürlich auch offen für alternativ-Vorschläge. Spontan könnte ich mir auch einen quadratischen Button mit so einem Farbverlauf o.ä. vorstellen.
+    - Kommentar: Kein Farbverlauf, nur 3 Kreise
 
-- die Farbe der Karten in der Komponente passt noch nicht ganz. Hier hätten wir gerne die im Bild angegebenen Farben. Die sind etwas kräftiger, aber bei Farbblindheit besser zu erkennen.
+- *DONE*: die Farbe der Karten in der Komponente passt noch nicht ganz. Hier hätten wir gerne die im Bild angegebenen Farben. Die sind etwas kräftiger, aber bei Farbblindheit besser zu erkennen.
 
-- Die Strichstärke in der Komponente ist aktuell etwas zu dick. Das liegt vmtl. daran, dass das alles etwas kleiner skaliert ist, als in Ullis Demo? Wäre gut, wenn die Strichstärke etwas näher an der Darstellung im Bild wäre. Vllt Stärke 1 für die ausgeklappten Karten, Stärke 2 für die zugeklappten.
+- *DONE*: Die Strichstärke in der Komponente ist aktuell etwas zu dick. Das liegt vmtl. daran, dass das alles etwas kleiner skaliert ist, als in Ullis Demo? Wäre gut, wenn die Strichstärke etwas näher an der Darstellung im Bild wäre. Vllt Stärke 1 für die ausgeklappten Karten, Stärke 2 für die zugeklappten.
 
 - Wir hätten gerne die „Lücken“ zwischen Million & Hunderttausender sowie Tausender & Hunderter. Idealerweise via Editor ein-/ausstellbar. Noch idealerer, wenn man zwischen Leerstelle, Punkten und „keine Lücke“ wählen könnte.
 

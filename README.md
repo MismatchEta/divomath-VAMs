@@ -133,6 +133,9 @@ cindyjs:
 - unfold: *\<bool>*
   - Gibt an, ob die Zahlenkarte(n) zu Beginn ausgeklappt sein sollen (true) oder nicht (false).
   - default false: Nicht ausgeklappt. 
+- separator: *\<char>*
+  - Trennzeichen für 3er-Gruppen von Ziffern (Punkt, Leerzeichen oder sonstiges)
+  - default " " (Leerzeichen)
 
 ### Zustand: strapwork
 - rows: *\<int>*
@@ -193,19 +196,20 @@ Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt
   - **#1_item3** bezeichnet die dritte Position in Container 1
 
 ## Changelog
-### v1.0.0
-- neue Komponenten: "numbercards", "strapwork"
+### v2.1.0
+
 ### v2.0.0
-- neue Komponenten: "divisors"
+- neues VAM: "divisors"
 - VAM:
   - numbercards:
     - Fix: Als Liste übergebene Listen (z.B. für x und y) werden jetzt korrekt verarbeitet.
+    - Styling angepasst: schmalerer Rand, Aus-/Einklappbutton abgerundetes Rechteck, Farbbutton pro Karte und neues Styling, neues Layout für +/- Buttons, Farben an Montessorifarben angepasst
+    - Trennzeichen zwischen 3er-Gruppen von Ziffern hinzugefügt, einstellbar über Editor ("separator")
     - Dokumentation angepasst
   - strapwork:
     - divomath Zustandsdefinition angepasst
     - Eistellbarkeit zwischen fixer und flexibler Containerlänge hinzugefügt
     - löschen der letzten Komponente bei vollem Container hinzugefügt
-    - 
 - FW
   - draw:
     - debug Funktion entfernt, die überall nadas beim debuggen gezeichnet hat
@@ -215,6 +219,7 @@ Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt
       - geändert: DIVOBLUE von (120,147,194) zu (83,125,156)
       - geändert: DIVORED von (255,84,84) zu (235,85,78)
       - geändert: DIVOGREY von (165,165,165) zu (130,149,192) --> eher blau
+      - hinzugefügt: MONTERED, MONTEGREEN, MONTEBLUE, MONTEGREY für Montessorifarben. Zusätzliche MONTEPALETTE als Liste aller Montessorifarben
     - VALUEMAP: weist Zahlen von 1-12 die Wörter "Einer", "Zweier" ... "Zwölfer" zu
     - HEXMAP: weist den Strings "0" bis "9" sowie "A" bis "F" bzw. "a" bis "f" die Zahlen 1 bis 15 zu
     - COLORMAP: enthält die meisten vordefinierten Farben
@@ -231,3 +236,6 @@ Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt
     - Attribut "show", zum Ein- und Ausblenden des Buttons hinzugefügt
     - Flag "hasshadow" hinzugefügt, um das Zeichnen des Schattens steuern zu können
     - Handles für "color", "bordercolor" und "fontcolor" eingefügt
+
+### v1.0.0
+- neue VAMs: "numbercards", "strapwork"
