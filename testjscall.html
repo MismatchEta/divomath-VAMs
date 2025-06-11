@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    
+    <title>testjscall.cdy</title>
+    <style type="text/css">
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+        
+        #CSConsole {
+            background-color: #FAFAFA;
+            border-top: 1px solid #333333;
+            bottom: 0px;
+            height: 200px;
+            overflow-y: scroll;
+            position: fixed;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cindyjs.org/dist/v0.8/CindyJS.css">
+    <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
+<script id="csinit" type="text/x-cindyscript">
+//Script (CindyScript)
+A.xy = [0,0];
+
+calljs(foo) := (
+	javascript("alert('" + foo + "');");
+);
+;
+
+</script>
+<script id="csmouseclick" type="text/x-cindyscript">
+//Script (CindyScript)
+m = mouse();
+A.xy = m;
+if (m.x > 0 & m.y > 0, calljs("Du bist im 1. Quadrant"));
+if (m.x < 0 & m.y > 0, calljs("Du bist im 2. Quadrant"));
+if (m.x < 0 & m.y < 0, calljs("Du bist im 3. Quadrant"));
+if (m.x > 0 & m.y < 0, calljs("Du bist im 4. Quadrant"));
+;
+
+</script>
+    <script type="text/javascript">
+var cdy = CindyJS({
+  scripts: "cs*",
+  defaultAppearance: {
+    dimDependent: 0.7,
+    fontFamily: "sans-serif",
+    lineSize: 1,
+    pointSize: 5.0,
+    textsize: 12.0
+  },
+  angleUnit: "°",
+  geometry: [
+    {name: "A", type: "Free", pos: [4.0, 1.166666666666667, 0.5208333333333334], color: [1.0, 0.0, 0.0], labeled: true}
+  ],
+  ports: [{
+    width: 680,
+    height: 336,
+    id: "CSCanvas",
+    transform: [{visibleRect: [-12.46, 6.9, 14.74, -6.54]}],
+    axes: true,
+    background: "rgb(168,176,192)"
+  }],
+  csconsole: false,
+  cinderella: {build: 2088, version: [3, 0, 2088]}
+});
+    </script>
+</head>
+<body>
+    <div id="CSCanvas"></div>
+    <button
+    onclick="cdy.evokeCS('A.xy = [0,0]')"
+    type="button"
+    >
+      Send A to origin.
+    </button>
+</body>
+</html>

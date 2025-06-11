@@ -17,9 +17,10 @@ JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Wi
 
 ### Strings für *vam* Schlüssel
 Folgende Strings sind für *vam* Schlüssel zulässig:
-- divisors (seit: 2.0.0, letzte Änderung: 2.0.0)
-- numbercards (seit: 1.0.0, letzte Änderung: 1.0.0)
-- strapwork (seit: 1.0.0, letzte Änderung: 2.0.0)
+- divisors (seit: 2.0.0, letzte Änderung: 2.1.0)
+- numbercards (seit: 1.0.0, letzte Änderung: 2.1.0)
+- percentagebar (seit 3.0.0, letzte Änderung: 3.0.0)
+- strapwork (seit: 1.0.0, letzte Änderung: 3.0.0)
 
 ### Beispiel
 Eine Minimalkonfiguration zur Darstellung der Zahlenkarten-Komponente ("numbercards").
@@ -44,7 +45,7 @@ cindyjs:
 
 ### Zustand: divisors
 - color: *[\<string>,\<string>]*
-  - Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Folgende Farbstrings sind zulässig:
+  - Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Folgende Farbstrings sind u.a. möglich:
     - DARKRED=(228,26,28)/255;
     - DARKGREEN=(77,175,74)/255;
     - DARKBLUE=(55,126,184)/255;
@@ -66,9 +67,12 @@ cindyjs:
 - size: *\<float>*
   - Größe der Blobs
   - default .7
-- padding: *\<float>*
+- blobmargin: *\<float>*
   - Abstand der Blobs in einem Band
   - default .2
+- stripmargin: *\<float>*
+  - Abstand der Bänder untereinander
+  - default .5
 - timing: *\<float>*
   - Zeit für die Animation bei der Bewegung der Blobs
   - default 1
@@ -83,10 +87,13 @@ cindyjs:
   - default 0 (bzw. keine Gruppen)
 - maxcols: *\<int>*
   - Maximale Anzahl an erlaubten Spalten (größter Teiler)
-  - default 100
+  - default 10
 - sequentialorder: *\<bool>*
   - Steuert Umordnungsverhalten der Blobs in den Bändern
   - default false
+- drawbuttons: *\<bool>
+  - Zeichnen Buttons (true) oder auch nicht
+  - default: true
 - displaycalc: *\<bool>*
   - Anzeige der Berechnungsvorschrift "a : b"
   - default true
@@ -137,38 +144,46 @@ cindyjs:
   - Trennzeichen für 3er-Gruppen von Ziffern (Punkt, Leerzeichen oder sonstiges)
   - default " " (Leerzeichen)
 
+### Zustand: percentagbar
+> bisher keiner
+
 ### Zustand: strapwork
-- rows: *\<int>*
-  - Anzahl der Zeilen für ein Ornament
-  - default 1: Eine Zeile
 - size: *\<float>*
   - stellt generelle Größe der Objekte ein
   - default 1
-- limit: *\<int>* oder *\<list>*
-  - als *\<int>*: alle Container (rows) können maximal *limit* viele Objekte enthalten
-  - als *\<list>*: *limit* jedes Containers einzeln konfigurierbar. Liste muss so viele Einträge haben, wie es Container gibt.
-  - default [-1]: Liste für einen Container (-1 gibt an, dass der Container unendlich lang werden kann)
-- borders: *\<bool>*
-  - Rahmen der Polygone zeichnen (true) oder nicht (false)
-  - default false
+- polys: *\<list>*
+  - dient der genaueren Konfiguration der Basis-Polygone. Hier werden in einer Liste die Ecken der verfügbaren Polyone (und damit auch die Anzahl an Polygonen) definiert, e.g. [3,3,4,4] erzeugt zwei Dreiecke und zwei Vierecke (in verschiedenen Farben)
+  - default [0,3,6]: Kreis, Dreieck, Viereck
+- polycolors: *\<list>*
+  - genaue Konfiguration der Farbe jedes Basis-Polygons. Muss mindestens so viele Einträge enthalten, *\<polys>* gibt.
+  - Farben:
+    1. blau
+    2. dunkelblau
+    3. rot
+    4. grün
+    5. violett
+    6. grau
+    7. schwarz
+  - default: [1,2,3,...,100]
+- rows: *\<int>*
+  - Anzahl der Zeilen/Streifen eines Containers
+  - default 1: Eine Zeile
+- state: \<list of strings>
+  - Definiert, welche der über **vertices** und **colors** definierten Polygone im Container beim Start enthalten sein sollen.
+  - **Beispiel**: Für **vertices**=[0,3,4] sowie **rows**=3 stellt ["1,2,2", "3,3,3", ""] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.
+  - default ["", "", ...]
+- limit: *\<list>*
+  - Definiert, wie viele Polygone pro Band erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
+  - default [10,10,...] (potenziell 100 Bänder)
+- drawpatterncontainer: *\<bool>*
+  - true, wenn Mustercontainer gezeichnet werden soll.
+  - default true
 - drawseparator: *\<bool>*
   - Trennsymbol an der linken Seite eines Containers anzeigen (true) oder nicht (false)
   - default true
-- polys: *\<int>* oder *\<list>*
-  - als *\<int>*: Dann gibt polys die Anzahl der verfügbaren Polygone an. Die Polygone werden dann mit steigender Zahl von Ecken angelegt, also e.g. "Kreis, Dreieck, Viereck, Fünfeck", wenn polys den Wert 4 hat.
-  - als *\<list>*: Dient der genaueren Konfiguration der Polygone. Hier werden in einer Liste die Ecken der verfügbaren Polyone (und damit auch die Anzahl an Polygonen) definiert, e.g. [3,3,4,4] erzeugt zwei Dreiecke und zwei Vierecke (in verschiedenen Farben)
-  - default [0,3,4]: Kreis, Dreieck, Viereck
-- polycolors: *\<int>* or *\<list>*
-  - als *\<int>*: Setzt die Startfarbe der Polygone, die dann entsprechend der in Cindy hinterlegten divomath-Farben gewählt werden
-  - als *\<list>*: genaue Konfiguration der Farbe jedes Containers. Muss so viele Einträge enthalten, wie es Container gibt.
-  - Farben:
-    1. blau
-    2. rot
-    3. grün
-    4. violett
-    5. grau
-    6. schwarz
-  - default: 1
+- drawborders: *\<bool>*
+  - Rahmen um Polygone zeichnen (true) oder nicht (false)
+  - default false
 
 ## Validierung
 Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Der Zugriff erfolgt grundsätzlich über \<komponentenname>\\{RESULT_\<bezeichner>}, e.g. "**meinvam**\\{RESULT_**x**}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
@@ -178,7 +193,7 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse:
 > BISHER KEINE
 
 ### Validierung: numbercards
-Die Bezeichner beginnen stets mit "nc" (numbercard) gefolgt von einer Zahl (1,2,...), welche die Zahlenkarte identifiziert. Die Bezeichnungen beginnen entsprechend mit nc1, nc2, ... in Abhängigkeit davon, auf welchen Wert der Parameter cards im [Zustand](#1-numbercards) gesetzt wurde. Diesem Prefix folgt ein Unterstrich (_), wiederum gefolgt von einem Bezeichner. 
+(seit 1.0.0) Die Bezeichner beginnen stets mit "nc" (numbercard) gefolgt von einer Zahl (1,2,...), welche die Zahlenkarte identifiziert. Die Bezeichnungen beginnen entsprechend mit nc1, nc2, ... in Abhängigkeit davon, auf welchen Wert der Parameter cards im [Zustand](#1-numbercards) gesetzt wurde. Diesem Prefix folgt ein Unterstrich (_), wiederum gefolgt von einem Bezeichner. 
 - nc1 \<int>:
   - Wert der Zahlenkarte
 - nc1_E \<int>:
@@ -189,15 +204,85 @@ Die Bezeichner beginnen stets mit "nc" (numbercard) gefolgt von einer Zahl (1,2,
 - nc1_unfolded \<bool>:
   - Karte aufklappt (true) oder zusammengefaltet (false)
 
+### Validierung: percentagebar
+> BISHER KEINE
+
 ### Validierung: strapwork
-Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der Schlüssel enthält jeweils die Nummer des Containers und die Position, der Wert ist ein Text der Form und Anzahl der Ecken des dort befindlichen Polygons enthält. Zur besseren Orientierung, können mit einem debuglevel > 0 die IDs der Container angezeigt werden. Die genaue Struktur der Bezeichner ist wie folgt:
+(seit 1.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der Schlüssel enthält jeweils die Nummer des Containers und die Position, der Wert ist ein Text der Form und Anzahl der Ecken des dort befindlichen Polygons enthält. Zur besseren Orientierung, können mit einem debuglevel > 0 die IDs der Container angezeigt werden. Die genaue Struktur der Bezeichner ist wie folgt:
 - #\<Container-ID>_item\<Objektposition>
   - wobei \<Container-ID> und \<Objektposition> jeweils durchnummeriert werden, z.B.
   - **#1_item3** bezeichnet die dritte Position in Container 1
 
 ## Changelog
-### v2.1.0
+### v3.0.0 (in development)
+- neues VAM: "percentagebar"
+- VAM:
+  - divisors:
+    - Konfiguration für Darstellung der UI Buttons hinzugefügt (**drawbuttons**)
+    - Fix: **color** Konfiguration
+  - numbercards:
+    - Farbbutton geändert. Ist jetzt grau, wenn auch die Karten grau sind und farbig, wenn die Karten farbig sind.
+    - Klickverhalten der Numbercards geändert:
+      - Kinder Placecards werden nicht mehr nach der Animation gelöscht um eine Gesamtkarte zu bilden. Stattdessen bleiben die Placecards erhalten werden nur in der Position animiert. (~ Zeile 503, setpropertylater() auskommentiert)
+      - Farben werden auch nicht mehr gefadet beim aus- und einklappen. Placecards (und Farben) sind auch im zusammengeklappten Zustand sichtbar. (~ Zeilen 523 & 562 auskommentiert, Animationskonstrukt aber erhalten)
+  - strapwork:
+    - RegPolys sind "gleichgroß". Bei Polygonen mit gerader Eckenzahl sind gegenüberliegende Kanten 2*RADIUS weit entfernt, bei ungerader Eckenzahl, ist jede Ecke von ihrer gegenüberliegenden Kante 2*RADIUS weit entfernt. Vorher hatten alle den gleichen Umkreis mit RADIUS.
+    - RegPolys werden mit der unteren Kante parallel zur x-Achse ausgerichtet, es sei denn, "rotation" wird spezifiziert (nicht dm-konfigurierbar)
+    - Ist das RegPoly ein Kreis, wird es nicht mehr als Kreis verwaltet, sondern ein 100-Eck. Der Einheitlichkeit wegen. "shape" und "draw" entsprechend angepasst
+    - dm-config:
+      - **vertices**: Polygone können nur noch als Liste an Ecken angegeben werden, nicht mehr Alternativ als Anzahl. Es geht also nur noch e.g. [3,6,9] Für ein Drei-, Sechs- und Neuneck. Nicht mehr e.g. "4", um vier Polygone mit steigender Anzahl Ecken zu bauen (Kreis, Dreieck, Viereck, Fünfeck)
+      - **colors**: Analoges gilt für Farben. Es *MUSS* eine Liste angegeben werden, die die gleiche Länge hat wie **vertices** oder GAR NICHTS. Dann wird die Liste [1,2,3,...] verwendet (Standardreihenfolge der DIVOMATH Farbpalette).
+      - NEU **state** ([ ] \<string>): Definiert, welche der über **vertices** und **colors** definierten Polygone im Container beim Start enthalten sein sollen. Für **vertices**=[0,3,4] sowie **rows**=3 stellt ["1,2,2", "3,3,3", ""] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.
+      - NEU **drawpatterncontainer** (\<bool>): true, wenn PatternContainer gezeichnet werden soll.
+      - **borders** in **drawborders** umbenannt. Funktion gleich.
+  - FW:
+    - mousedown Handler: 
+      - Zeile 41 entfernt, die dafür sorgt, das hottes Element nach vorne geholt wird. Holt sonst bei **strapwork** im Zweifel Container vor Polygone. 
+        > **@Todo**: Durch Layer-System und "movetofront" Attribut austauschen (mit Ulli abstimmen, geht das rückwärtskompatibel?!).
+  - CLASS:
+    - Scrollbar:
+      - "script" wird nicht mehr auf "moveend" getriggered (zusätzlich zu "move"), sondern bei "click" (zusätzlich zu "move"), da sonst immer der "value" VOR der Änderung verwendet wird.
+### v2.1.1
+- VAM:
+  - numbercards:
+    - Fix: Anordnung der Montessorifarben korrigiert
+    - Fix: divomath Einstellung, ob eine Karte eingeklappt dargestellt wird oder nicht ("unfold" Attribut)
+  - divisors:
+    - neue divomath Konfiguration: "stripmargin"
+    - divomath Konfig. "padding" umbenannt in "blobmargin"
+    - Ausrichtung der Polygone angepasst (ungerade #Ecken => Spitze oben, gerade => Kante oben)
+    - Aussehen des verschiebbaren Balkens rechts der Bänder geändert
+    - Verhalten des verschiebbaren Balkens angepasst
+    - fix: verschiebbarer Balken ordnet sich beim loslassen an den Bändern an
+    - Attribute "width" und "height" für Strips hinzugefügt
+  - CLASS:
+    - *new* Key:
+      - Eine Taste für eine Tastatur (erbt von Button)
+    - *new* Keyboard:
+      - eine (momentan nur numerische) Tastatur, die eingeblendet werden kann, wenn ein Textfeld angeklickt wird o.ä.
+    - *new* TextInput:
+      - eine Quasi-Textbox, die beim Auswählen ein "Keyboard" zur Eingabe steuern kann.
+    - *new* Toggle:
+      - Toggle-Button, dessen "state" als bool verwendet werden kann. Ruft bei "click" sein "script" auf.
+    - *new* Scrollbar:
+      - Scrollbalken, dessen "value" zur Konfiguration anderer Komponenten genutzt werden kann.
+- FW:
+  - constants:
+    - unicode für verschiedene Pfeile hinzugefügt (LEFTARROW, RIGHTARROW, ...)
+  - helper functions:
+    - incircle(): Prüft, ob ein Punkt innerhalb eines Kreises liegt
 
+### v2.1.0
+- VAM:
+  - strapwork:
+    - Animationsverhalten angepasst
+    - Scrollbar hinzugefügt
+    - Resetbutton hinzugefügt
+- CLASS:
+  - Button:
+    - "hasborder" (bool) als Attribut hinzugefügt
+  - *new* Scrollbar:
+    - Eine Scrollleiste um Content zu bewegen. Beim Bewegen der Scrollbar wird deren Wert aktualisiert. Was damit getan werden soll (am Ende eines move-Events) muss über das "script"-Attribut konfiguriert werden. "max" und "min" Attribute können einzeln gesetzt werden (default: 100 bzw. 0). Zugriff auf den aktuellen Wert über das Attribut "value". "value" ändert sich linear mit der Position der Scrollbar.
 ### v2.0.0
 - neues VAM: "divisors"
 - VAM:
@@ -212,7 +297,7 @@ Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt
     - löschen der letzten Komponente bei vollem Container hinzugefügt
 - FW
   - draw:
-    - debug Funktion entfernt, die überall nadas beim debuggen gezeichnet hat
+    - Fix: debug Funktion entfernt, die überall nadas beim debuggen gezeichnet hat
     - objpreview entfernt, wird nicht benötigt
   - constants:
     - colors:
