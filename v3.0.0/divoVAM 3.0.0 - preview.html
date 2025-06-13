@@ -84,7 +84,7 @@ mousepressedtime='mousepressedtime=false;
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-vam = "strapwork"; // comment before production
+vam = "percentagebar"; // comment before production
 ;
 //FW: constants
 // v5
@@ -352,9 +352,14 @@ coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(rand
 );
 ;
 //FW: helper functions
-// v3
-// Convenience functions
+// v5
+// Recent changes:
+// - added values() function
+// - added ellipse() functions
+// - added defaultto() function
 
+
+// Convenience functions
 // A | VAM object functions
 // A.0 | Instance methods (kind of); only useful as object properties
 my(property) := ( // Getter some property.
@@ -704,6 +709,47 @@ rotate(point, angle, center) := (
 	point + center;
 );
 
+// Returns a list of points along an elliptical arc
+// Parameters:
+// center: center of the ellipse (e.g., [0,0])
+// a: semi-axis length in x-direction
+// b: semi-axis length in y-direction
+// angle: rotation angle of the ellipse in radians (optional)
+// t1: start angle (parameter domain, e.g., 0) (optional)
+// t2: end angle (parameter domain, e.g., pi/2) (optional)
+// steps: number of segments (optional)
+
+ellipse(center, a, b, angle, t1, t2, steps) := (
+	// Setup optional variables
+	angle	= if(!isundefined(angle), angle, 0);
+	t1		= if(!isundefined(t1), t1, 0);
+	t2		= if(!isundefined(t2), t2, 2*PI);
+  steps = if(!isundefined(steps), steps, 100);
+
+	regional(points);
+  points = [];
+
+  forall(0..steps,
+    t = t1 + (t2 - t1) * # / steps;
+    p = [a * cos(t), b * sin(t)];
+
+    // Apply rotation
+    p = [
+      cos(angle)*p_1 - sin(angle)*p_2,
+      sin(angle)*p_1 + cos(angle)*p_2
+    ];
+
+    // Apply translation
+    p = p + center;
+    points = points :> p;
+  );
+
+  points;
+);
+
+ellipse(center, a, b, t1, t2) := ellipse(center, a, b, nada, t1, t2, nada);
+ellipse(center, a, b) := ellipse(center, a, b, nada, nada, nada, nada);
+
 // C | Textboxes
 // @TODO:
 // - ordentlich dokumentieren
@@ -832,6 +878,14 @@ list(thing) := (
 
 listor(list):=contains(list,true);
 
+// Get all values of an object in a list (equivalent to keys())
+values(o) := (
+	regional(values);
+	values = [];
+	forall(keys(o), key, values = values :> o:key);
+	values; // Return
+);
+
 // *.4 | Random other stuff
 colorsort(list):=(
 	regional(slist,sub);
@@ -864,6 +918,8 @@ tickfactor(q):= (
 transformedcolor(c):= (
 	apply(c, if(colorblendmode=="sigmoid",	#^7 / (.5^7+ #^7), # ););
 );
+
+defaultto(var, defaultvalue) := if(!isundefined(var), var, defaultvalue);
 ;
 //C: Workbench, WorkbenchElement
 // v1
@@ -1087,7 +1143,7 @@ new VAMobject(type) := (
 	obj = {
 		"coord" 			: [0,0],
 		"type"  		  : type,
-		"ismoveable" : false,
+		"ismoveable"  : false,
 		"copyonmove"	: false,
 		"isclickable" : false,
 		"getaction" 	: "move",
@@ -1109,7 +1165,6 @@ new VAMobject(type) := (
 	
 	obj; // Return the VAMobject.
 );
-
 ;
 //C: Button
 // v3
@@ -1228,38 +1283,42 @@ new Keyboard(coord, subtype, keysize, target) := (
 	o:"click" := (
 		regional(key, value);
 		value = my("value");
-		key = select(my("keys"),#:"ishot");
-		if(length(key) > 0, // out of bounds if array is empty
-			key = key_1:"label";
-			
-			// Add character
-			if(!contains([DOWNARROWTIPLEFT,LEFTARROW], key),
-				value = value + key;
-			);
-			
-			// Execute targets onupdate script
-			if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
-				eval(my("target"):"onupdate", value->my("value"));
-			);
+		key = select(my("keys"),#:"ishot"); // Get all the hot keys (should be exactly one)
 
-			// Remove last character if any
-			if(key == LEFTARROW & length(value) > 0, // Remove last char
-				value = value_(1..(length(value)-1));
-				
-				// Build string from list
-				regional(temp);
-				temp = "";
-				forall(value, println(#);temp = temp + #);
-				value = temp;
-			);
+		// Get key label with out of bounds check (should not happen)
+		if(length(key) > 0, key = key_1:"label");
+			
+		// Add character if not clicked on an arrow key 
+		if(!contains([DOWNARROWTIPLEFT,LEFTARROW], key),
+			value = value + key;
 		);
-		
+
+		// Execute targets onupdate script on Enter press
+		if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
+			eval(my("target"):"onupdate", value->my("value"));
+		);
+
+		// Remove last character if any on leftarrow press
+		if(key == LEFTARROW & length(value) > 0,
+			// Remove last char
+			value = value_(1..(length(value)-1)); // is list now :(
+			println(value);
+			// Rebuild string from list
+			regional(temp);
+			temp = "";
+			forall(value, temp = temp + #);
+			value = temp;
+		);
+
+		// Reassign new value
 		self():"value" = value;
 		
 		// Execute targets onkeypress script
 		if(!isundefined(my("target")),
 			eval(my("target"):"onkeypress", key->key);
 		);
+		
+		key; // Return the key label
 	);
 
 	o:"draw" := (
@@ -1357,9 +1416,14 @@ new TextInput(coord, label, keyboardtype) := (
 
 	// Hooks from Keyboard class
 	// gets evaled with "key"
-	o:"onkeypress" := self():"value" = value;
+	o:"onkeypress" := ( // set own value
+		self():"value" = value;
+	);
+
 	// gets evaled with "value"
-	o:"onupdate" := (	);
+	o:"onupdate" := (	// Destroy keyboard
+		self():"keyboard" = nada;
+	);
 
 	o;
 );
@@ -3388,34 +3452,80 @@ forall(cards, card,
 if(vam == "percentagebar", // change accordingly
 // A | Documentation
 'doc = "
-	Add a documentation for controlling the VAM,
-	especially configuration options with the divomath state 
-	editor. Text is going to be drawn in draw script if
-	'debuglevel > 9.
+	...
 ";
 
 // B | Divomath config
-// Add handlers for divomath editor settings (i.e. state vars)
-// e.g. if the position of a thing can be configured:
-somepoint = if(!isundefined('dmstate.somepoint),
-	'dmstate.somepoint; // uses var "somepoint" from divomath state
-, 
-	[3,2] // if non-existent, uses [3,2] instead (default)
+// ===================
+regional(item);
+
+// Configure precision of the bars drag action
+item = 'dmstate.barprecision;
+barprecision = if(!isundefined(item), item, 1); // default
+barprecision = barprecision / 100; // Input is as x%. Adjust here.
+
+// Configure width and height of the bar
+item = 'dmstate.barwidth;
+barwidth = if(!isundefined(item), item, 16); // default
+item = 'dmstate.barheight;
+barheight = if(!isundefined(item), item, 1.5); // default
+
+// Configure bars initial value
+item = 'dmstate.barvalue;
+barvalue = if(!isundefined(item), item, 0); // default
+
+// Configure bars initial base value
+item = 'dmstate.basevalue;
+basevalue = if(!isundefined(item), item, 100); // default
+
+// Configure initial number of bars subdivisions
+item = 'dmstate.subdivisions;
+subdivisions = if(!isundefined(item), item, 3); // default
+
+// Configure the displayed unit
+item = 'dmstate.unit;
+unit = if(!isundefined(item), item, ""); // default
+
+
+// Configure the color of things
+// - Percentagebar
+item = 'dmstate.barcolor;
+barcolor = if(!isundefined(item), item, DZLMCOLORGOLD); // default
+// - Arches
+item = 'dmstate.archcolor;
+archcolor = if(!isundefined(item), item, DZLMCOLORGOLD); // default
+
+
+
+
+//------------ REDO
+//TickColor1&2,Archcolor(standard as tick2),amount of ticks2,
+'standardTicks = if(!isundefined('dmconf.standardTicks),
+	'dmconf.standardTicks,
+	[0,1]
+);
+tickColor1 = if(!isundefined('dmconf.tickColor1),
+	'dmconf.tickColor1,
+	[0,.5,1]
+);
+'tickColor2 = if(!isundefined('dmconf.tickColor2),
+	'dmconf.tickColor2,
+	[0,.5,1]
 );
 
 // B.2 | Other toggles
 // Add VAM-global toggles as needed, e.g.
 'delay = 100;
 
-// C | Class definitions
-// C.1 | <Class name>
-// <Description as needed>
+// Percentagebar
+// Main functionality of a bar, that is draggable in a certain area. Provides labels for different values
 new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit) := (
 	regional(o);
 	o = new VAMobject("Percentagebar");
 	
 	// Look and feel
 	o:"coord" = coord;
+	o:"color" = barcolor;
 	o:"width" = width;
 	o:"height" = height;
 	o:"margin" = 0; // margin of bar shape to surrounding box
@@ -3431,8 +3541,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	o:"prozentwert" = nada;
 	o:"drawarches" = nada;
 	o:"canoverflow" = nada;
-	o:"toggles"; // reference to all toggle switches
-	
+
 	// Values for Percentagebar
 	o:"unit" = unit;
 	o:"value" = value; // between 0 and 1
@@ -3572,87 +3681,52 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		);
 		self():"ticks" = newTicks;
 	);
+
 	o; // Return the object.
 );
 
 // D | Initialization
-//TickColor1&2,Archcolor(standard as tick2),amount of ticks2,
-'standardTicks = if(!isundefined('dmconf.standardTicks),
-	'dmconf.standardTicks,
-	[0,1]
+// D.1 | Init Toggle Switches
+// new Toggle(coord,width,state,label,fontsize)
+// ============================================
+regional(toggles);
+toggles = {
+	"percentages" : new Toggle([1,3], 1, false, "Prozentsätze", 14),
+	"parts"				:	new Toggle([1,2], 1, false, "Prozentwerte", 14),
+	"percentage"	:	new Toggle([5,3], 1, false, "Prozentsatz", 14),
+	"part"				: new Toggle([5,2], 1, false, "Prozentwert", 14),
+	"arch"				: new Toggle([9,3], 1, true, "Bögen", 14),
+	"overflow"		: new Toggle([9,2], 1, true, "Overflow", 14)
+};
+
+// D.2 | Init Text Inputs for (sub)divisions and base value
+// ===================================================
+regional(textfields, inputdiv, inputbaseval);
+textfields = {
+	"divisions"	:	new TextInput([16,3], "Teile", "numeric"),
+	"basevalue" : new TextInput([16,2], "G", "numeric")
+};
+
+// Config subdivisions tf
+textfields:"divisions":"handle" = bar; // Pointer to the bar to alter
+textfields:"divisions":"value" =  subdivisions + ""; // Textinput value needs to be string
+textfields:"divisions":"onupdate" := (
+	my("handle"):"divisions" = parse(my("value"));
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
 );
-'tickColor1 = if(!isundefined('dmconf.tickColor1),
-	'dmconf.tickColor1,
-	[0,.5,1]
-);
-'tickColor2 = if(!isundefined('dmconf.tickColor2),
-	'dmconf.tickColor2,
-	[0,.5,1]
-);
-'archColor = if(!isundefined('dmconf.archColor),
-	'dmconf.archColor,
-	(.35,.55,.78)
-);
 
-// Init Toggle Switches
-saetzeToggle = new Toggle([1,3],1,false,"Prozentsätze",14);
-werteToggle = new Toggle([1,2],1,false,"Prozentwerte",14);
-satzToggle = new Toggle([5,3],1,false,"Prozentsatz",14);
-wertToggle = new Toggle([5,2],1,false,"Prozentwert",14);
-archToggle = new Toggle([9,3],1,true,"Bögen",14);
-overflowToggle = new Toggle([9,2],1,true,"Overflow",14);
- 
-percentagebarToggles = [saetzeToggle,werteToggle,satzToggle,wertToggle,archToggle,overflowToggle];
-
-// Init Percentagebar
-//new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit) := (
-bar = new Percentagebar([1,5], 14, 2, .6, .1, 4, 1200, "MB");
-bar:"toggles" = percentagebarToggles;
-bar:"prozentsätze" = saetzeToggle;
-bar:"prozentwerte" = werteToggle;
-bar:"prozentsatz" = satzToggle;
-bar:"prozentwert" = wertToggle;
-bar:"drawarches" = archToggle;
-bar:"canoverflow" = overflowToggle;
-bar:"standardTicks" = 'standardTicks;
-
-// Init ArchFields
-regional(archoffset);
-archoffset = .8;
-arch1 = new ArchField(bar:"coord"+[0,bar:"height"+archoffset],bar:"width",bar:"divisions");
-arch1:"color"='archColor;
-arch1:"toggleObject"=archToggle;
-arch1:"skalaShown"=percentagebarToggles_1;
-
-arch2 = new ArchField(bar:"coord"+[0,-archoffset],bar:"width",bar:"divisions");
-arch2:"height"=-arch2:"height";
-arch2:"toggleObject"=archToggle;
-arch2:"color"='archColor;
-arch2:"skalaShown"=percentagebarToggles_2;
-
-// Setup script for Arch Toggle to control number of arches drawn
-arch1:"number" := floor(bar:"value" * bar:"divisions");
-arch2:"number" := floor(bar:"value" * bar:"divisions");
-
-// Init Text Inputs for divisions and base value
-regional(inputdiv, inputbaseval);
-
-inputdiv = new TextInput([16,3], "Teile", "numeric");
-inputdiv:"handle" = bar; // Pointer to the bar to alter
-inputdiv:"value" =  bar:"divisions" + ""; // Textinput value needs to be string
-inputdiv:"onupdate" := my("handle"):"divisions" = parse(my("value"));
-
-inputbaseval = new TextInput([16,2], "G", "numeric");
-inputbaseval:"handle" = bar; // Pointer to the bar to alter
-inputbaseval:"value" =  bar:"aggregate" + ""; // Textinput value needs to be string
-inputbaseval:"onupdate" := my("handle"):"aggregate" = parse(my("value"));
+// Config base value tf
+textfields:"basevalue":"handle" = bar; // Pointer to the bar to alter
+textfields:"basevalue":"value" =  basevalue + ""; // Textinput value needs to be string
+textfields:"basevalue":"onupdate" := my("handle"):"aggregate" = parse(my("value"));
 
 // Init +1/-1 Buttons for subdividing
 // new Button(coord,width,height,label,fontsize)
 regional(btnplus, btnminus);
-btnminus = new Button(inputdiv:"coord" + [inputdiv:"width" + .1, 0], .7, .7, "-", 20);
-btnminus:"handle" = inputdiv;
-btnminus:"cornerradius" = .3;
+btnminus = new Button(textfields:"basevalue":"coord" + [textfields:"basevalue":"width" + .1, 0], .7, .7, "-", 20);
+btnminus:"handle" = textfields:"basevalue";
+btnminus:"cornerradius" = .35;
 btnminus:"script" := (
 	regional(val);
 	val = parse(my("handle"):"value");
@@ -3661,8 +3735,8 @@ btnminus:"script" := (
 	my("handle"):"onupdate";
 );
 btnplus = new Button(btnminus:"coord" + [btnminus:"width" + .2, 0], .7, .7, "+", 20);
-btnplus:"handle" = inputdiv;
-btnplus:"cornerradius" = .3;
+btnplus:"handle" = textfields:"basevalue";
+btnplus:"cornerradius" = .35;
 btnplus:"script" := (
 	regional(val);
 	val = parse(my("handle"):"value");
@@ -3671,6 +3745,43 @@ btnplus:"script" := (
 	my("handle"):"onupdate";
 );
 
+
+// Init Percentagebar
+// new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
+// ==================================================================================
+bar = new Percentagebar([1,5], barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+bar:"prozentsätze"	= toggles:"percentages";
+bar:"prozentwerte"	= toggles:"parts";
+bar:"prozentsatz"		= toggles:"percentage";
+bar:"prozentwert"		= toggles:"part";
+bar:"drawarches"		= toggles:"arch";
+bar:"canoverflow"		= toggles:"overflow";
+bar:"standardTicks"	= 'standardTicks;
+
+bar:"divisions" := parse(textfields:"divisions":"value");
+println(textfields:"divisions":"value");
+
+// Init ArchFields
+// ===============
+regional(archoffset);
+archoffset = .8;
+arch1 = new ArchField(bar:"coord"+[0,bar:"height"+archoffset],bar:"width",bar:"divisions");
+arch1:"color"=archcolor;
+arch1:"toggleObject" = toggles:"arch";
+arch1:"skalaShown" = toggles:"percentages";
+
+arch2 = new ArchField(bar:"coord"+[0,-archoffset],bar:"width",bar:"divisions");
+arch2:"height"=-arch2:"height";
+arch2:"color"=archcolor;
+arch2:"toggleObject" = toggles:"arch";
+arch2:"skalaShown" = toggles:"parts";
+
+// Setup script for Arch Toggle to control number of arches drawn
+arch1:"number" := floor(bar:"value" * bar:"divisions");
+arch2:"number" := floor(bar:"value" * bar:"divisions");
+
+
+
 // FOR DEBUGGING: Input for precision
 inputprec = new TextInput([5,14], "Prec.", "numeric");
 inputprec:"handle" = bar; // Pointer to the bar to alter
@@ -3678,16 +3789,15 @@ inputprec:"value" =  bar:"precision";
 inputprec:"onupdate" := my("handle"):"precision" = parse(my("value"));
 inputprec:"keyboardoffset" = -[0,5];
 
-obj = obj ++ percentagebarToggles;
+obj = obj ++ values(toggles);
+obj = obj ++ values(textfields);
+obj = obj :> btnminus;
+obj = obj :> btnplus;
 obj = obj :> bar;
 obj = obj :> arch1;
 obj = obj :> arch2;
 obj = obj :> agg;
-obj = obj :> inputdiv;
-obj = obj :> inputbaseval;
 obj = obj :> inputprec; // DEBUG
-obj = obj :> btnminus;
-obj = obj :> btnplus;
 
 ); // end vam-if
 ;
@@ -3859,7 +3969,6 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 			drawtext(my("center")+[.2,0], my("id"),color->grey(1));
 			draw(my("coord"), color->grey(.9));
 		);
-if(my("parent"):"subtype" == "Pattern", println("I'm in a Container"));
 	);
 
 	regpoly:"ishot" := inpoly(my("shape"),mouse().xy);
@@ -4123,8 +4232,6 @@ new Container(coord, numofstrips, limits) := (
 	);
 
 	cont:"droppoly" := ( // eval with dropobject (from own "drop" method)
-
-println("Dropping Poly: " + dropobject:"id");
 		// For safety
 		if(!contains(obj,dropobject), obj = obj :> dropobject);
 
@@ -4134,8 +4241,6 @@ println("Dropping Poly: " + dropobject:"id");
 		stripindex = 0; // index of hot strip
 		forall(stripys, if(mouse().xy_2 > #, stripindex = stripindex + 1)); // go up strips and count along if mouse is higher
 		hotstrip = my("strips")_stripindex; // VALUE COPY of strip, reassign later
-
-println("droppoly: " + hotstrip);
 
 		// Find position, where to insert dropobject
 		regional(position);
@@ -4301,8 +4406,9 @@ println("droppoly: " + hotstrip);
 
 new PatternContainer(coord, limit) := (
 	regional(cont);
-	cont = new Container(coord, 1, limit);
-	
+	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit
+	cont = new Container(coord, 1, [limit]);
+
 	// Inherited from Container, don't use
 	obj = obj -- [cont:"scrollbar"];
 	cont:"showscrollbar" = false; // don't ever show scrollbar, scrollbar can't be nada without breaking errors though.
@@ -4312,21 +4418,12 @@ new PatternContainer(coord, limit) := (
 	cont:"bordersize" = 0;
 	cont:"ismoveable" = false;
 	cont:"copyonmove" = true;
-	cont:"pushpolysup" = false; // flag to push polys up in obj on "move" so they get drawn properly
-	cont:"limit" = if(limit<1 % isundefined(limit), 3, limit); // force limit
-	cont:"width" = cont:"limit" * cont:"polyoffset";
+	cont:"width" = limit * cont:"polyoffset" * 1.1;
 
 	cont:"move" := if(my("ismoveable"),
-		// Hack, so that RegPolys from copied PatternContainer are on top,
-		// since when you add the PatternContainer to obj from "copy" the Polys will be added BEFORE the copied Container.
-		if(my("pushpolysup"),
-			obj = obj -- my("strips")_1 ++ my("strips")_1;
-			self():"pushpolysup" = false;
-		);
-
 		// Move self
 		self():"coord" = my("coord") + mousedelta;
-
+println(my("limits"));
 		// Move contents (RegPolys)
 		apply(my("strips")_1,#:"coord" = #:"coord" + mousedelta); // can only have one exactly strip
 	);
@@ -4349,10 +4446,9 @@ new PatternContainer(coord, limit) := (
 
 	cont:"copy" := (
 		regional(copy);
-		copy = new PatternContainer(my("coord"),my("limit"));
+		copy = new PatternContainer(my("coord"), my("limits")_1);
 		copy:"ismoveable" = true;
 		copy:"copyonmove" = false;
-		copy:"pushpolysup" = true; // see 'move'
 
 		// Copy RegPolys of original and out in only strip
 		copy:"strips"_1 = apply(1..length(my("strips")_1), my("strips")_1_#:"copy");
@@ -4407,7 +4503,7 @@ if(drawpatterncontainer,
 regional(container, polycopy, counter);
 container = new Container([0,5], rows, limit);
 
-// Fill container with predefined RegPolys
+// Fill Container with predefined RegPolys
 counter = 1; // start at first strip
 state = apply(state, tokenize(#,",")); // Create config from supplied strings from divomath
 
@@ -4425,12 +4521,13 @@ forall(state, row, // iterate over config for every row
 container:"movepolysintoplace"; // align polys
 
 // D.4 | Create Separator
+// ======================
 if(drawseparator,
 	regional(separator);
 	separator = new Separator(container:"coord", container:"height", container);
 );
 
-// D.4 | Reset Button
+// D.5 | Reset Button
 // ==================
 regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
@@ -4444,7 +4541,6 @@ btn:"fontcolor" = grey(1);
 btn:"script" := (
 	forall(select(obj, #:"type" == "Container"), #:"popall");
 	'polyid = 0;
-
 );
 
 // E | Build obj
@@ -4456,7 +4552,8 @@ obj = obj ++ polys;
 obj = obj ++ flatten(container:"strips"); // Initial Polys of container build at Container init
 obj = obj :> separator;
 
-
+// Order to draw (Separator last, so it is on top)
+typeorder = ["Container", "RegPoly", "Separator"];
 
 );
 ;
@@ -4851,7 +4948,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, -9.480034155453596E-18, 0.17077711315984156], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, 0.1607142857142857, 0.16671099141794055], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -4864,9 +4961,9 @@ var cdy = CindyJS({
   animcontrols: false,
   ports: [{
     width: 903,
-    height: 484,
+    height: 449,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.8033577767695931, 16.94192289231875, 31.438067664250074, -0.3391955057471615]}],
+    transform: [{visibleRect: [-0.23208113551121576, 16.65628457168956, 32.00934430550845, 0.6248338263763501]}],
     grid: 0.25,
     background: "rgb(255,255,255)"
   }],

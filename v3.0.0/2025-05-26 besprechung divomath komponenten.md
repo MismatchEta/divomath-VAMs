@@ -14,7 +14,7 @@ divisors:
 - **erledigt** Buttons ausstellbar konfigurieren
 - Blobs überlagern Text
   - ![alt text](image.png)
-- Lücken in Text größer
+- **erledigt** Lücken in Text größer
   - ![alt text](image-1.png)
 - Bug: Schieberegler ändert bei festem Zustand nicht mehr die Gruppengröße
   - ![alt text](image-2.png)
