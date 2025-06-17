@@ -24,7 +24,11 @@
     <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
 <script id="csinit" type="text/x-cindyscript">
 //FW: divomath config
-// v1
+// v2
+// Recent changes:
+// - usedivomath added as flag for storyline config
+usedivomath = false;
+
 // Access divomath editor settings
 'dmconf = divomathConfig.configuration;
 'dmstate = divomathConfig.divomathVarState;
@@ -74,7 +78,7 @@ vam = if(!isundefined('dmconf.vam), 'dmconf.vam, "default");
 
 // A | Common flags
 isdebugging='isdebugging = false;	// Toggle debugging. (legacy)
-'debuglevel = 5; // local overwrite for debuglevel set by divomath
+'debuglevel = 1; // local overwrite for debuglevel set by divomath
 mousepressedtime='mousepressedtime=false;
 
 // B | Screen config parameters
@@ -357,7 +361,8 @@ coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(rand
 // - added values() function
 // - added ellipse() functions
 // - added defaultto() function
-
+// - added drawtextbox() function
+// - overloaded getboundingbox(3) to get boundingbox for textbox drawing
 
 // Convenience functions
 // A | VAM object functions
@@ -751,31 +756,20 @@ ellipse(center, a, b, t1, t2) := ellipse(center, a, b, nada, t1, t2, nada);
 ellipse(center, a, b) := ellipse(center, a, b, nada, nada, nada, nada);
 
 // C | Textboxes
-// @TODO:
-// - ordentlich dokumentieren
-// - Prüfen ob es diese Methoden braucht
-// - hier ist noch n Fehler - drawtextbos mit 4 Parametern wird zweimal definiert
-
-//**A box with some text/number on it
-//*	@param P: ...TODO
-//**
-drawtextbox(P,w,h,txt,color):=
-(regional(size);
-	r=rectangle(P,w,h);
-	fillpoly(r,color->color,alpha->1);
-  drawpoly(r,color->grey(.5),alpha->0.3);
-	size=(round(h*screenresolution()*.8));//,round(w*screenresolution()/.8/max(1,length(txt))));
-	drawtext(P+(w/2,0),txt,size->ceil(size),bold->false,align->"center",family->monofont,
-	  			yoffset->ceil(size*.3)); 
-	//Diese Textbox funktioniert nur in moodle und nur wenn von feedback aufgerufen NICHT
-	//drawtext(P,size+" "+P+" " +txt);
-); 
-drawtextbox(P,h,txt,color):= (
-	w=length(txt)*h*.5;
-	drawtextbox(P-(w/2,0),w,h,txt,color);
+// (Overloaded) Gets the bounding rectangle for a text with given size and font
+getboundingbox(text, coord, size, font) := (
+	regional(pxsize);
+	pxsize = pixelsize(text, size->size, font->font); // [width,height,baseline] in px
+	pxsize = pxsize / screenresolution(); // divide by resolution to geht values in coords
+	rectangle(coord,pxsize_1,pxsize_2); // return rectangle
 );
-drawtextbox(P,w,h,txt):=drawtextbox(P,w,h,txt,(1,1,.9));
-drawtextbox(P,h,txt):=drawtextbox(P,h,txt,(1,1,.9));
+
+// Draws a textbox with optional backgroundcolor
+drawtextbox(coord, text, size, font, bgcolor) := (
+	bgcolor = defaultto(bgcolor, grey(.9));
+	fillpoly(getboundingbox(text, coord, size, font), color->bgcolor);
+	drawtext(coord, text, size->size, font->font);
+);
 
 // D | Commands
 or(list)  := (regional(x);x=false;forall(list,x=x%#));
@@ -1433,6 +1427,7 @@ new TextInput(coord, label, keyboardtype) := (
 new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
+	o:"type" = "Toggle";
 	o:"object";
 	o:"cornerradius" = width;
 	o:"state" = if(!isundefined(state),state,false);
@@ -1841,6 +1836,7 @@ new ArchField(coord,width,number):=(
 if(vam == "default",
 
 // A | Documentation
+//'doctextpos = [9,15.5];
 'doc = "
 	Das ist das Standard-VAM. Die Auswahl des 'richtigen' VAMs erfolgt über das Komponentenverhalten.
 Dort muss folgende Struktur übernommen werden.
@@ -1926,6 +1922,7 @@ obj = obj :> o;
 if(vam == "divisors", // change accordingly
 
 // A | Documentation
+//'doctextpos = [9,15.5];
 'doc = "
 >> Konfigurierbarer Zustand | VAM 'divisors'
 color: <string> # eine repräsentierte Farbe (siehe Doku)
@@ -2303,7 +2300,7 @@ println("@TO BE IMPLEMENTED");
 			// - " = c"
 			if(displayresult,
 				bottomleftx = bottomleftx+.1+pixelsize(text)_1/screenresolution();
-				text = "  =  " + floor(b/d);
+				text = "   =  " + floor(b/d);
 				drawtext([bottomleftx,1.7],
 					text,
 					size->16,
@@ -2771,16 +2768,20 @@ println(screenbounds());
 ); // end vam-if
 ;
 //VAM: numbercards
-// v7
+// v8
 // last changes:
-// - switched color button looks. Now grey if cards are grey, and colorful if cards are too.
+// - switched color button look. Now grey if cards are colorful, and colorful if cards are grey.
+// - changed look of greyed color button to be greyscale MONTEPALETTE used in colored option.
+// - changed unfold button behavior. Now shows one line, if unfolded, and multiple lines if folded.
 // - changed click behavior, Placecards are not removed and color isn't faded. Placecards therefore always visible
+// - made cards immoveable
+// - hide borders of empty Placecards when not folded
 
 // Zahlenkarten
 if(vam == "numbercards",
 
 // A | Documentation
-'doctextpos = [9,15.5];
+//'doctextpos = [9,15.5];
 'doc = "
 >> Konfigurierbarer Zustand | VAM 'numbercards'
 color: <bool> # Darstellung in Farbe? (oder Graustufen)
@@ -2819,14 +2820,14 @@ repeat(numofcards,
 // Configure x-locations "c"_1
 item = 'dmstate.x;
 item = if(!islist(item) & !isundefined(item), [item], item); // force list
-if(isundefined(item), item = [3, 8, 13, 18]);
+if(isundefined(item), item = [4, 9, 14, 19]);
 repeat(min(numofcards,length(item)),
 	cards_#:"c"_1 = item_#
 );
 // Configure y-locations "c"_2
 item = 'dmstate.y;
 item = if(!islist(item) & !isundefined(item), [item], item); // force list
-if(isundefined(item), item = [17, 17, 17, 17]);
+if(isundefined(item), item = [16, 16, 16, 16]);
 repeat(min(numofcards,length(item)),
 	cards_#:"c"_2 = item_#
 );
@@ -2948,7 +2949,7 @@ new Placecard (c, initialvalue, maxplaces) := (
 	o:"bgcolor" 		= MONTEGREY;
 	o:"mix" 				= 0;
 	o:"edit"				= false;
-	o:"ismoveable"	= true;
+	o:"ismoveable"	= false;
 	o:"downbutton"	= {"center": [-10,-10], "radius": 0};
 	o:"upbutton"		= {"center": [-10,-10], "radius": 0};
 
@@ -2964,28 +2965,15 @@ new Placecard (c, initialvalue, maxplaces) := (
 	);
 
 	o:"draw" := (
-		if(my("value")>0, // Draw the filled placecard
-			fillpoly(
-				my("shape"),
-				color->(1-my("mix"))*my("bgcolor")+my("mix")*my("color")
-			);
-			drawpoly(
-				my("shape"),
-				size->1,
-				color->(1-my("mix"))*my("bgcolor")+my("mix")*my("color")
-			);				
-			drawpoly(
-				my("shape"),
-				color->grey(0)
-			);
+		// For nonzero place card
+		if(my("value")>0,
+			// Draw the box
+			fillpoly(my("shape"), color->(1-my("mix"))*my("bgcolor")+my("mix")*my("color"));
+			drawpoly(my("shape"), color->grey(0));
 			
 			// Draw card text
 			regional(ps);
-			ps = pixelsize(
-				"0",
-				size->screenresolution(),
-				family->schulschrift
-			);
+			ps = pixelsize("0", size->screenresolution(), family->schulschrift);
 
 			repeat(my("maxplaces"),
 				// Draw digit
@@ -2999,6 +2987,7 @@ new Placecard (c, initialvalue, maxplaces) := (
 					size->screenresolution(),
 					family->schulschrift
 				);
+
 				// Draw seperator
 				if(mod(#,3) == 0 & # < my("maxplaces"),
 					drawtext(
@@ -3013,14 +3002,11 @@ new Placecard (c, initialvalue, maxplaces) := (
 					);
 				);
 			);
-		, // else draw empty rectangle
-			drawpoly(
-				my("shape"),
-				size->2,
-				color->(1-my("mix"))*my("bgcolor")+my("mix")*my("color")
+		, // else draw empty rectangle if unfolded
+			if(my("parent"):"expanded",
+				drawpoly(my("shape"), size->2, color->(1-my("mix"))*my("bgcolor")+my("mix")*my("color"));
 			);
 		);
-
 		// Draw + and - buttons
 		regional(circ);
 		if(my("edit"),
@@ -3114,7 +3100,7 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 	o:"foldtime" 		= 5/5;
 	o:"color" 			= MONTEGREY;
 	o:"fadealpha"		= alpha;
-	o:"ismoveable" 	= true;
+	o:"ismoveable" 	= false;
 	o:"montessori" 	= monte;
 	o:"showtogglemonte" = showtogglemonte;
 
@@ -3200,7 +3186,7 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 
 		draw(rect, color->rectcolor, size->size);
 		fill(rect, color->rectcolor);
-		repeat(if(!my("expanded"),1,4),
+		repeat(if(my("expanded"),1,4), // Draw burger-like lines to display "unfold"
 			fillpoly(rectangle(
 				(self():"coord")+(-offset_1-0.1+.2*#,-.05+.2*(5-#)),
 				(5-#)*.2,.1
@@ -3211,19 +3197,22 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 
 		// Color Button
 		if(my("showtogglemonte"),
-			regional(rect);
-			rect = roundedrectangle(self():"coord"-2*offset, 1, self():"height",.1);
-			
-			if(my("montessori"), // Colorful button
-				regional(circ0, circ1, circ2);
-				circ0 = circle(self():"coord"-2*offset+[1,0], 2);
-				circ1 = circle(self():"coord"-2*offset+[1,0], 1);
-				circ2 = circle(self():"coord"-2*offset+[1,0], .5);
+			regional(rect, circ0, circ1, circ2);
+			// Setup parts to be drawn
+			rect = roundedrectangle(self():"coord"-2*offset, 1, self():"height",.1); // border
+			circ0 = circle(self():"coord"-2*offset+[1,0], 2); // outer circle
+			circ1 = circle(self():"coord"-2*offset+[1,0], 1); // middle circle
+			circ2 = circle(self():"coord"-2*offset+[1,0], .5); // inner circle
+
+			// Draw...
+			if(!my("montessori"), // Colorful button
 				fill(rect~~circ0, color->MONTEBLUE);
 				fill(rect~~circ1, color->MONTERED);
 				fill(rect~~circ2, color->MONTEGREEN);
-			, // WHITE BUTTON
-				fill(rect, color->MONTEGREY);
+			, // Grey button
+				fill(rect~~circ0, color->grey(.9));
+				fill(rect~~circ1, color->grey(.6));
+				fill(rect~~circ2, color->grey(.3));
 			);
 			draw(rect, color->DIVOBLUE, size->size);
 		);
@@ -3448,9 +3437,10 @@ forall(cards, card,
 ;
 //VAM: percentagebar
 // v1
-// Numberline
-if(vam == "percentagebar", // change accordingly
+if(vam == "percentagebar",
+
 // A | Documentation
+//'doctextpos = [9,15.5];
 'doc = "
 	...
 ";
@@ -3460,41 +3450,30 @@ if(vam == "percentagebar", // change accordingly
 regional(item);
 
 // Configure precision of the bars drag action
-item = 'dmstate.barprecision;
-barprecision = if(!isundefined(item), item, 1); // default
-barprecision = barprecision / 100; // Input is as x%. Adjust here.
+barprecision = defaultto('dmstate.barprecision, 1);
+barprecision = barprecision / 100; // Adjust to not be expressed as y%
 
 // Configure width and height of the bar
-item = 'dmstate.barwidth;
-barwidth = if(!isundefined(item), item, 16); // default
-item = 'dmstate.barheight;
-barheight = if(!isundefined(item), item, 1.5); // default
+barwidth = defaultto('dmstate.barwidth, 16);
+barheight = defaultto('dmstate.barheight, 2);
 
-// Configure bars initial value
-item = 'dmstate.barvalue;
-barvalue = if(!isundefined(item), item, 0); // default
-
-// Configure bars initial base value
-item = 'dmstate.basevalue;
-basevalue = if(!isundefined(item), item, 100); // default
+// Configure bars initial value and base value
+barvalue = defaultto('dmstate.barvalue, 0); // in [0,1]
+basevalue = defaultto('dmstate.basevalue, 1000);
 
 // Configure initial number of bars subdivisions
-item = 'dmstate.subdivisions;
-subdivisions = if(!isundefined(item), item, 3); // default
+subdivisions = defaultto('dmstate.subdivisions, 3);
 
 // Configure the displayed unit
-item = 'dmstate.unit;
-unit = if(!isundefined(item), item, ""); // default
+unit = defaultto('dmstate.unit, "");
 
-
-// Configure the color of things
+// Configure look and feel of things
 // - Percentagebar
-item = 'dmstate.barcolor;
-barcolor = if(!isundefined(item), item, DZLMCOLORGOLD); // default
+barcolor = defaultto('dmstate.barcolor, DZLMCOLORGOLD);
 // - Arches
-item = 'dmstate.archcolor;
-archcolor = if(!isundefined(item), item, DZLMCOLORGOLD); // default
-
+archcolor = defaultto('dmstate.archcolor, DZLMCOLORGOLD);
+// - Font
+fontfamily = defaultto('dmstate.fontfamily, nada);
 
 
 
@@ -3530,7 +3509,8 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	o:"height" = height;
 	o:"margin" = 0; // margin of bar shape to surrounding box
 	o:"precision" = precision; // precision of movement of bar (in [0,1])
-	o:"textSize" = 14;
+	o:"fontsize" = 14;
+	o:"fontfamily" = fontfamily; // set globally
 	o:"isclickable" = true;
 	o:"ismoveable" = true;
 
@@ -3546,39 +3526,82 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	o:"unit" = unit;
 	o:"value" = value; // between 0 and 1
 	o:"aggregate" = baseval;
-	o:"divisions" = divisions; // only need to update Divisions to get ticks updated
-	o:"ticks" = nada;//[.2,.4,.6,.8];
-	o:"standardTicks" = [0,1];
+	o:"divisions" = divisions; // determines ticks, gets updated via Textfield
+	o:"ticks" := apply(1..my("divisions")-1, #/my("divisions"));
+	o:"standardticks" = [0,1];
 	
 	// Shape & hitbox
 	o:"box" = rectangle(coord-[o:"margin",o:"margin"], width+2*o:"margin", height+2*o:"margin");
 	o:"shape" := roundedrectangle(my("coord"), my("value")*my("width"), my("height"), .1);
-	o:"hitbox" = rectangle(coord-[10000,0],100000,height);
+	o:"hitbox" := rectangle(my("coord"),my("width"),my("height"));
 
 	o:"ishot" := inrectangle(my("hitbox"), mouse().xy);
 
 	o:"draw" := (
-		// Calculate how many ticks have to be drawn due to overflowing bar
-		regional(overflowticks, count);
-		overflowticks = [];
-		count = ceil(my("value")*my("divisions")) - my("divisions");
-		repeat(count, overflowticks = overflowticks :> 1 + # / my("divisions"));
-
 		// Draw background box
 		fillpoly(my("box"), color->grey(.9));
 
-		// Draw extended background box if required
-		if (length(overflowticks) > 0,
-			fillpoly(rectangle(my("coord")+[my("width"),0],
-				length(overflowticks)*my("width")/my("divisions"),
-				my("height")
-				), 
-				color->grey(.9);
+		// Draw actual draggable bar
+		fill(my("shape"), color->my("color"));
+
+		// Draw inbetween ticks
+		regional(p1); // anchor point for vertical lines
+		forall(my("ticks"),
+			p1 = my("coord") + [#,0]*my("width"); // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 + [0,my("height")],
+				size->2,
+				color->DZLMCOLORBLUE
 			); 
 		);
 
-		// Draw actual draggable bar
-		fill(my("shape"), color->my("color"));
+		// Draw standard ticks (left and right by default)
+		forall(my("standardticks"),
+			p1 = my("coord") + [#,0]*my("width"); // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 + [0,my("height")],
+				size->2,
+				color->grey(.3)
+			); 
+		);
+
+		// Draw labels for percentages
+		regional(size, font, label, text, box);
+		size = my("fontsize");
+		family = my("fontfamily");
+		text = "Hallo";
+		box = getboundingbox(text, [10,10], size, family);
+//println(fontfamilies());
+
+println(box);
+drawtext([10,10], text, size->size, font->family);
+drawpoly(box);
+		
+
+//		forall(my("ticks")++my("standardTicks")++overflowticks,i,
+//			if(drawProzente % contains(my("standardTicks"),i),drawtext(
+//				my("coord") + [i*my("width"),my("height")+1.5*my("margin")+.2]
+//				," "+text(round(i*1000)/10)+"%"
+//				,align->"mid",color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
+//				,size->my("textSize")
+//			););
+//			if(drawWertskala % contains(my("standardTicks"),i),drawtext(
+//				my("coord") + [i*my("width"),-3*my("margin")-.5]
+//				,text(round(my("aggregate")*i*100)/100)+my("unit")
+//				,align->"mid"
+//				,color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
+//				,size->my("textSize")
+//			););
+//			draw(
+//				my("coord") + [i*my("width"),if(contains([0,.5,1],i),-my("margin"),0)]
+//				,my("coord") + [i*my("width"),my("height")+if(contains([0,.5,1],i),my("margin"),0)]
+//				,size->3
+//				,color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
+//			);
+//		);
+
+
+
 		
 		// Draw labels on vertical lines if applicable
 		if(length(my("ticks"))!=my("divisions")-1,my("setTicks"););
@@ -3587,28 +3610,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		regional(drawWertskala);
 		drawWertskala = if(!isundefined(my("prozentwerte")),my("prozentwerte"):"state",true);
 
-		// Draw ticks
-		forall(my("ticks")++my("standardTicks")++overflowticks,i,
-			if(drawProzente % contains(my("standardTicks"),i),drawtext(
-				my("coord") + [i*my("width"),my("height")+1.5*my("margin")+.2]
-				," "+text(round(i*1000)/10)+"%"
-				,align->"mid",color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
-				,size->my("textSize")
-			););
-			if(drawWertskala % contains(my("standardTicks"),i),drawtext(
-				my("coord") + [i*my("width"),-3*my("margin")-.5]
-				,text(round(my("aggregate")*i*100)/100)+my("unit")
-				,align->"mid"
-				,color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
-				,size->my("textSize")
-			););
-			draw(
-				my("coord") + [i*my("width"),if(contains([0,.5,1],i),-my("margin"),0)]
-				,my("coord") + [i*my("width"),my("height")+if(contains([0,.5,1],i),my("margin"),0)]
-				,size->3
-				,color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
-			);
-		);
+	
 
 		// Draw labels on draggable percentage bar
 		regional(drawProzentsatz);
@@ -3620,7 +3622,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 				my("coord") + [1*my("width"),.4*my("height")]
 				," "+text(round(my("value")*1000)/10)+"%"
 				,align->"left",color->grey(.3)
-				,size->my("textSize")
+				,size->my("fontsize")
 			);
 		,
 			if(drawProzentsatz,
@@ -3628,7 +3630,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 					my("coord") + [my("value")*my("width"),.4*my("height")]
 					," "+text(round(my("value")*1000)/10)+"%"
 					,align->"left",color->grey(.3)
-					,size->my("textSize")
+					,size->my("fontsize")
 				);
 			);
 			if(drawProzentwert,
@@ -3636,7 +3638,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 					my("coord") + [my("value")*my("width"),.4*my("height")]
 					,text(round(my("aggregate")*my("value")*100)/100)+my("unit")+" "
 					,align->"right",color->grey(.3)
-					,size->my("textSize")
+					,size->my("fontsize")
 				);
 			);
 		);
@@ -3644,6 +3646,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		// Debug draw
 		if('debuglevel > 0, drawtext(my("coord")+[0.3,0],my("value")));
 		if('debuglevel > 0, draw(my("coord")));
+		if('debuglevel > 1, drawpoly(my("hitbox"), color->[0,1,0]));
 	);
 
 	o:"move" := if(my("ismoveable"),
@@ -3673,7 +3676,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		self():"value" = my("precision") * round(my("value")/my("precision"));
 	);
 
-	o:"setTicks":=(
+	o:"setTicks" := if(false,
 		regional(newTicks);
 		newTicks=[];
 		repeat(my("divisions")-1,i,
@@ -3686,6 +3689,11 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 );
 
 // D | Initialization
+// SL Config
+if(!usedivomath,
+	basevalue = 1000;
+);
+
 // D.1 | Init Toggle Switches
 // new Toggle(coord,width,state,label,fontsize)
 // ============================================
@@ -3703,7 +3711,7 @@ toggles = {
 // ===================================================
 regional(textfields, inputdiv, inputbaseval);
 textfields = {
-	"divisions"	:	new TextInput([16,3], "Teile", "numeric"),
+	"divisions"	:	new TextInput([16,3], "Schritte", "numeric"),
 	"basevalue" : new TextInput([16,2], "G", "numeric")
 };
 
@@ -3719,7 +3727,11 @@ textfields:"divisions":"onupdate" := (
 // Config base value tf
 textfields:"basevalue":"handle" = bar; // Pointer to the bar to alter
 textfields:"basevalue":"value" =  basevalue + ""; // Textinput value needs to be string
-textfields:"basevalue":"onupdate" := my("handle"):"aggregate" = parse(my("value"));
+textfields:"basevalue":"onupdate" := (
+	my("handle"):"aggregate" = parse(my("value"));
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+);
 
 // Init +1/-1 Buttons for subdividing
 // new Button(coord,width,height,label,fontsize)
@@ -3745,7 +3757,6 @@ btnplus:"script" := (
 	my("handle"):"onupdate";
 );
 
-
 // Init Percentagebar
 // new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
 // ==================================================================================
@@ -3758,8 +3769,7 @@ bar:"drawarches"		= toggles:"arch";
 bar:"canoverflow"		= toggles:"overflow";
 bar:"standardTicks"	= 'standardTicks;
 
-bar:"divisions" := parse(textfields:"divisions":"value");
-println(textfields:"divisions":"value");
+bar:"divisions" := parse(textfields:"divisions":"value"); // Initial number of divisions
 
 // Init ArchFields
 // ===============
@@ -3780,8 +3790,6 @@ arch2:"skalaShown" = toggles:"parts";
 arch1:"number" := floor(bar:"value" * bar:"divisions");
 arch2:"number" := floor(bar:"value" * bar:"divisions");
 
-
-
 // FOR DEBUGGING: Input for precision
 inputprec = new TextInput([5,14], "Prec.", "numeric");
 inputprec:"handle" = bar; // Pointer to the bar to alter
@@ -3799,6 +3807,8 @@ obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj :> inputprec; // DEBUG
 
+
+
 ); // end vam-if
 ;
 //VAM: strapwork
@@ -3811,6 +3821,7 @@ if(vam == "strapwork",
 
 
 // A | Documentation
+//'doctextpos = [9,15.5];
 'doc = "
 >> Konfigurierbarer Zustand | VAM 'strapwork'
 size: <float> # Größe der Elemente (Polygone, Container)
@@ -3910,7 +3921,7 @@ divomathUpdateResults() := (
 divomathSetState() := ();
 
 
-// CLASS: Provides a means to render a regular polygon based on its center and the radius of the circumcircle* and
+// CLASS RegPoly: Provides a means to render a regular polygon based on its center and the radius of the circumcircle* and
 // having it iteractable (i.e. being able to "move", "copy" and interact with a container on "moveend".
 // Uses regularpolygon() function but scales and rotates the result depending on the parity of vertices
 // (even: rotate by PI/4, scale up so that radius is edge to opposite edge, odd: no rotation, scale -> 2*radius = edge to opposite edge).
@@ -4024,20 +4035,22 @@ new Separator(coord, height, parent) := (
 	sep:"copies" = [];
 
 	sep:"hitbox" := ( // mutliple polys
-		regional(hitbox, offset, barscale);
+		regional(hitbox, offset, barscale, blobscale);
+		blobscale = .6;
 		hitbox = [];
 
-		hitbox = hitbox :> regularpolygon(my("coord"), my("width"), 4, PI/4); // bottom square
+		hitbox = hitbox :> regularpolygon(my("coord"), blobscale * my("width"), 100, PI/4); // bottom square
 
-		repeat(my("parent"):"#strips" - 1, // create middle squares
-			offset = #/my("parent"):"#strips" * [0,my("parent"):"height"];
-			hitbox = hitbox :> regularpolygon(my("coord") + offset, my("width"), 4, 0);
-		);
+		// not wanted by customer
+		//repeat(my("parent"):"#strips" - 1, // create middle squares
+		//	offset = #/my("parent"):"#strips" * [0,my("parent"):"height"];
+		//	hitbox = hitbox :> regularpolygon(my("coord") + offset, my("width"), 4, 0);
+		//);
 
 		offset = [0,my("parent"):"height"];
-		hitbox = hitbox :> regularpolygon(my("coord")+offset, my("width"), 4, PI/4); // top square
+		hitbox = hitbox :> regularpolygon(my("coord")+offset, blobscale * my("width"), 100, PI/4); // top square
 
-		barscale = .3;
+		barscale = .2;
 		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),0], 2*barscale*my("width"), my("parent"):"height");
 	);
 	sep:"ishot" := contains(apply(my("hitbox"), inpoly(#,mouse().xy)), true); // mouse in one the parts of the hitbox
@@ -4100,6 +4113,11 @@ new Separator(coord, height, parent) := (
 		copy;
 	);
 
+	sep:"popall" := (
+		obj = obj -- my("copies");
+		self():"copies" = [];
+	);
+
 	sep; // Return
 );
 
@@ -4110,7 +4128,7 @@ new Container(coord, numofstrips, limits) := (
 	cont = new VAMobject("Container");
 
 	cont:"stripmargin" = .3; // distance to left and right border, half the distance is used to next strip
-	cont:"polypadding" = .3;
+	cont:"polypadding" = .5;
 	cont:"polyoffset" = 2*size + cont:"polypadding"; // distance between center of two RegPolys in a strip
 
 	cont:"coord" = coord;
@@ -4423,7 +4441,6 @@ new PatternContainer(coord, limit) := (
 	cont:"move" := if(my("ismoveable"),
 		// Move self
 		self():"coord" = my("coord") + mousedelta;
-println(my("limits"));
 		// Move contents (RegPolys)
 		apply(my("strips")_1,#:"coord" = #:"coord" + mousedelta); // can only have one exactly strip
 	);
@@ -4471,6 +4488,7 @@ println(my("limits"));
 //drawseparator = true;
 
 // D | Initialization
+// ==================
 // Controls
 regional('screenref, 'padding, 'marginleft, 'marginbottom);
 'screenref = (screenbounds()_4).xy; // bottom left corner of screen
@@ -4493,15 +4511,17 @@ repeat(length(vertices),
 
 // D.2 | Create PatternContainer
 // =============================
+// Align with coord of first RegPoly
 if(drawpatterncontainer,
 	regional(patterncontainer);
-	patterncontainer = new PatternContainer([0,14], 3);
+	patterncontainer = new PatternContainer(polys_1:"coord" + [-size,2*size], 3);
 );
 
 // D.3 | Create and config Container
 // =================================
+// Align with coord of Patterncontainer
 regional(container, polycopy, counter);
-container = new Container([0,5], rows, limit);
+container = new Container(patterncontainer:"coord" + [0,patterncontainer:"height"+size], rows, limit);
 
 // Fill Container with predefined RegPolys
 counter = 1; // start at first strip
@@ -4535,12 +4555,16 @@ regional(btn);
 
 btn = new Button('screenref, 2*size, size, ANTICLOCKWISEARROW, 26);
 btn:"cornerradius" = size;
-btn:"color" = DARKBLUE;
-btn:"bordercolor" = DARKBLUE;
+btn:"color" = DIVODARKBLUE;
+btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
 btn:"script" := (
+	// Remove all RegPolys
 	forall(select(obj, #:"type" == "Container"), #:"popall");
 	'polyid = 0;
+	
+	// Remove all Separators
+	forall(select(obj, #:"type" == "Separator" & isundefined(#:"original")), #:"popall");
 );
 
 // E | Build obj
@@ -4799,20 +4823,12 @@ if(!isundefined(divomathConfig),
 </script>
 <script id="csdraw" type="text/x-cindyscript">
 //FW: global drawing
-// v2
+// v3
+// Recent changes:
+// - changed drawing order for Debug stuff
+
 // Color background.
-fill(screen(),color->'bgcolor);
-
-// DEBUGGING
-if('debuglevel > 1,
-	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
-	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
-	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
-);
-
-if('debuglevel > 9, 
-	drawtext('doctextpos,'doc)
-);
+fill(screen(), color->'bgcolor);
 
 // Globale Screenparameter
 getscreenparams();
@@ -4826,6 +4842,18 @@ forall(typeorder,to,
 
 forall(obj,o,
 		if(not(contains(typeorder,o:"type")),o:"draw")
+);
+
+// DEBUGGING
+if('debuglevel > 1,
+	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
+	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
+	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
+);
+
+
+if('debuglevel > 9, 
+	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
 );
 ;
 
@@ -4948,7 +4976,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.1607142857142857, 0.16671099141794055], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, 0.23661205307677521, 0.16630529242080255], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -4961,9 +4989,9 @@ var cdy = CindyJS({
   animcontrols: false,
   ports: [{
     width: 903,
-    height: 449,
+    height: 470,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.23208113551121576, 16.65628457168956, 32.00934430550845, 0.6248338263763501]}],
+    transform: [{visibleRect: [-0.17354910085930927, 17.864813036551073, 32.06787634016036, 1.0835616995862405]}],
     grid: 0.25,
     background: "rgb(255,255,255)"
   }],
