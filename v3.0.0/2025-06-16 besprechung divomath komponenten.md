@@ -4,7 +4,7 @@ strapwork:
 - **erledigt** Container weiter nach rechts verschieben
 - **erledigt** polypadding größer (.5 oder so)
 - **---** Dreieck etwas tiefer (niedrige Priorität)
-- Validierung prüfen (jedes Feld einzeln), auch Marker zurückgeben
+- **erledigt** Validierung prüfen (jedes Feld einzeln), auch Marker zurückgeben
 
 numbercards:
 - **erledigt** Graustufen für Farbbutton nicht nur graues Feld
@@ -14,8 +14,8 @@ numbercards:
 
 divisors:
 - siehe Besprechung 2025-05-26
-  - im wesentlichen debugging der Leiste zum Bewegen
-  - und skalieren von allem, wenn zu hoch
+  - **erledigt** im wesentlichen debugging der Leiste zum Bewegen
+  - **erledigt** und skalieren von allem, wenn zu hoch (und zu breit schätze ich)
 
 übergeordnet:
 - 

@@ -208,7 +208,7 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse:
 > BISHER KEINE
 
 ### Validierung: strapwork
-(seit 1.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der Schlüssel enthält jeweils die Nummer des Containers und die Position, der Wert ist ein Text der Form und Anzahl der Ecken des dort befindlichen Polygons enthält. Zur besseren Orientierung, können mit einem debuglevel > 0 die IDs der Container angezeigt werden. Die genaue Struktur der Bezeichner ist wie folgt:
+(seit 1.0.0, letzte 3.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der Schlüssel enthält jeweils die Nummer des Containers und die Position, der Wert ist ein Text der Form und Anzahl der Ecken des dort befindlichen Polygons enthält. Zur besseren Orientierung, können mit einem debuglevel > 0 die IDs der Container angezeigt werden. Die genaue Struktur der Bezeichner ist wie folgt:
 - #\<Container-ID>_item\<Objektposition>
   - wobei \<Container-ID> und \<Objektposition> jeweils durchnummeriert werden, z.B.
   - **#1_item3** bezeichnet die dritte Position in Container 1

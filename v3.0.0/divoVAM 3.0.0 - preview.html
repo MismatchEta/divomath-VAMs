@@ -27,13 +27,15 @@
 // v2
 // Recent changes:
 // - usedivomath added as flag for storyline config
-usedivomath = false;
+
 
 // Access divomath editor settings
 'dmconf = divomathConfig.configuration;
 'dmstate = divomathConfig.divomathVarState;
 'dmprevans = divomathPreviousAnswer;
 'dmisviewer = divomathConfig.runtime == "VIEWER"; // otherwise "EDITOR" (or nada)
+
+usedivomath = !isundefined('dmconf); // Flag for setting VAM specific non divomath config overwrites on init
 
 // @Overwrite
 // Builds a state object to be used by divomathGetVarState()
@@ -61,6 +63,7 @@ divomathUpdateResults() := (
 
 // Set vam by divomath, else default
 vam = if(!isundefined('dmconf.vam), 'dmconf.vam, "default");
+
 // Set environment vars
 'bgcolor = if(!isundefined('dmconf.bgcolor),
 	'dmconf.bgcolor,
@@ -88,12 +91,14 @@ mousepressedtime='mousepressedtime=false;
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-vam = "percentagebar"; // comment before production
+
+vam = "strapwork"; // comment before production
 ;
 //FW: constants
-// v5
+// v6
 // last changes:
 // - added unicode chars for some arrows
+// - added golden ratio (PHI)
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -216,6 +221,7 @@ DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
 // D | Other
 E  = exp(1);
 PI = 3.141592653589793238462643383279;
+PHI = (1 + sqrt(5)) / 2;
 
 VALUEMAP = {
 "1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", "6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", "11" : "Elfer", "12" : "Zwölfer"
@@ -759,7 +765,9 @@ ellipse(center, a, b) := ellipse(center, a, b, nada, nada, nada, nada);
 // (Overloaded) Gets the bounding rectangle for a text with given size and font
 getboundingbox(text, coord, size, font) := (
 	regional(pxsize);
-	pxsize = pixelsize(text, size->size, font->font); // [width,height,baseline] in px
+	bold = defaultto(bold, false);
+
+	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
 	pxsize = pxsize / screenresolution(); // divide by resolution to geht values in coords
 	rectangle(coord,pxsize_1,pxsize_2); // return rectangle
 );
@@ -767,8 +775,11 @@ getboundingbox(text, coord, size, font) := (
 // Draws a textbox with optional backgroundcolor
 drawtextbox(coord, text, size, font, bgcolor) := (
 	bgcolor = defaultto(bgcolor, grey(.9));
-	fillpoly(getboundingbox(text, coord, size, font), color->bgcolor);
-	drawtext(coord, text, size->size, font->font);
+	bold = defaultto(bold, false);
+	alpha = defaultto(alpha, 1);
+
+	fillpoly(getboundingbox(text, coord, size, font), color->bgcolor, alpha->alpha);
+	drawtext(coord, text, size->size, font->font, bold->bold);
 );
 
 // D | Commands
@@ -1161,7 +1172,9 @@ new VAMobject(type) := (
 );
 ;
 //C: Button
-// v3
+// v4
+// Recent changes:
+// - added labelheight and fontfamily fields
 new Button(coord,width,height,label,fontsize) := (
 	regional(obj);
 	obj = new VAMobject("Button");
@@ -1174,7 +1187,14 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"bordercolor" = dzlmcolorgold;
 	obj:"fontcolor" = dzlmcolordark;
 	obj:"label"	 = label;
-	obj:"fontsize" = if(fontsize==nada, 12, fontsize);
+	obj:"fontsize" = defaultto(fontsize, 12);
+	obj:"fontfamily" = nada;
+	obj:"labelheight" = (
+		regional(box);
+		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
+		box_4_2 - box_1_2;
+	);
+
 	obj:"ismoveable" = false;
 	obj:"hasshadow" = true;
 	obj:"hasborder" = true;
@@ -1296,7 +1316,7 @@ new Keyboard(coord, subtype, keysize, target) := (
 		if(key == LEFTARROW & length(value) > 0,
 			// Remove last char
 			value = value_(1..(length(value)-1)); // is list now :(
-			println(value);
+
 			// Rebuild string from list
 			regional(temp);
 			temp = "";
@@ -1352,11 +1372,15 @@ new Keyboard(coord, subtype, keysize, target) := (
 );
 ;
 //C: TextInput
+// v2
+// Recent changes:
+// - added fields "fontfamily" and "labelpadding" for more control when drawing
 // Text Entry Box
 new TextInput(coord, label, keyboardtype) := (
 	regional(o);
 	o = new VAMobject("textinput");
 	o:"coord" = coord;
+	o:"keyboardcoord" = coord;
 	o:"label" = label;
 	o:"width" = 2;
 	o:"height" = .6;
@@ -1365,7 +1389,9 @@ new TextInput(coord, label, keyboardtype) := (
 	o:"keyboardtype" = keyboardtype; // see Keyboard class
 	o:"keyboard" = nada;
 	o:"keyboardoffset" = [1,1];
-	o:"fontsize"=14;
+	o:"fontsize" = 14;
+	o:"fontfamily" = nada;
+	o:"labelpadding" = .2;
 
 	o:"isclickable" = true;
 	o:"ismoveable" = false;
@@ -1375,7 +1401,7 @@ new TextInput(coord, label, keyboardtype) := (
 
 	o:"ishot" := inrectangle(my("hitbox"),mouse().xy);
 
-	o:"draw":=(
+	o:"draw" := (
 		// Draw TextInput box
 		fillpoly(my("shape"), color->(245,233,196)/255);
 		drawtext(
@@ -1386,13 +1412,18 @@ new TextInput(coord, label, keyboardtype) := (
 		);
 
 		// Draw label
-		drawtext(
-			my("coord")- [1,-0.15], // @Todo: Prettify
+		regional(box, boxwidth, boxheight);
+		box = getboundingbox(my("label"), [0,0], my("fontsize"), my("fontfamily"));
+		boxwidth = box_2_1 - box_1_1;
+		boxheight = box_4_2 - box_1_2;
+
+		drawtextbox(
+			my("coord") - [boxwidth+my("labelpadding"), -.12],
 			my("label"),
-			color->dzlmcolordark,
-			size->my("fontsize")
+			my("fontsize"),
+			my("fontfamily"),
+			grey(1)
 		);
-		
 	);
 
 	o:"setValue":= self():"value" = my("keyboard"):"value";
@@ -1402,7 +1433,7 @@ new TextInput(coord, label, keyboardtype) := (
 			obj = obj -- [my("keyboard")];
 			self():"keyboard" = nada;
 		,
-			self():"keyboard" = new Keyboard(my("coord") + my("keyboardoffset"), "numeric", 1, self());
+			self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), "numeric", 1, self());
 			my("keyboard"):"value" = my("value");
 			obj = obj :> my("keyboard");
 		);
@@ -1428,10 +1459,11 @@ new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
 	o:"type" = "Toggle";
-	o:"object";
+	
 	o:"cornerradius" = width;
 	o:"state" = if(!isundefined(state),state,false);
 	o:"highlightcolor" = DARKBLUE;
+
 	o:"draw" := (
 		// Draw box and border
 		fill(
@@ -1458,7 +1490,7 @@ new Toggle(coord,width,state,label,fontsize) := (
 			color->my("color");
 		);
 
-		// Draw Label
+		// Draw label
 		drawtext(
 			my("coord")+[my("width")*1.2,.5*my("height")/3],
 			my("label"),
@@ -1474,7 +1506,9 @@ new Toggle(coord,width,state,label,fontsize) := (
 		set my("state", !my("state"));
 		my("script");
 	);
-	o:"script":=();
+
+	o:"script" := ();
+
 	o; // Return the toggle.
 );
 
@@ -1777,59 +1811,6 @@ new HorizontalScrollbar(coord, width) := (
 	obj; // Return Scrollbar;
 );
 ;
-//C: Arch
-//v1
-// Semicircle helper only for VAM: "percentagebar".
-new Arch(coord, width) := (
-	regional(o);
-	o = new VAMobject("Arch");
-	o:"coord" = coord;
-	o:"width" = width;
-	o:"height" = .9*width/2;
-	o:"draw":=(
-		regional(r);
-		r=my("width")/2;
-		f(x):=(my("height")*sqrt(r^2-(x-my("coord")_1-r)^2)/r+my("coord")_2);
-		plot(f(#),start->my("coord")_1,stop->my("coord")_1+my("width"),color->my("color"));
-		if('debuglevel > 0, draw(my("coord")));
-	);
-	o:"ishot"=false;
-	o;
-);
-
-new ArchField(coord,width,number):=(
-	regional(o);
-	o = new VAMobject("Arch");
-	o:"coord" = coord;
-	o:"width" = width;
-	o:"number" = number;
-	o:"maxarches" = number;
-	o:"height" = .8*width/(2*number);
-	o:"toggleObject";
-	o:"skalaShown";
-	o:"draw":=(
-		regional(shoulddraw);
-		shoulddraw = if(!isundefined(my("toggleObject")),my("toggleObject"):"state",true);
-		if(!isundefined(my("skalaShown")),shoulddraw=shoulddraw & my("skalaShown"):"state");
-		if(shoulddraw,
-			regional(archWidth);
-			archWidth=my("width")/my("maxarches");
-			regional(r);
-			r=archWidth/2;
-			f(x,d):=(my("height")*sqrt(r^2-(x-d-r)^2)/r+my("coord")_2);
-			repeat(my("number"),i,start->0,
-				plot(f(#,my("coord")_1 + archWidth*i),
-					start->my("coord")_1
-					,stop->my("coord")_1+my("width")
-					,color->my("color")
-				);
-				if('debuglevel > 0, draw(my("coord")));
-			);
-		);
-	);
-	o;
-);
-;
 //VAM: default
 // v1
 // Dummy VAM
@@ -1915,8 +1896,11 @@ obj = obj :> o;
 // last changes:
 // - included config for drawing UI Buttons or not ("drawbuttons")
 // - fixed color config
+// - fixed strips not aligned when removing blobs (and especially empty strips)
+// - fixed bar dragging not recognizing maximum divisor count (maxcols) when moved
 // - added local config overwrite for testing in Init part
 // - added scalingfactor for scaling whole content area (@Not implemented)
+// - general refactoring (use defaultto() and local config overwrite for SL and others)
 
 // Zahlenteiler
 if(vam == "divisors", // change accordingly
@@ -1947,81 +1931,34 @@ B I S H E R   K E I N E
 
 // B | Divomath config
 // States
-regional (item, color, padding, stripmargin, timing, blobs, maxblobs, divisor, maxcols,
+regional(item, color, padding, stripmargin, timing, blobs, maxblobs, divisor, maxcols,
 	sequentialorder, displaycalc, displayresult, displaydescription,
 	displayblobcount, displaydivisorcount
 );
 
-// Config color of Blobs and Strips a [R,G,B] or String
 item = 'dmstate.color;
-if(!isundefined(item), color = apply(item,COLORMAP:#));
-if(isundefined(color), color = [DIVORED, DIVOGREY]);
+color = if(!isundefined(item), apply(item, COLORMAP:#), [DIVORED, DIVOGREY]); // Color of Blobs and Strips as [str,str]
 
-// Config size of Blobs
-item = 'dmstate.size;
-if(!isundefined(item), size = item, size = .7);
-if(size < 0, size = 0.1);
+size = defaultto('dmstate.size, .7); // Size of Blobs.
+padding = defaultto('dmstate.blobmargin, .2); // Padding between blobs in a strip.
+stripmargin = defaultto('dmstate.stripmargin, .5); // Vertical margin between strips.
+timing = defaultto('dmstate.timing, 1); // Timing of animations.
+blobs = defaultto('dmstate.blobs, 0); // Inital blob count.
+maxblobs = defaultto('dmstate.maxblobs, 100); // Maximum blob count.
+divisor = defaultto('dmstate.divisor, 1); // Inital divisor.
+maxcols = defaultto('dmstate.maxcols, 10); // Maximum number of divisors (columns).
+sequentialorder = defaultto('dmstate.sequentialorder, false); // Reordering strategy when divisors changes
 
-// Config padding between blobs in a strip.
-item = 'dmstate.blobmargin;
-if(!isundefined(item), padding = item, padding = .2);
-if(padding < 0, padding = 0);
+// UI and display configs
+drawbuttons = defaultto('dmstate.drawbuttons, true); // Draw Button UI Elements
+displaycalc = defaultto('dmstate.displaycalc, true); // Display calculation text
+displayresult = defaultto('dmstate.displayresult, true); // Display result text
+displaydescription = defaultto('dmstate.displaydescription, true); // Display description text
+displayblobcount = defaultto('dmstate.displayblobcount, true); // Display blob count text
+displaydivisorcount = defaultto('dmstate.displaydivisorcount, true); // Display divisor count text
 
-// Config vertical margin between strips.
-item = 'dmstate.stripmargin;
-if(!isundefined(item), stripmargin = item, stripmargin = .5);
-if(stripmargin < 0, stripmargin = 0);
-
-// Config timing of animations.
-item = 'dmstate.timing;
-if(!isundefined(item), timing = item, timing = 1);
-if(timing < .0001, timing = .0001);
-
-// Config inital blob count.
-item = 'dmstate.blobs;
-if(!isundefined(item), blobs = item, blobs = 0);
-if(blobs < 0, blobs = 0);
-
-// Config maximum blob count.
-item = 'dmstate.maxblobs;
-if(!isundefined(item), maxblobs = item, maxblobs = 100);
-if(maxblobs < 0, maxblobs = 0);
-
-// Config inital divisor.
-item = 'dmstate.divisor;
-if(!isundefined(item), divisor = item, divisor = 1);
-if(divisor < 1, divisor = 1);
-
-// Config maximum number of divisors (columns).
-item = 'dmstate.maxcols;
-if(!isundefined(item), maxcols = item, maxcols = 10);
-if(maxcols < 0, maxcols = 0);
-
-// Config how Blobs are reorderd when divisors changes
-item = 'dmstate.sequentialorder;
-if(!isundefined(item), sequentialorder = item, sequentialorder = false);
-
-// Draw Button UI Elements
-item = 'dmstate.drawbuttons;
-if(!isundefined(item), drawbuttons = item, drawbuttons = true);
-
-// Config displaying of components
-// - Calculation text
-item = 'dmstate.displaycalc;
-if(!isundefined(item), displaycalc = item, displaycalc = true);
-// - Calculation result text
-item = 'dmstate.displayresult;
-if(!isundefined(item), displayresult = item, displayresult = true);
-// - Calculation description text
-item = 'dmstate.displaydescription;
-if(!isundefined(item), displaydescription = item, displaydescription = true);
-// - blob count text
-item = 'dmstate.displayblobcount;
-if(!isundefined(item), displayblobcount = item, displayblobcount = true);
-// - divisor count text
-item = 'dmstate.displaydivisorcount;
-if(!isundefined(item), displaydivisorcount = item, displaydivisorcount = true);
-
+// GLOBAL VARS
+'globalscaling = 1; // Adjusts size of stuff, gets set by world:"updateglobalscaling"
 
 // C | Class definitions
 // C.1 | Handler for positioning and drawing
@@ -2043,48 +1980,68 @@ new World() := (
 	o:"strips" = [];
 	o:"#strips" := length(my("strips"));
 	o:"#divisors" = 0;
-	o:"shape" = reverse(apply(screenbounds(),#.xy));
-	o:"refheight" = .5 * (2.5 + if(screenbounds()_4_2 < 0, -screenbounds()_4_2, 0)); // eyeballed height of bottom UI elements
-	o:"center" = o:"shape"_1 + 0.5 * (o:"shape"_3 - o:"shape"_1);
-	o:"padding" = padding / 2;
-	o:"stripmargin" := stripmargin * my("scalingfactor");
-	
-	o:"scalingfactor" = 1; // scaling factor for Blobs and stripmargin
-	o:"updatescalingfactor" := ( // updates scaling based on available height, call accordingly
-		regional(refheight, screenheight, contentheight);
+	o:"refheight" = 2.5 + if(screenbounds()_4_2 < 0, -screenbounds()_4_2, 0); // eyeballed height of bottom UI elements
+	o:"shape" = (
+		regional(shape, margin);
+		shape = reverse(apply(screenbounds(),#.xy)); // whole screen
 		
-		refheight = my("refheight");
-		screenheight = screenbounds()_1_2 - screenbounds()_4_2;
-		screenheight = screenheight - refheight; // available height
-		contentheight = my("bar"):"height";
+		// Remove bottom UI
+		shape_1 = shape_1 + [0, o:"refheight"];
+		shape_2 = shape_2 + [0, o:"refheight"];
 
-		println("contentheight: " + contentheight);
-println("@TO BE IMPLEMENTED");
-		self():"scalingfactor" = 1;
+		// Add some margins to each side
+		margin = .5;
+		shape_1 = shape_1 + margin*[1,1];
+		shape_2 = shape_2 + margin*[-1,1] - [2, 0];  // also add room for bar
+		shape_3 = shape_3 + margin*[-1,-1] - [2, 0];  // also add room for bar
+		shape_4 = shape_4 + margin*[1,-1];
+		
+		shape;
 	);
 
+	o:"center" = o:"shape"_1 + 0.5 * (o:"shape"_3 - o:"shape"_1);
+	o:"width" = o:"shape"_2_1 - o:"shape"_1_1;
+	o:"height" = o:"shape"_4_2 - o:"shape"_1_2;
+	// Helper fields for proper scaling
+	o:"contentwidth" := if(length(my("strips")) > 0, // height of all strips combined		
+		my("strips")_1:"shape"_2_1 - my("strips")_1:"shape"_1_1; // right corner - left corner
+	,
+		0 // 0, if no strips
+	);
+	o:"contentheight" := if(length(my("strips")) > 0, // height of all strips combined
+		length(my("strips")) * my("strips")_1:"height" + (length(my("strips"))-1) * my("stripmargin");
+	,
+		0 // if no strips
+	);
 
-	// UI
-	o:"bar" = ( // UI: Bar to change divisors
+	o:"padding" = padding / 2 * 'globalscaling;
+	o:"stripmargin" := stripmargin * 'globalscaling;
+	
+	o:"updateglobalscaling" := ( // update scaling based on available height/width, call accordingly
+
+		'globalscaling = 1; // reset scaling for proper recalculation of scaling factor
+		'globalscaling = min([1,  my("height") / my("contentheight"), my("width") / my("contentwidth")]);
+	);
+
+	// Inner objects: UI elements
+	// ==========================
+	// === UI: Bar to change divisors
+	o:"bar" = ( 
 		regional(bar);
 		bar = new VAMobject("Bar");
 		bar:"parent" = o;
 		bar:"ismoveable" = true;
 		bar:"width" = .1;
 		bar:"color" = DIVODARKBLUE;
-		bar:"height" := if(my("parent"):"#strips" > 0,
-			my("parent"):"strips"_1:"shape"_4_2 -	my("parent"):"strips"_(-1):"shape"_1_2
-		,
-			0
-		);
+		bar:"height" := my("parent"):"contentheight";
 		bar:"padleft" = 2*o:"padding";
-		bar:"coord" := if(my("parent"):"#allblobs" > 0,
-			regional(barx, bary);
-			barx = my("parent"):"strips"_1:"shape"_2_1 + my("padleft");
-			bary = my("parent"):"strips"_(-1):"shape"_1_2;
-			[barx,bary];
-		);
 
+		bar:"coord" := nada; // Gets assigned by my("alignbar")
+		bar:"alignbar" := ( // (Re-)sets bar position
+			self():"coord" := my("parent"):"center" + .5 * [my("parent"):"contentwidth", -my("parent"):"contentheight"] + [my("padleft"), 0];
+		);
+		bar:"alignbar"; // Initially set coord
+		
 		bar:"shape" := (
 			regional(parts);
 			parts = {};
@@ -2135,7 +2092,7 @@ println("@TO BE IMPLEMENTED");
 			requiredwidth = new Blob():"size";
 
 			// Increase divisor count if gap is big enough AND there is still more than one strip
-			if(gap > requiredwidth & my("parent"):"#strips" > 1,
+			if(gap > requiredwidth & my("parent"):"#strips" > 1 & my("parent"):"#divisors" < maxcols,
 				my("parent"):"divisor+":"script";
 			);
 		);
@@ -2163,8 +2120,9 @@ println("@TO BE IMPLEMENTED");
 
 		bar; // Return bar
 	);
-
-	o:"blob+" = ( // UI: Add a Blob
+	
+	// === UI: Button for adding a blob
+	o:"blob+" = (
 		regional(btn);
 		btn = new Button([2.6,.5],1,1,"+",22);
 		btn:"handle" = o;
@@ -2184,7 +2142,9 @@ println("@TO BE IMPLEMENTED");
 
 		btn; // Return Button
 	);
-	o:"blob-" = ( // UI: Remove a Blob
+
+	// === UI: Button for removing a blob
+	o:"blob-" = (
 		regional(btn);
 		btn = new Button([1.1,.5],1,1,"-",22);
 		btn:"handle" = o;
@@ -2203,7 +2163,9 @@ println("@TO BE IMPLEMENTED");
 		);
 		btn; // Return Button
 	);
-	o:"divisor+" = ( // UI: Increase divisor count by 1
+
+	// === UI: Button for increasing strip size
+	o:"divisor+" = (
 		regional(btn);
 		btn = new Button([20,.5],1,1,"+",22);
 		btn:"handle" = o;
@@ -2218,7 +2180,9 @@ println("@TO BE IMPLEMENTED");
 		);
 		btn; // Return Button
 	);
-	o:"divisor-" = ( // UI: Decrease divisor count by 1
+
+	// === UI: Button for decreasing strip size
+	o:"divisor-" = (
 		regional(btn);
 		btn = new Button([18.5,.5],1,1,"-",22);
 		btn:"handle" = o;
@@ -2253,13 +2217,18 @@ println("@TO BE IMPLEMENTED");
 	);
 	o:"removeemptystrips" := (
 		set my("strips", select(my("strips"),#:"size" > 0));
+		my("positionstrips"); // Redraw
 	);
 	
 	// Draw strips and (free) blobs
 	o:"draw" := (	
 		forall(my("blobs"),#:"draw");
 		forall(my("strips"),#:"draw");
-
+		
+		// Draw line to visualy separate bottom UI elements
+		//fillpoly(rectangle([-1,-1],35,3.5), color->grey(.95));
+		drawpoly(rectangle([-1,-1],35,3.5), color->grey(0));
+		
 		// Draw total blob count
 		if(displayblobcount,
 		drawtext([0.3,1.7],"Gesamtanzahl: " + my("#allblobs"), size->16, family->my("font"));
@@ -2347,6 +2316,14 @@ println("@TO BE IMPLEMENTED");
 					);
 				);
 			);
+		);
+
+		// Debug draw
+		if('debuglevel > 0,
+			drawpoly(my("shape"), color->grey(.7));
+			draw([my("shape")_1, my("shape")_3], color->grey(.7));
+			draw([my("shape")_2, my("shape")_4], color->grey(.7));
+			draw(my("center"), color->[.8,0,0]);
 		);
 	);
 
@@ -2493,20 +2470,21 @@ println("@TO BE IMPLEMENTED");
 	);
 
 	o:"positionstrips" := ( // Align Strips in World
-
-		// Calculate scaling factor
-		my("updatescalingfactor");
+		// Update global scaling factor
+		my("updateglobalscaling");
 
 		// Position accordingly
 		regional(s, diagonal, yposition);
 		s = my("strips");
+
 		repeat(length(s),
 			diagonal = s_#:"shape"_3 - s_#:"shape"_1; // bottom left to top right
-			yposition = length(s)/2 - # + 0.5;
+			yposition = length(s)/2 - # + .25 * my("stripmargin");
 			s_#:"coord" = my("center") - 0.5 * diagonal; // center strips on screen
 			s_#:"coord"_2 = my("center")_2 + // shift up or down
 				(diagonal_2 + my("stripmargin")) * yposition; // depending on yposition
-			s_#_"coord"_2 = s_#_"coord"_2 + .5*my("refheight"); // center in available space (regarding UI)
+			s_#_"coord"_2 = s_#_"coord"_2; // center in available space (regarding UI)
+
 			s_#:"positionchildren"; // reposition blobs for every strip
 		);
 
@@ -2562,8 +2540,7 @@ println("@TO BE IMPLEMENTED");
 	o; // Return World;
 );
 
-// C.2 | Blob container representing sets of divisor-many or
-// remainder-many Blobs
+// C.2 | Blob container representing sets of divisor-many or remainder-many Blobs
 new Strip(coord) := (
 	regional(o);
 	o = new VAMobject("Strip");
@@ -2573,14 +2550,13 @@ new Strip(coord) := (
 	o:"drawstrip" = true; // draw connecting strip between children
 	o:"children" = []; // contains Blobs
 	o:"size" := length(my("children"));
-	o:"padding" := padding; // horizontal distance between adjacent Blobs
+	o:"padding" := padding * 'globalscaling; // horizontal distance between adjacent Blobs
 	o:"width" := if(my("size")>0,
-		my("size") * (my("children")_1):"size" * 2 +
-		(my("size")-1) * my("padding");
+		my("size") * (my("children")_1):"size" * 2 + (my("size")-1) * my("padding");
 	,
 		0
 	);
-	o:"height" := if(my("size")>0,(my("children")_1):"size" * 2,0);
+	o:"height" := if(my("size")>0,(my("children")_1):"size" * 2, 0);
 	o:"shape" := rectangle(my("coord"),my("width"),my("height"));
 
 	// Use with eval()
@@ -2623,9 +2599,8 @@ new Strip(coord) := (
 				"coord", // property
 				children_#:"coord", // startvalue
 				my("coord") + [
-					(2*#-1)*children_#:"size" +
-						(#-1)*my("padding"),
-						children_#:"size"
+					(2*#-1)*children_#:"size" + (#-1)*my("padding"),
+					children_#:"size"
 				];, // endvalue
 				timing, // duration
 				"accel" // timeflow
@@ -2665,7 +2640,6 @@ new Strip(coord) := (
 
 		// Draw children
 		forall(my("children"),#:"draw");
-
 	);
 	
 	o; // Return o;
@@ -2677,7 +2651,7 @@ new Blob() := (
 	o = new VAMobject("Blob");
 	
 	o:"ismoveable" = false;
-	o:"size" = size;
+	o:"size" := size * 'globalscaling;
 	o:"parent" = nada;
 	o:"color" := if(!isundefined(my("parent"):"drawstrip"),
 			if(my("parent"):"drawstrip",color_1,color_2),
@@ -2716,12 +2690,14 @@ new Blob() := (
 );
 
 // D | Initialization
-// @LOCAL CONFIG OVERWRITE
-//size = .7;
-//blobs = 30;
-//divisor = 3;
-//color = [DZLMCOLORGOLD, DARKGREEN];
-
+// D.0 | SL Config
+// ===============
+if(!usedivomath,
+	size = .7;
+	blobs = 30;
+	divisor = 5;
+	color = [DZLMCOLORGOLD, DARKGREEN];
+);
 
 // Create World
 world = new World();
@@ -2763,12 +2739,15 @@ if(drawbuttons,
 
 
 // DEBUG REMOVE @TODO
-println(screenbounds());
-
+println(world:"shape");
+world:"updateglobalscaling";
+println(world:"stripmargin");
+println(apply(world:"strips"_1:"children", #:"size"));
+println(world:"stripmargin");
 ); // end vam-if
 ;
 //VAM: numbercards
-// v8
+// v9
 // last changes:
 // - switched color button look. Now grey if cards are colorful, and colorful if cards are grey.
 // - changed look of greyed color button to be greyscale MONTEPALETTE used in colored option.
@@ -2839,6 +2818,7 @@ if(isundefined(item), item = 1337);
 repeat(min(numofcards,length(item)),
 	cards_#:"val" = if(islist(item),item_#,item)
 );
+
 // Configure editable list "edit"
 item = 'dmstate.edit;
 item = if(!islist(item) & !isundefined(item), [item], item); // force list
@@ -2925,7 +2905,7 @@ divomathUpdateResults() := (
 		);
 
 		// Go to next card, if any
-		// (toggle button gets checked to, if visible)
+		// (toggle button gets checked too, if visible)
 		cardnr = cardnr + 1;
 	);
 
@@ -3453,28 +3433,26 @@ regional(item);
 barprecision = defaultto('dmstate.barprecision, 1);
 barprecision = barprecision / 100; // Adjust to not be expressed as y%
 
-// Configure width and height of the bar
-barwidth = defaultto('dmstate.barwidth, 16);
-barheight = defaultto('dmstate.barheight, 2);
+barwidth = defaultto('dmstate.barwidth, 16); // initial width of bar
+barheight = defaultto('dmstate.barheight, 2); // height of bar
 
-// Configure bars initial value and base value
-barvalue = defaultto('dmstate.barvalue, 0); // in [0,1]
-basevalue = defaultto('dmstate.basevalue, 1000);
+barvalue = defaultto('dmstate.barvalue, 0); // initial bar value in [0,1]
+basevalue = defaultto('dmstate.basevalue, 1000); // bars initial base value
 
-// Configure initial number of bars subdivisions
-subdivisions = defaultto('dmstate.subdivisions, 3);
+subdivisions = defaultto('dmstate.subdivisions, 3); // initial number of subdivisions
 
-// Configure the displayed unit
-unit = defaultto('dmstate.unit, "");
+unit = defaultto('dmstate.unit, ""); // displayed unit for values
 
 // Configure look and feel of things
-// - Percentagebar
-barcolor = defaultto('dmstate.barcolor, DZLMCOLORGOLD);
-// - Arches
-archcolor = defaultto('dmstate.archcolor, DZLMCOLORGOLD);
-// - Font
-fontfamily = defaultto('dmstate.fontfamily, nada);
+barcolor = defaultto('dmstate.barcolor, DZLMCOLORGOLD); // Percentagebar
+archcolor = defaultto('dmstate.archcolor, DZLMCOLORGOLD); // Arches
+fontfamily = defaultto('dmstate.fontfamily, nada); // Font
+isbardraggable = defaultto('dmstate.isbardraggable, true);
 
+// Configure scaffolds
+scaffoldvalue = defaultto('dmstate.scaffoldvalue, false);
+scaffoldpercentage = defaultto('dmstate.scaffoldpercentage, false);
+scaffoldbasevalue = defaultto('dmstate.scaffoldbasevalue, false);
 
 
 //------------ REDO
@@ -3483,18 +3461,6 @@ fontfamily = defaultto('dmstate.fontfamily, nada);
 	'dmconf.standardTicks,
 	[0,1]
 );
-tickColor1 = if(!isundefined('dmconf.tickColor1),
-	'dmconf.tickColor1,
-	[0,.5,1]
-);
-'tickColor2 = if(!isundefined('dmconf.tickColor2),
-	'dmconf.tickColor2,
-	[0,.5,1]
-);
-
-// B.2 | Other toggles
-// Add VAM-global toggles as needed, e.g.
-'delay = 100;
 
 // Percentagebar
 // Main functionality of a bar, that is draggable in a certain area. Provides labels for different values
@@ -3511,21 +3477,31 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	o:"precision" = precision; // precision of movement of bar (in [0,1])
 	o:"fontsize" = 14;
 	o:"fontfamily" = fontfamily; // set globally
-	o:"isclickable" = true;
-	o:"ismoveable" = true;
+	o:"labelpadding" = .2;
+	o:"isclickable" = isbardraggable;
+	o:"ismoveable" = isbardraggable;
 
 	// Booleans for showing/hiding stuff, set manually after init
-	o:"prozentsätze" = nada;
-	o:"prozentwerte" = nada;
-	o:"prozentsatz" = nada;
-	o:"prozentwert" = nada;
+	o:"drawpercentagelabels" = nada;
+	o:"drawvaluelabels" = nada;
+	o:"drawbasevaluelabel" = nada;
+	o:"drawcurrentpercentage" = nada;
+	o:"drawcurrentvalue" = nada;
 	o:"drawarches" = nada;
 	o:"canoverflow" = nada;
+	o:"scaffoldvalue" = scaffoldvalue;
+	o:"scaffoldpercentage" = scaffoldpercentage;
+	o:"scaffoldbasevalue" = scaffoldbasevalue;
+
+	// Handles for interface (textfields, buttons, toggles)
+	o:"toggles" = nada; // set at init
+	o:"textfields" = nada; // set at init
+	o:"buttons" = nada; // set at init
 
 	// Values for Percentagebar
 	o:"unit" = unit;
 	o:"value" = value; // between 0 and 1
-	o:"aggregate" = baseval;
+	o:"basevalue" = baseval;
 	o:"divisions" = divisions; // determines ticks, gets updated via Textfield
 	o:"ticks" := apply(1..my("divisions")-1, #/my("divisions"));
 	o:"standardticks" = [0,1];
@@ -3565,82 +3541,96 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 			); 
 		);
 
-		// Draw labels for percentages
-		regional(size, font, label, text, box);
+		// Draw labels for percentages and corresponding values
+		regional(size, font, label, text, box, position, xoffset, yoffset);
 		size = my("fontsize");
 		family = my("fontfamily");
-		text = "Hallo";
-		box = getboundingbox(text, [10,10], size, family);
-//println(fontfamilies());
-
-println(box);
-drawtext([10,10], text, size->size, font->family);
-drawpoly(box);
 		
+		// Draw percentage labels
+		if(my("drawpercentagelabels"),
+			yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
+			forall(my("ticks") ++ my("standardticks"),
+				text = round(#*1000)/10 + " %"; // tick value in % rounded to 1 decimal with "%" sign
+				box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				position = my("coord") + [xoffset, yoffset]; // actual position
 
-//		forall(my("ticks")++my("standardTicks")++overflowticks,i,
-//			if(drawProzente % contains(my("standardTicks"),i),drawtext(
-//				my("coord") + [i*my("width"),my("height")+1.5*my("margin")+.2]
-//				," "+text(round(i*1000)/10)+"%"
-//				,align->"mid",color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
-//				,size->my("textSize")
-//			););
-//			if(drawWertskala % contains(my("standardTicks"),i),drawtext(
-//				my("coord") + [i*my("width"),-3*my("margin")-.5]
-//				,text(round(my("aggregate")*i*100)/100)+my("unit")
-//				,align->"mid"
-//				,color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
-//				,size->my("textSize")
-//			););
-//			draw(
-//				my("coord") + [i*my("width"),if(contains([0,.5,1],i),-my("margin"),0)]
-//				,my("coord") + [i*my("width"),my("height")+if(contains([0,.5,1],i),my("margin"),0)]
-//				,size->3
-//				,color->if(contains(my("standardTicks"),i),grey(.3),(.35,.55,.78))
-//			);
-//		);
+				// Draw arches
+				if(my("drawarches"), eval(my("drawpercentagearches"), yoffset->yoffset+box_4_2-box_1_2));
 
-
-
-		
-		// Draw labels on vertical lines if applicable
-		if(length(my("ticks"))!=my("divisions")-1,my("setTicks"););
-		regional(drawProzente);
-		drawProzente = if(!isundefined(my("prozentsätze")),my("prozentsätze"):"state",true);
-		regional(drawWertskala);
-		drawWertskala = if(!isundefined(my("prozentwerte")),my("prozentwerte"):"state",true);
-
-	
-
-		// Draw labels on draggable percentage bar
-		regional(drawProzentsatz);
-		drawProzentsatz = if(!isundefined(my("prozentsatz")),my("prozentsatz"):"state",false);
-		regional(drawProzentwert);
-		drawProzentwert = if(!isundefined(my("prozentwert")),my("prozentwert"):"state",false);
-		if(my("value")>.92 & false, // why draw when bar is almost full?
-			drawtext(
-				my("coord") + [1*my("width"),.4*my("height")]
-				," "+text(round(my("value")*1000)/10)+"%"
-				,align->"left",color->grey(.3)
-				,size->my("fontsize")
+				// Draw labels
+				drawtext(position, text, size->size, font->family, color->grey(.5));
 			);
-		,
-			if(drawProzentsatz,
-				drawtext(
-					my("coord") + [my("value")*my("width"),.4*my("height")]
-					," "+text(round(my("value")*1000)/10)+"%"
-					,align->"left",color->grey(.3)
-					,size->my("fontsize")
+		);
+
+		// Draw value labels
+		if(my("drawvaluelabels"),
+			forall(my("ticks") ++ my("standardticks"),
+				text = round(#*my("basevalue")*100)/100 + " " + my("unit"); // altered tick value with unit
+				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+				yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+				position = my("coord") + [xoffset, yoffset]; // actual position
+
+				// Draw arches
+				if(my("drawarches"), eval(my("drawvaluearches"), yoffset->yoffset-my("labelpadding")));
+
+				// Draw
+				if(# != 1 % my("drawbasevaluelabel"), // ex-/include drawing of base value label
+					drawtext(position, text, size->size, font->family, color->grey(.5));
+				);
+
+				// Draw scaffold overlay for base value
+				if(# == 1 & my("drawbasevaluelabel") & my("scaffoldbasevalue"),
+					regional(scaffoldbox);
+					scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+					draw(scaffoldbox, color -> grey(.5));
+					fill(scaffoldbox, color -> grey(.9));
 				);
 			);
-			if(drawProzentwert,
-				drawtext(
-					my("coord") + [my("value")*my("width"),.4*my("height")]
-					,text(round(my("aggregate")*my("value")*100)/100)+my("unit")+" "
-					,align->"right",color->grey(.3)
-					,size->my("fontsize")
-				);
+		);
+
+		// Draw current percentage
+		if(my("drawcurrentpercentage"),
+			text = round(my("value")*1000)/10 + " %"; // current value in % rounded to 1 decimal with "%" sign
+			box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+			position = my("coord") + [ // actual position, start at bar coord
+				my("value")*my("width") - .5*(box_2_1-box_1_1), // move to vertical line and adjust by half the texts length
+				my("height")+my("labelpadding") // move up by the height of the bar
+			];
+
+			// Draw
+			drawtextbox(position, text, nada, nada, grey(1), bold->true);
+
+			// Draw scaffold overlay for percentage
+			if(my("scaffoldpercentage"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+				draw(scaffoldbox, color -> grey(.5));
+				fill(scaffoldbox, color -> grey(.9));
 			);
+		);
+
+		// Draw current value
+		if(my("drawcurrentvalue"),
+			text = round(my("value")*my("basevalue")*100)/100 + " " + my("unit"); // altered tick value with unit
+				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+				position = my("coord") + [ // actual position, start at bar coord
+					my("value")*my("width") - .5*(box_2_1-box_1_1), // move to vertical line and adjust by half the texts length
+					- (box_3_2-box_2_2) - my("labelpadding") // move down by the height of the text
+				];
+
+			// Draw
+			drawtextbox(position, text, nada, nada, grey(1), bold->true);
+
+			// Draw scaffold overlay for percentage
+			if(my("scaffoldvalue"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+				draw(scaffoldbox, color -> grey(.5));
+				fill(scaffoldbox, color -> grey(.9));
+			);
+
 		);
 
 		// Debug draw
@@ -3649,12 +3639,57 @@ drawpoly(box);
 		if('debuglevel > 1, drawpoly(my("hitbox"), color->[0,1,0]));
 	);
 
+	o:"drawpercentagearches" := ( // helper for drawing percentage arches (in "draw"), gets evaled with yoffset
+		regional(ticks, width, height, todraw);
+
+		if(isundefined(yoffset),yoffset=0);
+		ticks = 0 <: my("ticks") :> 1; // ticks with start (0) and end value (1) added
+		width = my("width") / my("divisions"); // ellipses width / major axis
+		height = width / PHI; // ellipses height / minor axis
+
+		// go through all ticks and draw arch if required
+		forall(2..length(ticks),
+			todraw = my("value") >= ticks_#; //checks for current tick, if value is bigger
+			if(todraw,
+				connect(
+					ellipse(my("coord") + [(#-1.5)*width, yoffset],	width/2, height/2, 0, PI),
+					color->my("color")
+				);
+			);
+		);
+	);
+	
+	o:"drawvaluearches" := ( // helper for drawing value arches (in "draw"), gets evaled with yoffset
+		regional(ticks, width, height, todraw);
+
+		if(isundefined(yoffset),yoffset=0);
+		ticks = 0 <: my("ticks") :> 1; // ticks with start (0) and end value (1) added
+		width = my("width") / my("divisions"); // ellipses width / major axis
+		height = width / PHI; // ellipses height / minor axis
+
+		// go through all ticks and draw arch if required
+		forall(2..length(ticks),
+			todraw = my("value") >= ticks_#; //checks for current tick, if value is bigger
+			if(todraw,
+				connect(
+					ellipse(my("coord") + [(#-1.5)*width, yoffset],	width/2, height/2, PI, 2*PI),
+					color->my("color")
+				);
+			);
+		);
+	);
+
+
 	o:"move" := if(my("ismoveable"),
 		my("setvalue");
 	);
 
 	o:"moveend" := if(my("ismoveable"),
-		println("I am moved.");
+		// Set value tf accordingly
+		my("textfields"):"value":"value" = 100 * my("value") + "";
+
+		// Set percentage tf accordingly
+		my("textfields"):"percentage":"value" = my("value") + "";
 	);
 
 	o:"click" := if(my("isclickable"),
@@ -3666,7 +3701,7 @@ drawpoly(box);
 		self():"value" = (mouse().xy - my("coord"))_1 / my("width");
 		
 		// Cut of properly
-		if(!my("canoverflow"):"state", // cap at 100% and 0%
+		if(!my("canoverflow"), // cap at 100% and 0%
 			self():"value" = min(max(my("value"),0),1);
 		,	// else: cap only at 0%
 			self():"value" = max(my("value"),0);
@@ -3689,30 +3724,47 @@ drawpoly(box);
 );
 
 // D | Initialization
-// SL Config
+// D.0 | SL Config
+// ===============
 if(!usedivomath,
+	barprecision = .05;
 	basevalue = 1000;
+	unit = "€";
+	scaffoldbasevalue = true;
+	scaffoldvalue = true;
+	scaffoldpercentage = true;
+	isbardraggable = true;
+	'debuglevel = 0;
 );
 
 // D.1 | Init Toggle Switches
 // new Toggle(coord,width,state,label,fontsize)
 // ============================================
-regional(toggles);
+regional(screen, toggles, togglepad);
+screen = apply(screenbounds(), #.xy);
+togglepad = .5;
+
 toggles = {
-	"percentages" : new Toggle([1,3], 1, false, "Prozentsätze", 14),
-	"parts"				:	new Toggle([1,2], 1, false, "Prozentwerte", 14),
-	"percentage"	:	new Toggle([5,3], 1, false, "Prozentsatz", 14),
-	"part"				: new Toggle([5,2], 1, false, "Prozentwert", 14),
-	"arch"				: new Toggle([9,3], 1, true, "Bögen", 14),
-	"overflow"		: new Toggle([9,2], 1, true, "Overflow", 14)
+	"percentages" : new Toggle(screen_1 - [-togglepad,togglepad+.5], 1, false, "Prozentsätze", 14),
+	"parts"				:	new Toggle(screen_1 - [-togglepad,togglepad+1.5], 1, false, "Prozentwerte", 14),
+	"basevalue"		: new Toggle(screen_1 - [-togglepad,togglepad+2.5], 1, false, "Grundwert", 14),
+	"percentage"	:	new Toggle(screen_1 - [-togglepad-5,togglepad+.5], 1, false, "Prozentsatz", 14),
+	"part"				: new Toggle(screen_1 - [-togglepad-5,togglepad+1.5], 1, false, "Prozentwert", 14),
+	"arch"				: new Toggle(screen_1 - [-togglepad-10,togglepad+.5], 1, true, "Bögen", 14),
+	"overflow"		: new Toggle(screen_1 - [-togglepad-10,togglepad+1.5], 1, false, "Overflow", 14),
+	"showtf-base"	: new Toggle(screen_1 - [-togglepad-10,togglepad+2.5], 1, false, "Eingabe G", 14),
+	"showtf-value": new Toggle(screen_1 - [-togglepad-10,togglepad+3.5], 1, false, "Eingabe P", 14),
+	"showtf-perc"	: new Toggle(screen_1 - [-togglepad-10,togglepad+4.5], 1, false, "Eingabe p", 14)
 };
 
 // D.2 | Init Text Inputs for (sub)divisions and base value
 // ===================================================
 regional(textfields, inputdiv, inputbaseval);
 textfields = {
-	"divisions"	:	new TextInput([16,3], "Schritte", "numeric"),
-	"basevalue" : new TextInput([16,2], "G", "numeric")
+	"divisions"	:	new TextInput(screen_1 - [-togglepad-18,togglepad+.5], "Schritte", "numeric"),
+	"basevalue" : new TextInput(screen_1 - [-togglepad-18,togglepad+2], "G", "numeric"),
+	"value" : new TextInput(screen_1 - [-togglepad-18,togglepad+3], "P", "numeric"),
+	"percentage" : new TextInput(screen_1 - [-togglepad-18,togglepad+4], "p", "numeric")
 };
 
 // Config subdivisions tf
@@ -3728,28 +3780,59 @@ textfields:"divisions":"onupdate" := (
 textfields:"basevalue":"handle" = bar; // Pointer to the bar to alter
 textfields:"basevalue":"value" =  basevalue + ""; // Textinput value needs to be string
 textfields:"basevalue":"onupdate" := (
-	my("handle"):"aggregate" = parse(my("value"));
+	my("handle"):"basevalue" = parse(my("value"));
 	obj = obj -- [my("keyboard")];
 	self():"keyboard" = nada;
 );
 
-// Init +1/-1 Buttons for subdividing
+// Config value tf
+textfields:"value":"handle" = bar; // Pointer to the bar to alter
+textfields:"value":"value" =  100 * barvalue + ""; // Textinput value needs to be string
+textfields:"value":"onupdate" := (
+	my("handle"):"value" = parse(my("value")) / 100;
+	textfields:"percentage":"value" = my("handle"):"value" + "";
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+);
+
+// Config percentage tf
+textfields:"percentage":"handle" = bar; // Pointer to the bar to alter
+textfields:"percentage":"value" =  barvalue + ""; // Textinput value needs to be string
+textfields:"percentage":"onupdate" := (
+	my("handle"):"value" = parse(my("value"));
+	textfields:"value":"value" = my("handle"):"value" * 100 + "";
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = nada;
+);
+
+// Init +/- Buttons 
+// ==================
 // new Button(coord,width,height,label,fontsize)
-regional(btnplus, btnminus);
-btnminus = new Button(textfields:"basevalue":"coord" + [textfields:"basevalue":"width" + .1, 0], .7, .7, "-", 20);
-btnminus:"handle" = textfields:"basevalue";
-btnminus:"cornerradius" = .35;
-btnminus:"script" := (
+regional(buttons);
+buttons = {};
+buttons:"minusdiv" = new Button(textfields:"divisions":"coord" + [textfields:"divisions":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusdiv" = new Button(buttons:"minusdiv":"coord" + [buttons:"minusdiv":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"minusbase" = new Button(textfields:"basevalue":"coord" + [textfields:"basevalue":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusbase" = new Button(buttons:"minusbase":"coord" + [buttons:"minusbase":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"minuspercentage" = new Button(textfields:"percentage":"coord" + [textfields:"percentage":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"pluspercentage" = new Button(buttons:"minuspercentage":"coord" + [buttons:"minuspercentage":"width" + .2, 0], .7, .7, "+", 20);
+
+// Config buttons for subdividing
+buttons:"minusdiv":"handle" = textfields:"divisions";
+buttons:"minusdiv":"cornerradius" = .35;
+buttons:"minusdiv":"script" := (
 	regional(val);
 	val = parse(my("handle"):"value");
 	val = max(1,val-1);
 	my("handle"):"value" = val + "";
 	my("handle"):"onupdate";
 );
-btnplus = new Button(btnminus:"coord" + [btnminus:"width" + .2, 0], .7, .7, "+", 20);
-btnplus:"handle" = textfields:"basevalue";
-btnplus:"cornerradius" = .35;
-btnplus:"script" := (
+
+buttons:"plusdiv":"handle" = textfields:"divisions";
+buttons:"plusdiv":"cornerradius" = .35;
+buttons:"plusdiv":"script" := (
 	regional(val);
 	val = parse(my("handle"):"value");
 	val = min(100,val+1);
@@ -3757,64 +3840,158 @@ btnplus:"script" := (
 	my("handle"):"onupdate";
 );
 
+// Config buttons for base value
+buttons:"minusbase":"handle" = textfields:"basevalue";
+buttons:"minusbase":"cornerradius" = .35;
+buttons:"minusbase":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(1,val-1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusbase":"handle" = textfields:"basevalue";
+buttons:"plusbase":"cornerradius" = .35;
+buttons:"plusbase":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = val + 1;
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+// Config buttons for (current) value
+buttons:"minusvalue":"handle" = textfields:"value";
+buttons:"minusvalue":"cornerradius" = .35;
+buttons:"minusvalue":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(0,val - 100 * my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusvalue":"handle" = textfields:"value";
+buttons:"plusvalue":"cornerradius" = .35;
+buttons:"plusvalue":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = min(100,val + 100 * my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+// Config buttons for percentage
+buttons:"minuspercentage":"handle" = textfields:"percentage";
+buttons:"minuspercentage":"cornerradius" = .35;
+buttons:"minuspercentage":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(0,val - my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"pluspercentage":"handle" = textfields:"percentage";
+buttons:"pluspercentage":"cornerradius" = .35;
+buttons:"pluspercentage":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = min(100,val + my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+// Configure Toggles corresponding to G,P,p textfields to toggle visibility
+// ========================================================================
+toggles:"showtf-base":"script" := if(my("state"),
+	obj = obj ++ [textfields:"basevalue"];
+	obj = obj ++ [buttons:"plusbase"];
+	obj = obj ++ [buttons:"minusbase"];
+,
+	obj = obj -- [textfields:"basevalue"];
+	obj = obj -- [buttons:"plusbase"];
+	obj = obj -- [buttons:"minusbase"];
+);
+
+toggles:"showtf-value":"script" := if(my("state"),
+	obj = obj ++ [textfields:"value"];
+	obj = obj ++ [buttons:"plusvalue"];
+	obj = obj ++ [buttons:"minusvalue"];
+,
+	obj = obj -- [textfields:"value"];
+	obj = obj -- [buttons:"plusvalue"];
+	obj = obj -- [buttons:"minusvalue"];
+);
+
+toggles:"showtf-perc":"script" := if(my("state"),
+	obj = obj ++ [textfields:"percentage"];
+	obj = obj ++ [buttons:"pluspercentage"];
+	obj = obj ++ [buttons:"minuspercentage"];
+,
+	obj = obj -- [textfields:"percentage"];
+	obj = obj -- [buttons:"pluspercentage"];
+	obj = obj -- [buttons:"minuspercentage"];
+);
+
 // Init Percentagebar
 // new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
 // ==================================================================================
-bar = new Percentagebar([1,5], barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
-bar:"prozentsätze"	= toggles:"percentages";
-bar:"prozentwerte"	= toggles:"parts";
-bar:"prozentsatz"		= toggles:"percentage";
-bar:"prozentwert"		= toggles:"part";
-bar:"drawarches"		= toggles:"arch";
-bar:"canoverflow"		= toggles:"overflow";
+bar = new Percentagebar([1,7], barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+bar:"drawpercentagelabels"	:= toggles:"percentages":"state";
+bar:"drawvaluelabels"				:= toggles:"parts":"state";
+bar:"drawbasevaluelabel"		:= toggles:"basevalue":"state";
+bar:"drawcurrentpercentage"	:= toggles:"percentage":"state";
+bar:"drawcurrentvalue"			:= toggles:"part":"state";
+bar:"drawarches"						:= toggles:"arch":"state";
+bar:"canoverflow"						:= toggles:"overflow":"state";
 bar:"standardTicks"	= 'standardTicks;
 
-bar:"divisions" := parse(textfields:"divisions":"value"); // Initial number of divisions
+// Update handles for textfields, since bar wasn't defined earlier
+textfields:"divisions":"handle" = bar;
+textfields:"basevalue":"handle" = bar;
+textfields:"value":"handle" = bar;
+textfields:"percentage":"handle" = bar;
+//bar:"divisions" := parse(textfields:"divisions":"value"); // update on input with keyboard
 
-// Init ArchFields
-// ===============
-regional(archoffset);
-archoffset = .8;
-arch1 = new ArchField(bar:"coord"+[0,bar:"height"+archoffset],bar:"width",bar:"divisions");
-arch1:"color"=archcolor;
-arch1:"toggleObject" = toggles:"arch";
-arch1:"skalaShown" = toggles:"percentages";
+// Add handles to bar for all the UI stuff
+bar:"toggles" = toggles;
+bar:"textfields" = textfields;
+bar:"buttons" = buttons;
 
-arch2 = new ArchField(bar:"coord"+[0,-archoffset],bar:"width",bar:"divisions");
-arch2:"height"=-arch2:"height";
-arch2:"color"=archcolor;
-arch2:"toggleObject" = toggles:"arch";
-arch2:"skalaShown" = toggles:"parts";
-
-// Setup script for Arch Toggle to control number of arches drawn
-arch1:"number" := floor(bar:"value" * bar:"divisions");
-arch2:"number" := floor(bar:"value" * bar:"divisions");
-
-// FOR DEBUGGING: Input for precision
-inputprec = new TextInput([5,14], "Prec.", "numeric");
+// FOR DEBUGGING: Input for precision >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+inputprec = new TextInput([12,2], "Prec.", "numeric");
 inputprec:"handle" = bar; // Pointer to the bar to alter
 inputprec:"value" =  bar:"precision";
 inputprec:"onupdate" := my("handle"):"precision" = parse(my("value"));
 inputprec:"keyboardoffset" = -[0,5];
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 obj = obj ++ values(toggles);
-obj = obj ++ values(textfields);
-obj = obj :> btnminus;
-obj = obj :> btnplus;
+obj = obj ++ values(textfields) -- [textfields:"basevalue", textfields:"value", textfields:"percentage"];
+obj = obj ++ values(buttons) -- [
+	buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
+	buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage"
+	];
 obj = obj :> bar;
 obj = obj :> arch1;
 obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj :> inputprec; // DEBUG
 
-
+// Call toggle scripts for G,P,p toggle to put in textfields approriately
+toggles:"showtf-base":"script";
+toggles:"showtf-value":"script";
+toggles:"showtf-perc":"script";
 
 ); // end vam-if
 ;
 //VAM: strapwork
-// v5
-// Recent changes
+// v7
+// Recent changes:
 // - complete rewrite
+// - changed divomath updateresult() logic
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -3841,7 +4018,7 @@ drawseparator: <bool> # Marker zeichnen?
 regional(shapemap, colormap, 'polyid, 'stripid);
 SHAPEMAP = { // Maps shape names (use k+"gon" for k>8)
 	"0":"circle", "3":"triangle", "4":"square", "5":"pentagon",
-	"6":"hexagon", "7":"heptagon", "8":"octagon"
+	"6":"hexagon", "7":"heptagon", "8":"octagon", "100": "circle"
 };
 COLORMAP = { // Maps color names
 	"1":"blue", "2": "darkblue", "3":"red", "4":"green",
@@ -3853,65 +4030,61 @@ COLORMAP = { // Maps color names
 // B | Divomath config
 // ===================
 // States
-regional (vertices, colors, rows, state);
+regional (size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
 
-// Configure general size of Polys and Container
-item = 'dmstate.size;
-size = if(!isundefined(item),  item, 1); // default
-
-// Configure number of RegPolys or list of number of vertices
-item = 'dmstate.polys;
-vertices = if(!isundefined(item),  item, [0,3,6]); // default
-
-// Configure colors of the RegPolys
-item = 'dmstate.polycolors;
-colors = if(!isundefined(item), item, 1..100); // default
-
-// Configure number of rows/strips in Container
-item = 'dmstate.rows;
-rows = if(!isundefined(item), item, 1);
-
-// Configure predefined RegPoly per strip
-item = 'dmstate.state;
-state = if(!isundefined(item), item, apply(1..rows, ""));
-
-// Configure limit of RegPolys per row/strip (-1 => no limit)
-item = 'dmstate.limit;
-limit = if(!isundefined(item),  item, apply(1..100, 10)); // default
+size = defaultto('dmstate.size, 1); // Configure general size of Polys and Container
+vertices = defaultto('dmstate.polys, [0,3,6]); // Configure number of RegPolys or list of number of vertices
+colors = defaultto('dmstate.polycolors, 1..100); // Configure colors of the RegPolys
+rows = defaultto('dmstate.rows, 1); // Configure number of rows/strips in Container
+state = defaultto('dmstate.state, apply(1..rows, "")); // Configure predefined RegPoly per strip
+limit = defaultto('dmstate.limit, apply(1..100, 10));// Configure limit of RegPolys per row/strip (-1 => no limit)
 
 // Configure, what to draw
-// - Pattern Container
-item = 'dmstate.drawpatterncontainer;
-drawpatterncontainer = if(!isundefined(item), item, true);
-// - Separator
-item = 'dmstate.drawseparator;
-drawseparator = if(!isundefined(item), item, true);
-// - Borders of RegPolys
-item = 'dmstate.drawborders;
-if(!isundefined(item), drawborders = item, drawborders = false);
+drawpatterncontainer = defaultto('dmstate.drawpatterncontainer, true); // - Pattern Container
+drawseparator = defaultto('dmstate.drawseparator, true); // - Separator
+drawborders = defaultto('dmstate.drawborders, true);// - Borders of RegPolys
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
 divomathUpdateResults() := (
 	divomathClearResult();
 
-	regional(containers, shape, color, index);
-	// Get all Containers from obj.
-	containers = [];
-	forall(obj, if(#:"type" == "Container", containers = containers :> #));
-	// 
-	forall(containers, c, // Post name of each RegPoly of Container as state
-		index = 1;
-		forall(c:"children",
-			divomathAddResult(
-				"#" + c:"cid" + "_item" + index, // Key
-				#:"name" // Value ("shape"_"color")
+	regional(todivomath, strips, stripcounter, polycounter, separators, sepisnext);
+	stripcounter = 1;
+	polycounter = 1;
+	strips = reverse(container:"strips"); // all strips (top to bottom)
+	separators = separator:"copies"; // list of Separator copies
+
+	// Add divomath result for every Poly of every strip in the form
+	// "<stripno>.<runningno>:<regpolyname>"
+	forall(strips, strip, // Check every strip
+		forall(strip, poly, // Check every Poly/Separator
+
+			// Stringify poly
+			todivomath = stripcounter + "." + polycounter + ":" + poly:"name";
+
+			// Push Poly to divomath
+			divomathAddResult(todivomath);
+			// println(todivomath);
+			polycounter = polycounter + 1;
+
+			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
+			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
+			sepisnext = length(sepisnext) > 0;
+
+			// if Separator is next, push to divomath
+			if(sepisnext,
+				todivomath = stripcounter + "." + polycounter + ":" + "*";
+				divomathAddResult(todivomath);
+				// println(stripcounter + "." + polycounter + ":" + "*");
+				polycounter = polycounter + 1;
 			);
-			if('debuglevel > 1, 
-				println(">Result added: #" + c:"cid" + "_item" + index + " = " + #:"name")
-			);
-			index = index + 1;
+
 		);
+		// Set counters
+		// println("---------");
+		stripcounter = stripcounter + 1;
+		polycounter = 1;
 	);
 
 	divomathSendResult();
@@ -3919,7 +4092,6 @@ divomathUpdateResults() := (
 
 // Overwrite divomath setState()
 divomathSetState() := ();
-
 
 // CLASS RegPoly: Provides a means to render a regular polygon based on its center and the radius of the circumcircle* and
 // having it iteractable (i.e. being able to "move", "copy" and interact with a container on "moveend".
@@ -3934,9 +4106,9 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 	
 	regpoly:"id" = 'polyid; 'polyid = 'polyid +1;
 	regpoly:"name"				= ( // Name for posting to divomath
-		if(vertices < 9, SHAPEMAP:vertices, vertices + "-gon") + // name of shape
+		if(vertices < 9 % vertices == 100, SHAPEMAP:vertices, vertices + "-gon") + // name of shape
 		"_" + 
-		COLORMAP:palettecolor; // generic name of color ("blue", "red", ...)
+		COLORMAP:(mod(palettecolor-1,	length(DIVOPALETTE)) + 1); // generic name of color ("blue", "red", ...)
 	);
 	
 	regpoly:"vertices"		= if(vertices < 3, 100, vertices); // if no vertices approximate a circle
@@ -4047,8 +4219,8 @@ new Separator(coord, height, parent) := (
 		//	hitbox = hitbox :> regularpolygon(my("coord") + offset, my("width"), 4, 0);
 		//);
 
-		offset = [0,my("parent"):"height"];
-		hitbox = hitbox :> regularpolygon(my("coord")+offset, blobscale * my("width"), 100, PI/4); // top square
+		//offset = [0,my("parent"):"height"];
+		//hitbox = hitbox :> regularpolygon(my("coord")+offset, blobscale * my("width"), 100, PI/4); // top square
 
 		barscale = .2;
 		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),0], 2*barscale*my("width"), my("parent"):"height");
@@ -4479,13 +4651,15 @@ new PatternContainer(coord, limit) := (
 
 
 // @LOCAL CONFIG OVERWRITE
-//rows = 3;
-//size = 1;
-//limit = [2,3,-1];
-//state = ["3,6", "3,1,3", "1,6,9,1,3,5,1,1,1,1,1,1,1"];
-//vertices = [2,3,4,5,6,7,8,9,10,11,12];
-//drawpatterncontainer = true;
-//drawseparator = true;
+if(!usedivomath,
+	rows = 3;
+	size = 1;
+	limit = [2,3,-1];
+	state = ["3,6", "3,1,3", "1,6,9,1,3,5,1,1,1,1,1,1,1"];
+	vertices = [2,3,4,5,6,7,8,9,10,11,12];
+	drawpatterncontainer = true;
+	drawseparator = true;
+);
 
 // D | Initialization
 // ==================
@@ -4545,6 +4719,7 @@ container:"movepolysintoplace"; // align polys
 if(drawseparator,
 	regional(separator);
 	separator = new Separator(container:"coord", container:"height", container);
+	container:"rootseparator" = separator;
 );
 
 // D.5 | Reset Button
@@ -4960,7 +5135,10 @@ if(length(hotlist)>0,
 </script>
 <script id="cskeydown" type="text/x-cindyscript">
 //Script (CindyScript)
-if(key()=="k", println(apply(obj,#:"id")));
+if(key()=="k",
+	//println("Global scaling currently: " + 'globalscaling);
+	divomathUpdateResults();
+);
 ;
 
 </script>
@@ -4976,7 +5154,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.23661205307677521, 0.16630529242080255], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, -0.029673590504451057, 0.1662163000487479], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -4989,9 +5167,10 @@ var cdy = CindyJS({
   animcontrols: false,
   ports: [{
     width: 903,
-    height: 470,
+    height: 514,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.17354910085930927, 17.864813036551073, 32.06787634016036, 1.0835616995862405]}],
+    transform: [{visibleRect: [-0.1606715553539186, 17.834542644284966, 32.08075388566575, -0.5177194561404044]}],
+    axes: true,
     grid: 0.25,
     background: "rgb(255,255,255)"
   }],

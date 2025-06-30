@@ -1,8 +1,30 @@
-() => ({
-scripts: {
-  init: 
-  // FW: divomath config
-  `// v2
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    
+    <title>divoVAM 3.0.0 - preview.cdy</title>
+    <style type="text/css">
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+        
+        #CSConsole {
+            background-color: #FAFAFA;
+            border-top: 1px solid #333333;
+            bottom: 0px;
+            height: 200px;
+            overflow-y: scroll;
+            position: fixed;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cindyjs.org/dist/v0.8/CindyJS.css">
+    <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
+<script id="csinit" type="text/x-cindyscript">
+//FW: divomath config
+// v2
 // Recent changes:
 // - usedivomath added as flag for storyline config
 
@@ -50,15 +72,16 @@ vam = if(!isundefined('dmconf.vam), 'dmconf.vam, "default");
 'debuglevel  = if(!isundefined('dmconf.debuglevel),
 	'dmconf.debuglevel,
 	0
-); // 0:no debug, >0:higher precision of debug`
-  +  // FW: configuration
-  `// v1
+); // 0:no debug, >0:higher precision of debug
+;
+//FW: configuration
+// v1
 // Vars for configuring VAM behavior
 // Convention - starts with single quote (')
 
 // A | Common flags
 isdebugging='isdebugging = false;	// Toggle debugging. (legacy)
-//'debuglevel = 10; // local overwrite for debuglevel set by divomath
+'debuglevel = 1; // local overwrite for debuglevel set by divomath
 mousepressedtime='mousepressedtime=false;
 
 // B | Screen config parameters
@@ -68,11 +91,11 @@ mousepressedtime='mousepressedtime=false;
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-//vam = "strapwork"; // comment before production
 
-  `
-  +  // FW: constants
-  `// v6
+vam = "strapwork"; // comment before production
+;
+//FW: constants
+// v6
 // last changes:
 // - added unicode chars for some arrows
 // - added golden ratio (PHI)
@@ -209,9 +232,10 @@ HEXMAP = {
 	"5":5,"6":6,"7":7,"8":8,"9":9,
 	"a":10,"b":11,"c":12,"d":13,"e":14,"f":15,
 	"A":10,"B":11,"C":12,"D":13,"E":14,"F":15
-};`
-  +  // FW: general vars init
-  `// v1
+};
+;
+//FW: general vars init
+// v1
 // Init of general variables for use in the framework.
 // A | Object lists for drawing
 obj = []; 				// All relevant VAM objects (mostly for drawing)
@@ -222,12 +246,9 @@ mousedown = false; // Toggles in relevant mouse scripts
 
 getscreenparams():= ( // Set screen parameters
 	bordersize = screenresolution()* 'bordersize; // equals 0.5 mm fineliner
-	pinchsensitivity = 10/screenresolution() * 'pinchsensitivity; 
-	//err(pinchsensitivity);
+	pinchsensitivity = 10/screenresolution() * 'pinchsensitivity;
 );
 getscreenparams();
-
-
 // -----------------------------------------------
 // Legacy. What is this for?
 typeorder=[]; // venrünftige order: "tasksheet","task","keyboard","multarray","chipreservoir","arraychip"];
@@ -238,9 +259,9 @@ modes= []; // globale Modi, ist vermutlich gar nicht gebraucht,
 
 // bugfix (legacy)
 preview=false;
-  `
-  +  // FW: animations
-  `// v1
+;
+//FW: animations
+// v1
 // Animations...@Todo: Document
 animations = [];
 
@@ -339,9 +360,9 @@ killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(1
 
 coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
 );
-  `
-  + // FW: helper functions
-  `// v5
+;
+//FW: helper functions
+// v5
 // Recent changes:
 // - added values() function
 // - added ellipse() functions
@@ -904,40 +925,10 @@ transformedcolor(c):= (
 );
 
 defaultto(var, defaultvalue) := if(!isundefined(var), var, defaultvalue);
-`
-  +  // CLASS: VAMobject
-  `// v1
-// Base "Class" for VAMobject
-new VAMobject(type) := (
-	regional(obj);
-	obj = {
-		"coord" 			: [0,0],
-		"type"  		  : type,
-		"ismoveable" : false,
-		"copyonmove"	: false,
-		"isclickable" : false,
-		"getaction" 	: "move",
-		"color" 			: VAMPALETTE_1
-	};
-	obj:"name" 			:= self():"type"+self():"coord";
-	obj:"ishot" 		:= dist(self():"coord",mouse().xy) < 1;
-	obj:"move"  		:= if(self():"ismoveable", self():"coord" = coord);
-	obj:"moveend"		:= nada;
-	obj:"clickcopy" := if(self():"copyonmove", self():"copy");
-	obj:"copy"  		:= (regional(r); r = new VAMobject(my("type")));
-	obj:"draw"			:= fill(
-		circle(self():("coord"),1),
-		color->self():"color"
-	);
-	obj:"click"			:= if(self():"isclickable", 
-		self():"color" = apply(self():"color",|1-#|)
-	);
-	
-	obj; // Return the VAMobject.
-);
-  `
-  +  // CLASS: Workbench, WorkbenchElement
-  `// v1
+
+;
+//C: Workbench, WorkbenchElement
+// v1
 //**Class Workbench:
 //* A rectengular area where objects can be stored and copied from.
 //*	Copies that are dragged back to the workbench get destroyed.
@@ -1149,9 +1140,40 @@ new WorkbenchElement(center, size, color, copyonmove, label) := (
 
 	obj; // Return WorkbenchElement.
 );
-  `
-  +  // CLASS: Button
-  `// v4
+;
+//C: VAMobject
+// v1
+// Base Class for VAMobject
+new VAMobject(type) := (
+	regional(obj);
+	obj = {
+		"coord" 			: [0,0],
+		"type"  		  : type,
+		"ismoveable"  : false,
+		"copyonmove"	: false,
+		"isclickable" : false,
+		"getaction" 	: "move",
+		"color" 			: VAMPALETTE_1
+	};
+	obj:"name" 			:= self():"type"+self():"coord";
+	obj:"ishot" 		:= dist(self():"coord",mouse().xy) < 1;
+	obj:"move"  		:= if(self():"ismoveable", self():"coord" = coord);
+	obj:"moveend"		:= nada;
+	obj:"clickcopy" := if(self():"copyonmove", self():"copy");
+	obj:"copy"  		:= (regional(r); r = new VAMobject(my("type")));
+	obj:"draw"			:= fill(
+		circle(self():("coord"),1),
+		color->self():"color"
+	);
+	obj:"click"			:= if(self():"isclickable", 
+		self():"color" = apply(self():"color",|1-#|)
+	);
+	
+	obj; // Return the VAMobject.
+);
+;
+//C: Button
+// v4
 // Recent changes:
 // - added labelheight and fontfamily fields
 new Button(coord,width,height,label,fontsize) := (
@@ -1230,68 +1252,10 @@ new Button(coord,width,height,label,fontsize) := (
   obj:"script" := println("Implement obj:script"); 
 
 	obj; // Return the button.
-);`
-  +  // CLASS: Toggle
-  `// v1
-new Toggle(coord,width,state,label,fontsize) := (
-	regional(o);
-	o = new Button(coord,width,width/2,label,fontsize);
-
-	o:"cornerradius" = width;
-	o:"state" = if(!isundefined(state),state,false);
-	o:"highlightcolor" = DARKBLUE;
-	
-	o:"draw" := (
-		// Draw box and border
-		fill(
-			my("shape"),
-			color->if(my("state"),my("highlightcolor"),grey(0.98)),
-			alpha->1
-		);
-		draw(
-			my("shape"),
-			color->grey(0.5),
-			alpha->1
-		);
-
-		// Draw circle
-		regional(center);
-		center = my("coord")+[my("height"),my("height")] / 2,
-		if(my("state"), // move circle right, if toggled
-			center = center + [my("width")-my("height"),0]
-		);
-
-		fillcircle(
-			center,
-			1.2 * my("height") / 2,
-			color->my("color");
-		);
-
-		// Draw Label
-		drawtext(
-			my("coord")+[my("width")*1.1,my("height")/3],
-			my("label"),
-			align->"left",
-			color->dzlmcolordark,
-			size->my("fontsize")
-		);
-		// Draw something after the button
-		my("drawafter");
-	);
-	
-	o:"click"	:= (
-		set my("state", !my("state"));
-		my("script");
-	);
-
-	o; // Return the toggle.
 );
-
-//sw = new Toggle([3,3],1,true,"Color",8);
-//obj = obj :> sw;
-  `
-  +  // CLASS: Keyboard
-  `// v1
+;
+//C: Keyboard
+// v1
 
 // Global config
 'fontsize = 16;
@@ -1334,38 +1298,42 @@ new Keyboard(coord, subtype, keysize, target) := (
 	o:"click" := (
 		regional(key, value);
 		value = my("value");
-		key = select(my("keys"),#:"ishot");
-		if(length(key) > 0, // out of bounds if array is empty
-			key = key_1:"label";
-			
-			// Add character
-			if(!contains([DOWNARROWTIPLEFT,LEFTARROW], key),
-				value = value + key;
-			);
-			
-			// Execute targets onupdate script
-			if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
-				eval(my("target"):"onupdate", value->my("value"));
-			);
+		key = select(my("keys"),#:"ishot"); // Get all the hot keys (should be exactly one)
 
-			// Remove last character if any
-			if(key == LEFTARROW & length(value) > 0, // Remove last char
-				value = value_(1..(length(value)-1));
-				
-				// Build string from list
-				regional(temp);
-				temp = "";
-				forall(value, println(#);temp = temp + #);
-				value = temp;
-			);
+		// Get key label with out of bounds check (should not happen)
+		if(length(key) > 0, key = key_1:"label");
+			
+		// Add character if not clicked on an arrow key 
+		if(!contains([DOWNARROWTIPLEFT,LEFTARROW], key),
+			value = value + key;
 		);
-		
+
+		// Execute targets onupdate script on Enter press
+		if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
+			eval(my("target"):"onupdate", value->my("value"));
+		);
+
+		// Remove last character if any on leftarrow press
+		if(key == LEFTARROW & length(value) > 0,
+			// Remove last char
+			value = value_(1..(length(value)-1)); // is list now :(
+
+			// Rebuild string from list
+			regional(temp);
+			temp = "";
+			forall(value, temp = temp + #);
+			value = temp;
+		);
+
+		// Reassign new value
 		self():"value" = value;
 		
 		// Execute targets onkeypress script
 		if(!isundefined(my("target")),
 			eval(my("target"):"onkeypress", key->key);
 		);
+		
+		key; // Return the key label
 	);
 
 	o:"draw" := (
@@ -1402,9 +1370,10 @@ new Keyboard(coord, subtype, keysize, target) := (
 	);
 
 	o; // Return Keyboard
-);`
-  +  // CLASS: TextInput
-  `// v2
+);
+;
+//C: TextInput
+// v2
 // Recent changes:
 // - added fields "fontfamily" and "labelpadding" for more control when drawing
 // Text Entry Box
@@ -1483,16 +1452,19 @@ new TextInput(coord, label, keyboardtype) := (
 	);
 
 	o;
-);`
-  +  // CLASS: Toggle
-  ` // v1
+);
+;
+//C: Toggle
+// v1
 new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
-	o:"object";
+	o:"type" = "Toggle";
+	
 	o:"cornerradius" = width;
 	o:"state" = if(!isundefined(state),state,false);
 	o:"highlightcolor" = DARKBLUE;
+
 	o:"draw" := (
 		// Draw box and border
 		fill(
@@ -1519,7 +1491,7 @@ new Toggle(coord,width,state,label,fontsize) := (
 			color->my("color");
 		);
 
-		// Draw Label
+		// Draw label
 		drawtext(
 			my("coord")+[my("width")*1.2,.5*my("height")/3],
 			my("label"),
@@ -1535,15 +1507,17 @@ new Toggle(coord,width,state,label,fontsize) := (
 		set my("state", !my("state"));
 		my("script");
 	);
-	o:"script":=();
+
+	o:"script" := ();
+
 	o; // Return the toggle.
 );
 
 //sw = new Toggle([3,3],1,true,"Color",8);
 //obj = obj :> sw;
-  `
-  +  // CLASS: ProgressCircle
-  `// v1
+;
+//C: ProgressCircle
+// v1
 new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
 	regional(obj);
 	obj = new VAMobject("ProgressCircle");
@@ -1655,9 +1629,9 @@ new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
 
 	obj; // Return ProgressCircle
 );
-  `
-  +  // CLASS: ScrollBar
-  ` // v3
+;
+//C: ScrollBar
+// v3
 // Recent Changes:
 // - dont call "script" on "moveend", becaus gets called with old value.
 // - call on "click" instead
@@ -1836,13 +1810,15 @@ new HorizontalScrollbar(coord, width) := (
 	obj:"script" := println("Implement obj:script || my(value) = " + my("value"));
 
 	obj; // Return Scrollbar;
-);`
-  +  // VAM default
-  `// v1
+);
+;
+//VAM: default
+// v1
 // Dummy VAM
 if(vam == "default",
 
 // A | Documentation
+//'doctextpos = [9,15.5];
 'doc = "
 	Das ist das Standard-VAM. Die Auswahl des 'richtigen' VAMs erfolgt über das Komponentenverhalten.
 Dort muss folgende Struktur übernommen werden.
@@ -1915,9 +1891,9 @@ o:"click" := (
 obj = obj :> o;
 'debuglevel = 10;
 );
-  `
-  +  // VAM divisors
-  `// v7
+;
+//VAM: divisors
+// v7
 // last changes:
 // - included config for drawing UI Buttons or not ("drawbuttons")
 // - fixed color config
@@ -2306,7 +2282,7 @@ new World() := (
 			// - " Rest d"
 			if(displayresult & m != 0,
 				bottomleftx = bottomleftx+pixelsize(text)_1/screenresolution()+.2;
-				text = " R " + m;
+				text = "   R " + m;
 				drawtext([bottomleftx,1.7],
 					text,
 					color->DIVOBLUE,
@@ -2717,7 +2693,7 @@ new Blob() := (
 // D | Initialization
 // D.0 | SL Config
 // ===============
-if(!usedivomath,
+if(!usedivomath & false,
 	size = .7;
 	blobs = 30;
 	divisor = 5;
@@ -2769,9 +2745,10 @@ world:"updateglobalscaling";
 println(world:"stripmargin");
 println(apply(world:"strips"_1:"children", #:"size"));
 println(world:"stripmargin");
-); // end vam-if`
-  + // VAM numbercards
-  `// v9
+); // end vam-if
+;
+//VAM: numbercards
+// v9
 // last changes:
 // - switched color button look. Now grey if cards are colorful, and colorful if cards are grey.
 // - changed look of greyed color button to be greyscale MONTEPALETTE used in colored option.
@@ -3437,9 +3414,10 @@ forall(cards, card,
 	obj = obj :> thing; // Add card to obj list.
 );
 
-); // End VAM-if`
-  + // VAM percentagebar
-  `// v1
+); // End VAM-if
+;
+//VAM: percentagebar
+// v1
 if(vam == "percentagebar",
 
 // A | Documentation
@@ -3476,7 +3454,8 @@ isbardraggable = defaultto('dmstate.isbardraggable, true);
 scaffoldvalue = defaultto('dmstate.scaffoldvalue, false);
 scaffoldpercentage = defaultto('dmstate.scaffoldpercentage, false);
 scaffoldbasevalue = defaultto('dmstate.scaffoldbasevalue, false);
-
+leftoutpercentages = defaultto('dmstate.leftoutpercenteges, []);
+leftoutvalues = defaultto('dmstate.leftoutvalues, []);
 
 //------------ REDO
 //TickColor1&2,Archcolor(standard as tick2),amount of ticks2,
@@ -3572,7 +3551,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		// Draw percentage labels
 		if(my("drawpercentagelabels"),
 			yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
-			forall(my("ticks") ++ my("standardticks"),
+			forall(my("ticks") ++ my("standardticks") --leftoutpercentages,
 				text = round(#*1000)/10 + " %"; // tick value in % rounded to 1 decimal with "%" sign
 				box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
 				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
@@ -3588,7 +3567,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 
 		// Draw value labels
 		if(my("drawvaluelabels"),
-			forall(my("ticks") ++ my("standardticks"),
+			forall(my("ticks") ++ my("standardticks") --leftoutvalues,
 				text = round(#*my("basevalue")*100)/100 + " " + my("unit"); // altered tick value with unit
 				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
 				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
@@ -3750,7 +3729,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	barprecision = .05;
+	barprecision = .01;
 	basevalue = 1000;
 	unit = "€";
 	scaffoldbasevalue = true;
@@ -3758,6 +3737,8 @@ if(!usedivomath,
 	scaffoldpercentage = true;
 	isbardraggable = true;
 	'debuglevel = 0;
+	leftoutpercentages = [.5];
+	leftoutvalues = [.25];
 );
 
 // D.1 | Init Toggle Switches
@@ -4008,9 +3989,10 @@ toggles:"showtf-base":"script";
 toggles:"showtf-value":"script";
 toggles:"showtf-perc":"script";
 
-); // end vam-if`
-  + // VAM strapwork
-  `// v10
+); // end vam-if
+;
+//VAM: strapwork
+// v9
 // Recent changes:
 // - complete rewrite
 // - changed divomath updateresult() logic
@@ -4078,7 +4060,7 @@ divomathUpdateResults() := (
 	separators = separator:"copies"; // list of Separator copies
 
 	// Add divomath result for every Poly of every strip in the form
-	// key = "<stripno>.<runningno>", value = <regpolyoriginals ID>
+	// "<stripno>.<runningno>:<regpolyname>"
 	forall(strips, strip, // Check every strip
 		forall(strip, poly, // Check every Poly/Separator
 
@@ -4235,7 +4217,7 @@ new Separator(coord, height, parent) := (
 		blobscale = .6;
 		hitbox = [];
 
-		hitbox = hitbox :> regularpolygon(my("coord"), blobscale * my("width"), 100, PI/4); // bottom square
+		hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
 
 		// not wanted by customer
 		//repeat(my("parent"):"#strips" - 1, // create middle squares
@@ -4247,7 +4229,7 @@ new Separator(coord, height, parent) := (
 		//hitbox = hitbox :> regularpolygon(my("coord")+offset, blobscale * my("width"), 100, PI/4); // top square
 
 		barscale = .2;
-		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),0], 2*barscale*my("width"), my("parent"):"height");
+		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
 	);
 	sep:"ishot" := contains(apply(my("hitbox"), inpoly(#,mouse().xy)), true); // mouse in one the parts of the hitbox
 
@@ -4405,7 +4387,7 @@ new Container(coord, numofstrips, limits) := (
 		);
 
 		// Draw border
-		drawpoly(my("shape"), color->grey(.3), size->my("bordersize"));
+		//drawpoly(my("shape"), color->grey(.3), size->my("bordersize"));
 
 		// Debug draw
 		if('debuglevel > 0,
@@ -4620,7 +4602,7 @@ new Container(coord, numofstrips, limits) := (
 
 new PatternContainer(coord, limit) := (
 	regional(cont);
-	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit
+	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit?
 	cont = new Container(coord, 1, [limit]);
 
 	// Inherited from Container, don't use
@@ -4719,7 +4701,7 @@ if(drawpatterncontainer,
 // =================================
 // Align with coord of Patterncontainer
 regional(container, polycopy, counter);
-container = new Container(patterncontainer:"coord" + [0,patterncontainer:"height"+size], rows, limit);
+container = new Container(patterncontainer:"coord" + [0,patterncontainer:"height"+1.5*size], rows, limit);
 
 // Fill Container with predefined RegPolys
 counter = 1; // start at first strip
@@ -4752,7 +4734,7 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - [2*size+'marginleft, size+'marginbottom]; // coord of Button
 
-btn = new Button('screenref, 2*size, size, ANTICLOCKWISEARROW, 26);
+btn = new Button(patterncontainer:"coord" + [container:"width" - 2*size,0], 2*size, size, ANTICLOCKWISEARROW, 26);
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
@@ -4778,11 +4760,43 @@ obj = obj :> separator;
 // Order to draw (Separator last, so it is on top)
 typeorder = ["Container", "RegPoly", "Separator"];
 
-);`
-  + // .debugging
-  `// v1
+);
+;
+//_DEV: sw-CONFIG
+if(vam == "dev", 
+
+);
+;
+//_DEV: sw-RegPoly
+if(vam == "dev", 
+
+);
+;
+//_DEV: sw-Separator
+if(vam == "dev",
+
+
+); // End VAM IF
+;
+//_DEV: sw-Container
+if(vam == "dev",
+
+);
+;
+//_DEV: sw-PatternContainer
+if(vam == "dev",
+
+); // End VAM IF
+;
+//_DEV: sw-INIT
+if(vam == "dev",
+
+);
+;
+//.debugging
+// v1
 // Debug print divomath details
-if('debuglevel > 9 & false,
+if('debuglevel > 9,
 	println("=============DIVOMATH SETTINGS=============");
 	println("divomath base object: " + divomathConfig);
 	println("Screenbounds: " + screenbounds());
@@ -4796,83 +4810,63 @@ if('debuglevel > 9 & false,
 	divomathSetState(); // Prints warning, if function is not overwritten
 	println("===========================================");
 );
-  `,
-  mousedown: `// v2
-mousedown = !mousedown;
-mousepressedtime=seconds();
+;
+//_template VAM
+// v1
+// Template divoVAM << change title
+if(vam == "template", // change accordingly
 
-// Finde alle Elemente, die beweglich sind, wenn die Maus an der aktuellen Stelle ist (mouse().xy)
-hotlist = select(obj,eval(#:"ishot",coord->mouse().xy));
+// A | Documentation
+'doc = "
+	Add a documentation for controlling the VAM,
+	especially configuration options with the divomath state 
+	editor. Text is going to be drawn in draw script if
+	'debuglevel > 9.
+";
 
-// auch Typeorder fürs anklicken beachten
-hotlist = flatten(apply(typeorder,to,select(hotlist,o,o:"type"==to)))
-					++select(hotlist,o,not(contains(typeorder,o:"type")));
-
-//err(sum(apply(hotlist,#:"name"+" ")));	
-
-if(!isundefined(oldaction), 
-	hotlist = [oldaction];
+// B | Divomath config
+// Add handlers for divomath editor settings (i.e. state vars)
+// e.g. if the position of a thing can be configured:
+somepoint = if(!isundefined('dmstate.somepoint),
+	'dmstate.somepoint // uses var "somepoint" from divomath state
+, 
+	[3,2] // if non-existent, uses [3,2] instead (default)
 );
 
-//err(apply(hotlist,#:"info"));
+// B.2 | Other toggles
+// Add VAM-global toggles as needed, e.g.
+'delay = 100;
 
-// Wenn es ein Element in der Hotlist gibt, dann finde die relative Distanz zwischen Referenzpunkt und Maus.
-if(length(hotlist)>0,
-		hot = hotlist_(length(hotlist));
-    startmouse = mouse().xy;
-    oldmouse = mouse().xy;
-		//err("pressed:"+hot:"name");
+// C | Class definitions
+// C.1 | <Class name>
+// <Description as needed>
+new Thing(center) := (
+	regional(o);
+	o = new VAMobject("mytype"); // use VAMobject as base class
 
-    clickcopy = hot:"clickcopy";
-		if(not(isundefined(clickcopy)),
-				//clickcopy:"clickcopy"=NADA;
-				obj = obj :> clickcopy;
-        hot=clickcopy;
-		);
-	
-    startcoord = hot:"coord";
-	  localcoord = startmouse - hot:"coord";
+	// change or add fields and methods as needed
+	o:"coord" = center;
+	o:"color" := [my("coord")_1/25,my("coord")_2/16,0.5];
+	o:"isclickable" = true;
+	o:"ismoveable" = true;
+	o:"click" := (
+		wait('delay); // uses toggle from above, not object-specific
+		println("Hello. I am at " + my("coord"));
+	);
 
-		action=eval(hot:"getaction",coord->startmouse, delta->localcoord, mouse -> mouse().xy);
-
-		//err("pressed:"+action);//err(hot:"moveable");
-
-		//obj = (obj -- [hot])++ [hot];
-		// dieses Movetofront geht so nicht, zerstört andere Stellen, die 
-		// mit globalem typeorder-Konzept arbeiten
-		//if(ifdefined(hot:"movetofront",true),obj = (obj -- [hot])++ [hot]);
-		//err(hot:"movetofront");
-
-		//err(sum(apply(obj,#:"name"+" ")));
-
-		// angefasste Elemente kommen nach vorn
-		x=0; //verhindert das seltsame Verhalten, dass bei Drücken nicht gezeichnet wird
-,
-    hot = NADA; // explizit auf "undefiniert" setzen.
-);`,
-  mousemove: `// v1
-// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
-
-if(!isundefined(oldaction),
- //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
-
- act(oldaction,action+"sticky",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
- oldmouse = mouse().xy;
-
- //err(oldaction);
- clrscr();
- forall(obj, #:"draw");
- forall(objpreview, eval(#:"draw",preview->true));
- repaint();
-
+	o; // Return the object.
 );
 
-// Handle divomath Result printing
-if(!isundefined(divomathConfig),
-	divomathUpdateResults();
-);
-  `,
-  mousedrag: `// v1
+// D | Initialization
+obj = obj :> new Thing([5,5]);
+
+); // end vam-if
+;
+
+</script>
+<script id="csmousedrag" type="text/x-cindyscript">
+//FW: mousedragged Handler
+// v1
 // Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
 
 if(!isundefined(hot),
@@ -4885,8 +4879,12 @@ if(!isundefined(hot),
  act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
  oldmouse = mouse().xy;
 );
-  `,
-  mouseclick: `// v1
+;
+
+</script>
+<script id="csmouseclick" type="text/x-cindyscript">
+//FW: mouseclicked Handler
+// v1
 if(false,
 
 // Der gesamte Code von Cklic wird jetzt bei release ausgeführt
@@ -4917,8 +4915,12 @@ if(!isundefined(oldaction),
 // Alternative Formulierung (schöner?):
 //forall(select(obj,#:"ishot"),#:"click");
 );
-  `,
-  mouseup: `// v1
+;
+
+</script>
+<script id="csmouseup" type="text/x-cindyscript">
+//FW: mousereleased Handler
+// v1
 // Code für RELEASE
 if(!isundefined(hot),
   //err("released:"+action);
@@ -4971,12 +4973,75 @@ if(!isundefined(oldaction),
 );
 
 );
-  `,
-  keydown: ``,
-  multidown: ``,
-  multidrag: ``,
-  multiup: ``,
-  tick: `// v1
+;
+
+</script>
+<script id="csmousemove" type="text/x-cindyscript">
+//FW: mousemoved Handler
+// v1
+// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
+
+if(!isundefined(oldaction),
+ //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
+
+ act(oldaction,action+"sticky",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+ oldmouse = mouse().xy;
+
+ //err(oldaction);
+ clrscr();
+ forall(obj, #:"draw");
+ forall(objpreview, eval(#:"draw",preview->true));
+ repaint();
+
+);
+
+// Handle divomath Result printing
+if(!isundefined(divomathConfig),
+	divomathUpdateResults();
+);
+;
+
+</script>
+<script id="csdraw" type="text/x-cindyscript">
+//FW: global drawing
+// v3
+// Recent changes:
+// - changed drawing order for Debug stuff
+
+// Color background.
+fill(screen(), color->'bgcolor);
+
+// Globale Screenparameter
+getscreenparams();
+copyrighttext.xy = (screenbounds()_3).xy-(225,-10)/screenresolution();
+
+// Zeichne alle Objekte, die in der Liste "obj" sind
+// zuerst alle types entsprechend der Typreihenfolge in typeorder, dann den Rest
+forall(typeorder,to,
+		forall(obj,o, if(o:"type"==to, o:"draw"))
+);
+
+forall(obj,o,
+		if(not(contains(typeorder,o:"type")),o:"draw")
+);
+
+// DEBUGGING
+if('debuglevel > 1,
+	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
+	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
+	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
+);
+
+
+if('debuglevel > 9, 
+	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
+);
+;
+
+</script>
+<script id="cstick" type="text/x-cindyscript">
+//FW: timestep
+// v1
 animations = select(animations, a,
 	regional(λ,γ,value,now);
   now=seconds();
@@ -5013,65 +5078,117 @@ animations = select(animations, a,
 );
 
 if(length(animations)==0, stopanimation());
-  `,
-  move: ``,
-  draw: ` // v2
-// Color background.
-fill(screen(),color->'bgcolor);
+;
 
-// DEBUGGING
-if('debuglevel > 1,
-	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
-	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
-	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
+</script>
+<script id="csmousedown" type="text/x-cindyscript">
+//FW: mousepressed Handler
+// v2
+mousedown = !mousedown;
+mousepressedtime=seconds();
+
+// Finde alle Elemente, die beweglich sind, wenn die Maus an der aktuellen Stelle ist (mouse().xy)
+hotlist = select(obj,eval(#:"ishot",coord->mouse().xy));
+
+// auch Typeorder fürs anklicken beachten
+hotlist = flatten(apply(typeorder,to,select(hotlist,o,o:"type"==to)))
+					++select(hotlist,o,not(contains(typeorder,o:"type")));
+
+//err(sum(apply(hotlist,#:"name"+" ")));	
+
+if(!isundefined(oldaction), 
+	hotlist = [oldaction];
 );
 
-if('debuglevel > 9, 
-	drawtext('doctextpos,'doc)
-);
+//err(apply(hotlist,#:"info"));
 
-// Globale Screenparameter
-getscreenparams();
-copyrighttext.xy = (screenbounds()_3).xy-(225,-10)/screenresolution();
+// Wenn es ein Element in der Hotlist gibt, dann finde die relative Distanz zwischen Referenzpunkt und Maus.
+if(length(hotlist)>0,
+		hot = hotlist_(length(hotlist));
+    startmouse = mouse().xy;
+    oldmouse = mouse().xy;
+		//err("pressed:"+hot:"name");
 
-// Zeichne alle Objekte, die in der Liste "obj" sind
-// zuerst alle types entsprechend der Typreihenfolge in typeorder, dann den Rest
-forall(typeorder,to,
-		forall(obj,o, if(o:"type"==to, o:"draw"))
-);
+    clickcopy = hot:"clickcopy";
+		if(not(isundefined(clickcopy)),
+				//clickcopy:"clickcopy"=NADA;
+				obj = obj :> clickcopy;
+        hot=clickcopy;
+		);
+	
+    startcoord = hot:"coord";
+	  localcoord = startmouse - hot:"coord";
 
-forall(obj,o,
-		if(not(contains(typeorder,o:"type")),o:"draw")
+		action=eval(hot:"getaction",coord->startmouse, delta->localcoord, mouse -> mouse().xy);
+
+		//err("pressed:"+action);//err(hot:"moveable");
+
+		//obj = (obj -- [hot])++ [hot];
+		// dieses Movetofront geht so nicht, zerstört andere Stellen, die 
+		// mit globalem typeorder-Konzept arbeiten
+		//if(ifdefined(hot:"movetofront",true),obj = (obj -- [hot])++ [hot]);
+		//err(hot:"movetofront");
+
+		//err(sum(apply(obj,#:"name"+" ")));
+
+		// angefasste Elemente kommen nach vorn
+		x=0; //verhindert das seltsame Verhalten, dass bei Drücken nicht gezeichnet wird
+,
+    hot = NADA; // explizit auf "undefiniert" setzen.
 );
-`,
-},
-defaultAppearance: {
-  dimDependent: 0.7,
-  fontFamily: "sans-serif",
-  lineSize: 1,
-  pointSize: 5.0,
-  textsize: 12.0
-},
-angleUnit: "°",
-geometry: [
-  {name: "copyrighttext", type: "Button", pos: [3.945205479452055, -4.0, 0.48088512286386786], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
-],
-animation: {
+;
+
+</script>
+<script id="cskeydown" type="text/x-cindyscript">
+//Script (CindyScript)
+if(key()=="k",
+	//println("Global scaling currently: " + 'globalscaling);
+	divomathUpdateResults();
+);
+;
+
+</script>
+    <script type="text/javascript">
+var cdy = CindyJS({
+  scripts: "cs*",
+  defaultAppearance: {
+    dimDependent: 0.7,
+    fontFamily: "sans-serif",
+    lineSize: 1,
+    pointSize: 5.0,
+    textsize: 12.0
+  },
+  angleUnit: "°",
+  geometry: [
+    {name: "copyrighttext", type: "Button", pos: [4.0, -0.14243323442136505, 0.1662163000487479], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+  ],
+  animation: {
+    autoplay: false,
+    controls: false,
+    speed: 0.8350515463917526,
+    speedRange: [0.0, 1.0],
+    accuracy: 1
+  },
   autoplay: false,
-  controls: false,
-  speed: 0.5,
-  speedRange: [0.0, 1.0],
-  accuracy: 1
-},
-autoplay: false,
-animcontrols: false,
-ports: [{
-  width: 747,
-  height: 516,
-  id: "CSCanvas",
-  transform: [{visibleRect: [-0.14428501372721858, 16.432459896711006, 23.807027264991067, -0.11222167734339224]}],
-  background: "rgb(255,255,255)"
-}],
-csconsole: false,
-cinderella: {build: 2075, version: [3, 0, 2075]}
+  animcontrols: false,
+  ports: [{
+    width: 903,
+    height: 533,
+    id: "CSCanvas",
+    transform: [{visibleRect: [-0.1606715553539186, 17.834542644284966, 32.08075388566575, -1.1961104676347274]}],
+    axes: true,
+    grid: 0.25,
+    background: "rgb(255,255,255)"
+  }],
+  csconsole: false,
+  images: {
+    "turtle.png": "data:image/png;base64,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"
+  },
+  cinderella: {build: 2091, version: [3, 0, 2091]}
 });
+    </script>
+</head>
+<body>
+    <div id="CSCanvas"></div>
+</body>
+</html>
