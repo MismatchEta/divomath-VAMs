@@ -92,7 +92,7 @@ mousepressedtime='mousepressedtime=false;
 
 // C | Overwrite VAM choice locally
 
-vam = "strapwork"; // comment before production
+vam = "percentagebar"; // comment before production
 ;
 //FW: constants
 // v6
@@ -774,12 +774,13 @@ getboundingbox(text, coord, size, font) := (
 
 // Draws a textbox with optional backgroundcolor
 drawtextbox(coord, text, size, font, bgcolor) := (
+	fontcolor = defaultto(fontcolor, DZLMCOLORDARK);
 	bgcolor = defaultto(bgcolor, grey(.9));
 	bold = defaultto(bold, false);
 	alpha = defaultto(alpha, 1);
 
-	fillpoly(getboundingbox(text, coord, size, font), color->bgcolor, alpha->alpha);
-	drawtext(coord, text, size->size, font->font, bold->bold);
+	//fillpoly(getboundingbox(text, coord, size, font), color->bgcolor, alpha->alpha); // does not work in CindyJS
+	drawtext(coord, text, size->size, font->font, bold->bold, color->fontcolor);
 );
 
 // D | Commands
@@ -925,6 +926,7 @@ transformedcolor(c):= (
 );
 
 defaultto(var, defaultvalue) := if(!isundefined(var), var, defaultvalue);
+
 ;
 //C: Workbench, WorkbenchElement
 // v1
@@ -1892,7 +1894,7 @@ obj = obj :> o;
 );
 ;
 //VAM: divisors
-// v6
+// v7
 // last changes:
 // - included config for drawing UI Buttons or not ("drawbuttons")
 // - fixed color config
@@ -2281,7 +2283,7 @@ new World() := (
 			// - " Rest d"
 			if(displayresult & m != 0,
 				bottomleftx = bottomleftx+pixelsize(text)_1/screenresolution()+.2;
-				text = " R " + m;
+				text = "   R " + m;
 				drawtext([bottomleftx,1.7],
 					text,
 					color->DIVOBLUE,
@@ -2692,7 +2694,7 @@ new Blob() := (
 // D | Initialization
 // D.0 | SL Config
 // ===============
-if(!usedivomath,
+if(!usedivomath & false,
 	size = .7;
 	blobs = 30;
 	divisor = 5;
@@ -3416,7 +3418,7 @@ forall(cards, card,
 ); // End VAM-if
 ;
 //VAM: percentagebar
-// v1
+// v2
 if(vam == "percentagebar",
 
 // A | Documentation
@@ -3453,7 +3455,8 @@ isbardraggable = defaultto('dmstate.isbardraggable, true);
 scaffoldvalue = defaultto('dmstate.scaffoldvalue, false);
 scaffoldpercentage = defaultto('dmstate.scaffoldpercentage, false);
 scaffoldbasevalue = defaultto('dmstate.scaffoldbasevalue, false);
-
+leftoutpercentages = defaultto('dmstate.leftoutpercenteges, []);
+leftoutvalues = defaultto('dmstate.leftoutvalues, []);
 
 //------------ REDO
 //TickColor1&2,Archcolor(standard as tick2),amount of ticks2,
@@ -3549,7 +3552,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		// Draw percentage labels
 		if(my("drawpercentagelabels"),
 			yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
-			forall(my("ticks") ++ my("standardticks"),
+			forall(my("ticks") ++ my("standardticks") --leftoutpercentages,
 				text = round(#*1000)/10 + " %"; // tick value in % rounded to 1 decimal with "%" sign
 				box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
 				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
@@ -3565,7 +3568,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 
 		// Draw value labels
 		if(my("drawvaluelabels"),
-			forall(my("ticks") ++ my("standardticks"),
+			forall(my("ticks") ++ my("standardticks") --leftoutvalues,
 				text = round(#*my("basevalue")*100)/100 + " " + my("unit"); // altered tick value with unit
 				box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
 				xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
@@ -3727,14 +3730,22 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	barprecision = .05;
-	basevalue = 1000;
-	unit = "€";
-	scaffoldbasevalue = true;
-	scaffoldvalue = true;
-	scaffoldpercentage = true;
-	isbardraggable = true;
 	'debuglevel = 0;
+	barprecision = .01;
+	barwidth = 16;
+	barheight = 2;
+	barvalue = 0;
+	basevalue = 1000;
+	subdivisions = 3;
+	unit = "€";
+	barcolor = DZLMCOLORGOLD;
+	archcolor = DZLMCOLORGOLD;
+	isbardraggable = true;
+	scaffoldvalue = true;
+	scaffoldbasevalue = true;
+	scaffoldpercentage = true;
+	leftoutpercentages = [.5];
+	leftoutvalues = [.25];
 );
 
 // D.1 | Init Toggle Switches
@@ -3761,7 +3772,7 @@ toggles = {
 // ===================================================
 regional(textfields, inputdiv, inputbaseval);
 textfields = {
-	"divisions"	:	new TextInput(screen_1 - [-togglepad-18,togglepad+.5], "Schritte", "numeric"),
+	"divisions"	:	new TextInput(screen_1 - [-togglepad-18,togglepad+.5], "Schrittanzahl", "numeric"),
 	"basevalue" : new TextInput(screen_1 - [-togglepad-18,togglepad+2], "G", "numeric"),
 	"value" : new TextInput(screen_1 - [-togglepad-18,togglepad+3], "P", "numeric"),
 	"percentage" : new TextInput(screen_1 - [-togglepad-18,togglepad+4], "p", "numeric")
@@ -3988,7 +3999,7 @@ toggles:"showtf-perc":"script";
 ); // end vam-if
 ;
 //VAM: strapwork
-// v7
+// v9
 // Recent changes:
 // - complete rewrite
 // - changed divomath updateresult() logic
@@ -4060,29 +4071,29 @@ divomathUpdateResults() := (
 	forall(strips, strip, // Check every strip
 		forall(strip, poly, // Check every Poly/Separator
 
-			// Stringify poly
-			todivomath = stripcounter + "." + polycounter + ":" + poly:"name";
+			// Get [key, ID of original]
+			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathAddResult(todivomath);
-			// println(todivomath);
+			divomathAddResult(todivomath_1, todivomath_2);
+			println(todivomath);
 			polycounter = polycounter + 1;
 
 			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
 			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
 			sepisnext = length(sepisnext) > 0;
 
-			// if Separator is next, push to divomath
+			// if Separator is next, push a 0 to divomath
 			if(sepisnext,
-				todivomath = stripcounter + "." + polycounter + ":" + "*";
-				divomathAddResult(todivomath);
-				// println(stripcounter + "." + polycounter + ":" + "*");
+				todivomath = [stripcounter + "." + polycounter, 0];
+				divomathAddResult(todivomath_1, todivomath_2);
+				println(todivomath);
 				polycounter = polycounter + 1;
 			);
 
 		);
 		// Set counters
-		// println("---------");
+		println("---------");
 		stripcounter = stripcounter + 1;
 		polycounter = 1;
 	);
@@ -4091,7 +4102,7 @@ divomathUpdateResults() := (
 );
 
 // Overwrite divomath setState()
-divomathSetState() := ();
+//divomathSetState() := ();
 
 // CLASS RegPoly: Provides a means to render a regular polygon based on its center and the radius of the circumcircle* and
 // having it iteractable (i.e. being able to "move", "copy" and interact with a container on "moveend".
@@ -4166,6 +4177,8 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 			my("colorkey");
 		);
 
+		copy:"original" = self(); // Reference to copyable RegPoly for divomath result adding
+
 		copy; // Return copy of RegPoly
 	);
 	
@@ -4211,7 +4224,7 @@ new Separator(coord, height, parent) := (
 		blobscale = .6;
 		hitbox = [];
 
-		hitbox = hitbox :> regularpolygon(my("coord"), blobscale * my("width"), 100, PI/4); // bottom square
+		hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
 
 		// not wanted by customer
 		//repeat(my("parent"):"#strips" - 1, // create middle squares
@@ -4223,7 +4236,7 @@ new Separator(coord, height, parent) := (
 		//hitbox = hitbox :> regularpolygon(my("coord")+offset, blobscale * my("width"), 100, PI/4); // top square
 
 		barscale = .2;
-		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),0], 2*barscale*my("width"), my("parent"):"height");
+		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
 	);
 	sep:"ishot" := contains(apply(my("hitbox"), inpoly(#,mouse().xy)), true); // mouse in one the parts of the hitbox
 
@@ -4381,7 +4394,7 @@ new Container(coord, numofstrips, limits) := (
 		);
 
 		// Draw border
-		drawpoly(my("shape"), color->grey(.3), size->my("bordersize"));
+		//drawpoly(my("shape"), color->grey(.3), size->my("bordersize"));
 
 		// Debug draw
 		if('debuglevel > 0,
@@ -4596,7 +4609,7 @@ new Container(coord, numofstrips, limits) := (
 
 new PatternContainer(coord, limit) := (
 	regional(cont);
-	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit
+	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit?
 	cont = new Container(coord, 1, [limit]);
 
 	// Inherited from Container, don't use
@@ -4695,7 +4708,7 @@ if(drawpatterncontainer,
 // =================================
 // Align with coord of Patterncontainer
 regional(container, polycopy, counter);
-container = new Container(patterncontainer:"coord" + [0,patterncontainer:"height"+size], rows, limit);
+container = new Container(patterncontainer:"coord" + [0,patterncontainer:"height"+1.5*size], rows, limit);
 
 // Fill Container with predefined RegPolys
 counter = 1; // start at first strip
@@ -4728,7 +4741,7 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - [2*size+'marginleft, size+'marginbottom]; // coord of Button
 
-btn = new Button('screenref, 2*size, size, ANTICLOCKWISEARROW, 26);
+btn = new Button(patterncontainer:"coord" + [container:"width" - 2*size,0], 2*size, size, ANTICLOCKWISEARROW, 26);
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
@@ -5154,7 +5167,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, -0.029673590504451057, 0.1662163000487479], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, -0.0593471810089021, 0.1662163000487479], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -5167,9 +5180,9 @@ var cdy = CindyJS({
   animcontrols: false,
   ports: [{
     width: 903,
-    height: 514,
+    height: 519,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.1606715553539186, 17.834542644284966, 32.08075388566575, -0.5177194561404044]}],
+    transform: [{visibleRect: [-0.1606715553539186, 17.834542644284966, 32.08075388566575, -0.6962434065336472]}],
     axes: true,
     grid: 0.25,
     background: "rgb(255,255,255)"
