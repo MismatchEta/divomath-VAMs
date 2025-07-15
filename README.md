@@ -17,8 +17,8 @@ JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Wi
 
 ### Strings für *vam* Schlüssel
 Folgende Strings sind für *vam* Schlüssel zulässig:
-- divisors (seit: 2.0.0, letzte Änderung: 2.1.0)
-- numbercards (seit: 1.0.0, letzte Änderung: 2.1.0)
+- divisors (seit: 2.0.0, letzte Änderung: 3.0.0)
+- numbercards (seit: 1.0.0, letzte Änderung: 3.0.0)
 - percentagebar (seit 3.0.0, letzte Änderung: 3.0.0)
 - strapwork (seit: 1.0.0, letzte Änderung: 3.0.0)
 
@@ -68,7 +68,7 @@ cindyjs:
   - Größe der Blobs
   - default .7
 - blobmargin: *\<float>*
-  - Abstand der Blobs in einem Band
+  - Abstand der Blobs innerhalb eines Bandes
   - default .2
 - stripmargin: *\<float>*
   - Abstand der Bänder untereinander
@@ -84,7 +84,7 @@ cindyjs:
   - default 100
 - divisor: *\<int>*
   - Gruppengröße zu Beginn
-  - default 0 (bzw. keine Gruppen)
+  - default 1 (bzw. keine Gruppen)
 - maxcols: *\<int>*
   - Maximale Anzahl an erlaubten Spalten (größter Teiler)
   - default 10
@@ -98,7 +98,7 @@ cindyjs:
   - Anzeige der Berechnungsvorschrift "a : b"
   - default true
 - displayresult: *\<bool>*
-  - Anzeige des Ergebnisses "= c Rest d"
+  - Anzeige des Ergebnisses "= c R d"
   - default true
 - displaydescription: *\<bool>*
   - Anzeige der 2 beschreibenden Textzeilen
@@ -111,6 +111,26 @@ cindyjs:
   - default true
 
 ### Zustand: numbercards
+- cards: *\<int>*
+  - Anzahl der Zahlenkarten, Standardwerte entsprechen denen der folgenden Parameter.
+  - Werden mehrere Karten verwendet, müssen die folgenden Parameter als entsprechend lange Listen angelegt werden.
+  - default 1: eine Karte
+- x: *\<list of floats>* oder *\<float>*
+  - x-Koordinate(n) der Zahlenkarte(n)
+  - default [10*#-7] (Länge bestimmt sich durch *cards*)
+- y: *\<list of floats>* oder *\<float>*
+  - y-Koordinate(n) der Zahlenkarte(n)
+  - default [16] (Länge bestimmt sich durch *cards*)
+- value: *\<list of ints>* oder *\<int>*
+  - Initiale(r) Wert(e) der Zahlenkarte(n). Größer oder gleich 0.
+  - default [1234] (Länge bestimmt sich durch *cards*)
+- edit: *\<list of strings>* oder *\<string>*
+  - String(s) aus chars "t" (true) oder "f" (false), welcher zum einen die Länge der Karte repräsentiert und zum anderen, welche Stellen (links nach rechts von groß nach klein) geändert werden können (t) und welche nicht (f).
+  - Bsp: "tft" = Eine 3-stellige Karte bei der die Zehnerstelle nicht geändert werden kann, die Hunderter- und Einerstelle dagegen schon.
+  - default ["t..t", ..] (Alles editierbar, Länge bestimmt sich durch *cards*, Anzahl der Stellen durch *values*)
+- unfold: *</list of bools>* oder *\<bool>*
+  - Gibt an, ob die Zahlenkarte(n) zu Beginn ausgeklappt sein sollen (true) oder nicht (false).
+  - default [true] (Länge bestimmt sich durch *cards*)
 - color: *\<bool>*
   - Darstellung der Stellenkarten in Farbe oder Graustufen
   - default true: Montessori Farben
@@ -120,32 +140,12 @@ cindyjs:
 - alpha: *\<float>*
   - Transparenz der Zahlenkarte im ausgeklappten Zustand. (aus [0,1])
   - default 0.2
-- cards: *\<int>*
-  - Anzahl der Zahlenkarten, Standardwerte entsprechen denen der folgenden Parameter.
-  - Werden mehrere Karten verwendet, müssen die folgenden Parameter als entsprechend lange Listen angelegt werden.
-  - default 1: eine Karte
-- x: *\<float>*
-  - x-Koordinate der Zahlenkarte(n)
-  - default 3
-- y: *\<float>*
-  - y-Koordinate der Zahlenkarte(n)
-  - default 14
-- value: *\<int>*
-  - Initialer Wert der Zahlenkarte(n). Größer oder gleich 0.
-  - default 42
-- edit: *\<string>*
-  - String aus chars "t" (true) oder "f", welcher zum einen die Länge der Karte repräsentiert und zum anderen, welche Stellen (links nach rechts von groß nach klein) geändert werden können (t) und welche nicht (f).
-  - Bsp: "tft" = Eine 3-stellige Karte bei der die Zehnerstelle nicht geändert werden kann, die Hunderter- und Einerstelle dagegen schon.
-  - default "ttt": 3-stellige Zahl, alles editierbar.
-- unfold: *\<bool>*
-  - Gibt an, ob die Zahlenkarte(n) zu Beginn ausgeklappt sein sollen (true) oder nicht (false).
-  - default false: Nicht ausgeklappt. 
 - separator: *\<char>*
   - Trennzeichen für 3er-Gruppen von Ziffern (Punkt, Leerzeichen oder sonstiges)
   - default " " (Leerzeichen)
 
 ### Zustand: percentagbar
-> bisher keiner
+> @ToDo
 
 ### Zustand: strapwork
 - size: *\<float>*
@@ -164,11 +164,11 @@ cindyjs:
     5. violett
     6. grau
     7. schwarz
-  - default: [1,2,3,...,100]
+  - default: [1..100]
 - rows: *\<int>*
   - Anzahl der Zeilen/Streifen eines Containers
   - default 1: Eine Zeile
-- state: \<list of strings>
+- state: *\<list of strings>*
   - Definiert, welche der über **vertices** und **colors** definierten Polygone im Container beim Start enthalten sein sollen.
   - **Beispiel**: Für **vertices**=[0,3,4] sowie **rows**=3 stellt ["1,2,2", "3,3,3", ""] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.
   - default ["", "", ...]
@@ -184,10 +184,13 @@ cindyjs:
 - drawborders: *\<bool>*
   - Rahmen um Polygone zeichnen (true) oder nicht (false)
   - default false
+- polypadding: *\<float>
+  - Abstand zwischen den Polygonen in einem Band
+  - default .5
 
 ## Validierung
-Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Der Zugriff erfolgt grundsätzlich über \<komponentenname>\\{RESULT_\<bezeichner>}, e.g. "**meinvam**\\{RESULT_**x**}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
-Nachfolgend die von jeder Komponente gelieferten Ergebnisse:
+Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Mindestens liefert eine Komponente ihre Zustandsparameter wieder als Ergebnis zurück. Der Zugriff erfolgt grundsätzlich über \<komponentenname>\\{RESULT_\<bezeichner>}, e.g. "**meinvam**\\{RESULT_**x**}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
+Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zustandsbeschreibung, dazu siehe [Referenzierung](#referenzierung-divomath)):
 
 ### Validierung: divisors
 > BISHER KEINE
@@ -208,14 +211,47 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse:
 > BISHER KEINE
 
 ### Validierung: strapwork
-(seit 1.0.0, letzte 3.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der Schlüssel enthält jeweils die Nummer des Containers und die Position, der Wert ist ein Text der Form und Anzahl der Ecken des dort befindlichen Polygons enthält. Zur besseren Orientierung, können mit einem debuglevel > 0 die IDs der Container angezeigt werden. Die genaue Struktur der Bezeichner ist wie folgt:
-- #\<Container-ID>_item\<Objektposition>
-  - wobei \<Container-ID> und \<Objektposition> jeweils durchnummeriert werden, z.B.
-  - **#1_item3** bezeichnet die dritte Position in Container 1
+(seit 1.0.0, letzte 3.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der abzufragende Schlüssel einer Position enthält die Bandnummer und die Position, genauer ist der Schlüssel "\<bandnummer>.\<position>".
+
+Ist das **fünfte** Polygon im **ersten** Band gesucht ist der Schlüssel entsprechend "**1.5**". Der zugehörige Wert ist die ID des "Basis-Polygons", sprich desjenigen Polygons aus der unteren Zeile, das an dieser Stelle steht. diese werden von links nach rechts von 1 an durchnummeriert. Kommt für den Schlüssel **1.5** also der Wert **3** zurück, befindet sich an dieser Stelle das dritte Basis-Polygon (von links). Kommt als Wert eine **0** zurück ist an der Stelle ein Trennstrich.
+
+## Referenzierung (divomath)
+Jede Komponente kann in ihrem Zustand grundsätzlich Werte andere Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter [Validierung](#validierung) aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM im Top-Level der Zustandsbeschreibung nach Bezeichnern, die denen der unter [Validierung](#validierung) aufgeführten entpsrechen, aber mit zwei Unterstrichen ("__") beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung *"size"*, dann kann dieser (**Top-Level(!)**) durch *"__size"* überschrieben werden. Dieses Verhalten kann dazu genutzt werden, um Zustände anderer Komponenten abzugreifen und zu verwenden. #
+
+### Beispiel
+Am Bsp. der numbercards: Es seien zwei Folien gegegeben mit den Namen *"ZAHLENKARTEN"* und *"ZAHLENKARTEN-2"* auf denen jeweils die VAM-Komponenten *"vam-karten"* bzw. *"vam-karten2"* angelegt sind. Nachfolgend ein möglicher Zustand von *"vam-karten2"*, um auf das vorige VAM zuzugreifen.
+
+```yaml
+# Zustand von "vam-karten2"
+# Hier werden die Zustände unten überschrieben
+__value: ZAHLENKARTEN/vam-karten/{RESULT_value}
+__unfold: ZAHLENKARTEN/vam-karten/{RESULT_unfold}
+
+# Default Zustandsbeschreibung
+cindyjs:
+  cards: 1
+  x:
+    - 3
+  y:
+    - 15
+  value:
+    - 12123
+  edit:
+    - tttff
+  unfold:
+    - true
+  color: false
+  colortoggle: true
+  alpha: 0.5
+  separator: .
+```
+Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird der *"value"* der Zahlenkarte, sowie der Zustand übernommen, ob die Karte eingeklappt ist oder nicht. Dies überschreibt auch die Zustandsdefinition weiter unten, in der *"value"* auf `12123` gesetzt wird und *"unfold"* auf `true`.
+### Sonstiges
+Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
-### v3.0.0 (in development)
-- neues VAM: "percentagebar"
+### v3.0.0
+- neues VAM: "percentagebar", noch ohne Validierung, Persistenz des Zustandes beim Wechseln der Folie in divomath oder Referenzierung für divomath
 - VAM:
   - divisors:
     - Konfiguration für Darstellung der UI Buttons hinzugefügt (**drawbuttons**)
