@@ -1,6 +1,8 @@
 # divomath VAM Dokumentation
 JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das [Komponentenverhalten](#komponentenverhalten) und den [Zustand](#konfiguration-des-zustands-eines-vams) konfiguriert.
 
+> Version: 3.1.0
+
 ## Komponentenverhalten
 ### Generelles Verhalten
 Über das Komponentenverhalten der Framework-Komponente wird deren generelles Verhalten gesteuert (insbesondere die Auswahl eines Widgets). Die Konfiguration des gewählten Widgets findet in [Zustand](#zustand) statt. Die folgenden Einstellungen werden im Komponentenverhalten unter dem Schlüssel "configuration" vorgenommen:
@@ -91,8 +93,14 @@ cindyjs:
 - sequentialorder: *\<bool>*
   - Steuert Umordnungsverhalten der Blobs in den Bändern
   - default false
-- drawbuttons: *\<bool>
-  - Zeichnen Buttons (true) oder auch nicht
+- drawblobbuttons: *\<bool>
+  - Zeichne Buttons zur Änderung der Anzahl der Blobs (true) oder auch nicht
+  - default: true
+- drawdivbuttons: *\<bool>
+  - Zeichne Buttons zur Änderung des Divisors (true) oder auch nicht
+  - default: true
+- drawbar: *\<bool>
+  - Zeichne vertikale Linie zur Änderung des Divisors (true) oder auch nicht
   - default: true
 - displaycalc: *\<bool>*
   - Anzeige der Berechnungsvorschrift "a : b"
@@ -250,6 +258,17 @@ Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird d
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+### 3.1.1
+- VAM:
+  - divisors:
+    - Fix: UI unten wird durch eine waagerechte Gerade optisch vom oberen Teil getrennt, nicht durch ein Rechteck
+    - Fix: Blobs werden beim Erzeugen zufällig im Viewport der Welt angelegt, nicht irgendwo auf dem Bildschirm
+    - Buttons sind jetzt einzeln ausblendbar (~~drawbuttons~~ --> drawblobbuttons & drawdivbuttons)
+    - Vertikaler Balken zur Einstellung des Divisors ein-/ausblendbar (drawbar)
+### v3.1.0
+- VAM:
+  - strapwork:
+    - Musterfolgencontainer nicht mehr fix in seiner Größe. Größe passt sich an den Inhalt an.
 ### v3.0.0
 - neues VAM: "percentagebar", noch ohne Validierung, Persistenz des Zustandes beim Wechseln der Folie in divomath oder Referenzierung für divomath
 - VAM:

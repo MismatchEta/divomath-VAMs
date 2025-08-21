@@ -1,30 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    
-    <title>divoVAM 3.0.0 - preview.cdy</title>
-    <style type="text/css">
-        * {
-            margin: 0px;
-            padding: 0px;
-        }
-        
-        #CSConsole {
-            background-color: #FAFAFA;
-            border-top: 1px solid #333333;
-            bottom: 0px;
-            height: 200px;
-            overflow-y: scroll;
-            position: fixed;
-            width: 100%;
-        }
-    </style>
-    <link rel="stylesheet" href="https://cindyjs.org/dist/v0.8/CindyJS.css">
-    <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
-<script id="csinit" type="text/x-cindyscript">
-//FW: divomath config
-// v2
+() => ({
+scripts: {
+  init: 
+  // FW: divomath config
+  `// v2
 // Recent changes:
 // - usedivomath added as flag for storyline config
 
@@ -73,16 +51,15 @@ vam = if(!isundefined('dmconf.vam), 'dmconf.vam, "default");
 	'dmconf.debuglevel,
 	0
 ); // 0:no debug, >0:higher precision of debug
-
-;
-//FW: configuration
-// v1
+`
+  +  // FW: configuration
+  `// v1
 // Vars for configuring VAM behavior
 // Convention - starts with single quote (')
 
 // A | Common flags
 isdebugging='isdebugging = false;	// Toggle debugging. (legacy)
-'debuglevel = 1; // local overwrite for debuglevel set by divomath
+//'debuglevel = 1; // local overwrite for debuglevel set by divomath
 mousepressedtime='mousepressedtime=false;
 
 // B | Screen config parameters
@@ -93,14 +70,12 @@ mousepressedtime='mousepressedtime=false;
 
 // C | Overwrite VAM choice locally
 
-vam = "numbercards"; // comment before production
-;
-//FW: constants
-// v7
+//vam = "numbercards"; // comment before production
+`
+  +  // FW: constants
+  `// v8
 // last changes:
-// - added unicode chars for some arrows
-// - added golden ratio (PHI)
-// - added quotiation mark (")
+// - fixed Montecolors (GREEN <-> BLUE)
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -150,9 +125,9 @@ divopalette=DIVOPALETTE = [
 ];
 
 // A.4. | Montessori colors
+MONTEGREEN = (100,228,178)/255;
+MONTEBLUE = (108,169,255)/255;
 MONTERED = (240,150,112)/255;
-MONTEGREEN = (108,169,255)/255;
-MONTEBLUE = (100,228,178)/255;
 MONTEGREY = (242,242,242)/255;
 
 MONTEPALETTE = [
@@ -236,10 +211,9 @@ HEXMAP = {
 	"a":10,"b":11,"c":12,"d":13,"e":14,"f":15,
 	"A":10,"B":11,"C":12,"D":13,"E":14,"F":15
 };
-
-;
-//FW: general vars init
-// v1
+`
+  +  // FW: general vars init
+  `// v1
 // Init of general variables for use in the framework.
 // A | Object lists for drawing
 obj = []; 				// All relevant VAM objects (mostly for drawing)
@@ -263,9 +237,9 @@ modes= []; // globale Modi, ist vermutlich gar nicht gebraucht,
 
 // bugfix (legacy)
 preview=false;
-;
-//FW: animations
-// v1
+`
+  +  // FW: animations
+  `// v1
 // Animations...@Todo: Document
 animations = [];
 
@@ -364,16 +338,16 @@ killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(1
 
 coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
 );
-;
-//FW: helper functions
-// v9
+`
+  + // FW: helper functions
+  `// v10
 // Recent changes:
 // - added values() function
 // - added ellipse() functions
 // - added defaultto() function
 // - added drawtextbox() function
 // - overloaded getboundingbox(3) to get boundingbox for textbox drawing
-// - added dmdefaultto() function for handling 'dmstate and 'dmprevans keys
+// - added defaultstateto() function for handling 'dmstate and 'dmprevans keys
 // - removed label bg in drawtextbox() -> does not work in HTML for some reason
 
 // Convenience functions
@@ -821,17 +795,29 @@ divomathGetVarState(dmcb) := (
 	);
 );
 
-// Checks 'dmprevans for the "key" and returns corresponding value
-// If not found, checks 'dmstate for "key" and returns value,
+// Checks 'dmstate for "key" and returns value,
 // else returns default "value"
 defaultstateto(key, value) := (
-	// Workaround for CindyJS returning nada on contains(nada, key) thus skipping if AND else branch.
+	regional(resultkey, resultvalue, stateobject, statevalue);
+	
+	// Get config overwrites for forward referencing from RESULT structure (if any)
+	resultkey = "__" + key; // Built key with dunder to separate from other keys of 'dmconf
+	resultvalue = divomathConfig:resultkey; // Get corresponding value if any
+	
+	// Get value from stateobject, if any ( for resetting previous state
+	stateobject = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
+	if(islist(stateobject), stateobject = {}); // 'dmstate is empty list not nada, if divomath site is revisted
+	statevalue = if(contains(keys(stateobject), key), 'dmstate:key);
 
-	'dmstate = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
-	if(islist('dmstate), 'dmstate = {}); // 'dmstate is empty list not nada, if divomath site is revisted
-
-	// Return divomath config regarding *key* or set default *value*
-	if(contains(keys('dmstate), key), 'dmstate:key, value);
+	// Set correct value
+	if(!isundefined(resultvalue),
+		value = resultvalue;
+	, if(!isundefined(statevalue),
+		value = statevalue;
+	));
+	
+	// Return
+	value;
 );
 
 // * | Other
@@ -944,10 +930,9 @@ transformedcolor(c):= (
 );
 
 defaultto(var, defaultvalue) := if(!isundefined(var), var, defaultvalue);
-
-;
-//C: VAMobject
-// v1
+`
+  +  // CLASS: VAMobject
+  `// v1
 // Base Class for VAMobject
 new VAMobject(type) := (
 	regional(obj);
@@ -976,9 +961,9 @@ new VAMobject(type) := (
 	
 	obj; // Return the VAMobject.
 );
-;
-//C: Workbench, WorkbenchElement
-// v1
+`
+  +  // CLASS: Workbench, WorkbenchElement
+  `// v1
 //**Class Workbench:
 //* A rectengular area where objects can be stored and copied from.
 //*	Copies that are dragged back to the workbench get destroyed.
@@ -1190,9 +1175,9 @@ new WorkbenchElement(center, size, color, copyonmove, label) := (
 
 	obj; // Return WorkbenchElement.
 );
-;
-//C: Button
-// v4
+`
+  +  // CLASS: Button
+  `// v4
 // Recent changes:
 // - added labelheight and fontfamily fields
 new Button(coord,width,height,label,fontsize) := (
@@ -1204,7 +1189,7 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"height" = height;
 	obj:"cornerradius" = (width+height) / 50;
 	obj:"color"	 = dzlmcolorlight;
-	obj:"bordercolor" = dzlmcolorgold;
+	obj:"bordercolor" = dzl;
 	obj:"fontcolor" = dzlmcolordark;
 	obj:"label"	 = label;
 	obj:"fontsize" = defaultto(fontsize, 12);
@@ -1272,9 +1257,9 @@ new Button(coord,width,height,label,fontsize) := (
 
 	obj; // Return the button.
 );
-;
-//C: Toggle
-// v1
+`
+  +  // CLASS: Toggle
+  `// v1
 new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
@@ -1331,12 +1316,9 @@ new Toggle(coord,width,state,label,fontsize) := (
 
 	o; // Return the toggle.
 );
-
-//sw = new Toggle([3,3],1,true,"Color",8);
-//obj = obj :> sw;
-;
-//C: Keyboard
-// v1
+`
+  +  // CLASS: Keyboard
+  `// v1
 
 // Global config
 'fontsize = 16;
@@ -1452,9 +1434,9 @@ new Keyboard(coord, subtype, keysize, target) := (
 
 	o; // Return Keyboard
 );
-;
-//C: TextInput
-// v2
+`
+  +  // CLASS: TextInput
+  `// v2
 // Recent changes:
 // - added fields "fontfamily" and "labelpadding" for more control when drawing Text Entry Box
 
@@ -1534,9 +1516,9 @@ new TextInput(coord, label, keyboardtype) := (
 
 	o;
 );
-;
-//C: ProgressCircle
-// v1
+`
+  +  // CLASS: ProgressCircle
+  `// v1
 new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
 	regional(obj);
 	obj = new VAMobject("ProgressCircle");
@@ -1648,9 +1630,9 @@ new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
 
 	obj; // Return ProgressCircle
 );
-;
-//C: ScrollBar
-// v3
+`
+  +  // CLASS: ScrollBar
+  `// v3
 // Recent Changes:
 // - dont call "script" on "moveend", becaus gets called with old value.
 // - call on "click" instead
@@ -1830,9 +1812,9 @@ new HorizontalScrollbar(coord, width) := (
 
 	obj; // Return Scrollbar;
 );
-;
-//VAM: default
-// v1
+`
+  +  // VAM default
+  `// v1
 // Dummy VAM
 if(vam == "default",
 
@@ -1910,18 +1892,15 @@ o:"click" := (
 obj = obj :> o;
 'debuglevel = 10;
 );
-;
-//VAM: divisors
-// v9
+`
+  +  // VAM divisors
+  `// v11
 // last changes:
-// - included config for drawing UI Buttons or not ("drawbuttons")
-// - fixed color config
-// - fixed strips not aligned when removing blobs (and especially empty strips)
-// - fixed bar dragging not recognizing maximum divisor count (maxcols) when moved
-// - fixed bar not updating when clicking buttons
-// - added local config overwrite for testing in Init part
-// - added scalingfactor for scaling whole content area (@Not implemented)
-// - general refactoring (use defaultto() and local config overwrite for SL and others)
+// - draw line instead of rectangle to separate UI Elements at the bottom
+// - Generate random position of Blobs properly inside of worlds viewport
+// - removed "drawbuttons" and replaced it with "drawblobbuttons" and "drawdivbuttons" to control those separately
+// - added "drawbar" to control access to the bar
+// - changed default timing from 1 to .5
 
 if(vam == "divisors", // change accordingly
 
@@ -1931,7 +1910,7 @@ if(vam == "divisors", // change accordingly
 >> Konfigurierbarer Zustand | VAM 'divisors'
 color: <string> # eine repräsentierte Farbe (siehe Doku)
 size: <float> # Größe der Blobs
-blobmargin: <float> # Abstand der Blobs in einem Band
+blobmargin: <float> # Abstand der Blobs innerhalb eines Bandes
 stripmargin: <float> # Abstand der Bänder untereinander
 timing: <float> # Geschwindigkeit der Animation
 blobs: <uint> # Anzahl der Blobs zu Beginn
@@ -1940,7 +1919,9 @@ divisor: <uint> # Gruppengröße zu Beginn
 maxcols: <uint> # Maximal erlaubte Gruppengröße
 displaycalc: <bool> # Formel anzeigen? ('a : b')
 displayresult: <bool> # Ergebnis anzeigen? ('= c Rest d')
-drawbuttons: <bool> # Draw Button controls?
+drawblobbuttons: <bool> # Draw blob Button controls?
+drawdivbuttons: <bool> # Draw divisor Button controls?
+drawbar: <bool> # Draw vertical bar for divisor controls?
 displaydescription: <bool> # Beschreibung anzeigen?
 displayblobcount: <bool> # Anzahl Blobs anzeigen?
 displaydivisorcount: <bool> # Gruppengröße anzeigen?
@@ -1962,7 +1943,7 @@ color = if(!isundefined(item), apply(item, COLORMAP:#), [DIVORED, DIVOGREY]); //
 size = defaultstateto("size", .7); // Size of Blobs.
 padding = defaultstateto("blobmargin", .2); // Padding between blobs in a strip.
 stripmargin = defaultstateto("stripmargin", .5); // Vertical margin between strips.
-timing = defaultstateto("timing", 1); // Timing of animations.
+timing = defaultstateto("timing", .5); // Timing of animations.
 blobs = defaultstateto("blobs", 0); // Inital blob count.
 maxblobs = defaultstateto("maxblobs", 100); // Maximum blob count.
 divisor = defaultstateto("divisor", 1); // Inital divisor.
@@ -1970,12 +1951,33 @@ maxcols = defaultstateto("maxcols", 10); // Maximum number of divisors (columns)
 sequentialorder = defaultstateto("sequentialorder", false); // Reordering strategy when divisors changes
 
 // UI and display configs
-drawbuttons = defaultstateto("drawbuttons", true); // Draw Button UI Elements
+drawblobbuttons = defaultstateto("drawblobbuttons", true); // Draw Button UI Elements for Blob count
+drawdivbuttons = defaultstateto("drawdivbuttons", true); // Draw Button UI Elements for div
+drawbar = defaultstateto("drawbar", true); // Draw vertical bar for changing div
 displaycalc = defaultstateto("displaycalc", true); // Display calculation text
 displayresult = defaultstateto("displayresult", true); // Display result text
 displaydescription = defaultstateto("displaydescription", true); // Display description text
 displayblobcount = defaultstateto("displayblobcount", true); // Display blob count text
 displaydivisorcount = defaultstateto("displaydivisorcount", true); // Display divisor count text
+
+// Configure result handling and setState.
+// Overwrite divomath result updating function.
+divomathUpdateResults() := (
+	divomathClearResult();
+
+	// Proper result reporting here (for validation)
+	// @TODO
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
+	);
+
+	// Post results
+	divomathSendResult();
+);
 
 // Overwrite divomath setState()
 divomathSetState() := (
@@ -1993,7 +1995,8 @@ divomathSetState() := (
 		"divisor" : world:"#divisors", // Initial number of divisors
 		"maxcols" : maxcols, // Max number of divisors
 		"sequentialorder" : sequentialorder, // Reording strategy on divisor change
-		"drawbuttons" : drawbuttons,
+		"drawblobbuttons" : drawblobbuttons,
+		"drawdivbuttons" : drawdivbuttons,
 		"displaycalc" : displaycalc,
 		"displayresult" : displayresult,
 		"displaydescription" : displaydescription,
@@ -2284,8 +2287,8 @@ new World() := (
 		
 		// Draw line to visualy separate bottom UI elements
 		//fillpoly(rectangle([-1,-1],35,3.5), color->grey(.95));
-		drawpoly(rectangle([-1,-1],35,3.5), color->grey(0));
-		
+		//drawpoly(rectangle([-1,-1],35,3.5), color->grey(0));
+		draw(join([0,2.5],[1,2.5]), color->grey(0));
 		// Draw total blob count
 		if(displayblobcount,
 		drawtext([0.3,1.7],"Gesamtanzahl: " + my("#allblobs"), size->16, family->my("font"));
@@ -2718,19 +2721,10 @@ new Blob() := (
 	o:"coord" = ( // Set coordinate randomly inside viewport
 		regional(screen);
 
-		// Get screen bounds
-		screen = screenbounds();
-		screen = [(screen_4).xy, (screen_2).xy]; // [lower left, upper right]
-
-		// Make bounding box smaller by size of Blobs
-
-		screen_1 = screen_1 + 1.2 * [size*'globalscaling, size*'globalscaling];
-		//screen_2 = screen_2 - 1.2 * [o:"size",o:"size"];
-
-		// Return random center point
+		screen = world:"shape";
 		[
-			screen_1_1 + randominteger(screen_2_1 - screen_1_1),
-			screen_1_2 + randominteger(screen_2_2 - screen_1_2)
+			screen_1_1+o:"size" + randominteger(screen_3_1 - screen_1_1),
+			screen_1_2+o:"size" + randominteger(screen_3_2 - screen_1_2)
 		];
 	);
 
@@ -2750,14 +2744,18 @@ new Blob() := (
 
 	o; // Return blob.
 );
-println(size);
+
 // D | Initialization
 // D.0 | SL Config
 // ===============
-if(!usedivomath & false,
+if(!usedivomath,
 	size = .7;
+	timing = .5;
 	blobs = 30;
 	divisor = 5;
+	drawblobbuttons = false;
+	drawdivbuttons = true;
+	drawbar = false;
 	color = [DZLMCOLORGOLD, DARKGREEN];
 );
 
@@ -2794,34 +2792,30 @@ world:"positionstrips";
 if(!isundefined(help), timing = help);
 
 // Draw UI Elements
-obj = obj :> world:"bar";
-if(drawbuttons,
-	forall(world:"uielements" -- [world:"bar"], obj = obj :> #);
+if(drawbar,
+	obj = obj :> world:"bar";
 );
-
+if(drawblobbuttons,
+	obj = obj :> world:"blob+";
+	obj = obj :> world:"blob-";
+);
+if(drawdivbuttons,
+	obj = obj :> world:"divisor+";
+	obj = obj :> world:"divisor-";
+);
 
 // DEBUG REMOVE @TODO
 world:"updateglobalscaling"; // is that still necessary?
-println("@REMOVE PRINTS");
-
-
 
 ); // end vam-if
-
-;
-//VAM: numbercards
-// v14
+`
+  + // VAM numbercards
+  `// v19
 // last changes:
-// - switched color button look. Now grey if cards are colorful, and colorful if cards are grey.
-// - changed look of greyed color button to be greyscale MONTEPALETTE used in colored option.
-// - changed unfold button behavior. Now shows one line, if unfolded, and multiple lines if folded.
-// - changed click behavior, Placecards are not removed and color isn't faded. Placecards therefore always visible
-// - made cards immoveable
-// - hide borders of empty Placecards when not folded
-// - changed fading behavior in Numbercards "draw"
-// - fixed color change on unfold action
-// - Refactor divomath config, change divomathUpdateResult() to include the last settings of the thing
-// - Added divomathSetState() to persist state of VAM
+// - Fix: Alpha set to 1, when revisiting a page in divomath
+// - Fix: Always show Placecards, even on startup overlaying the numbercard
+// - Fix: Color changes when folding/unfolding (this time for real, maybe)
+// - add call to divomathUpdateResults() when buttons are pressed
 
 if(vam == "numbercards",
 
@@ -2829,15 +2823,15 @@ if(vam == "numbercards",
 //'doctextpos = [9,15.5];
 'doc = "
 >> Konfigurierbarer Zustand | VAM 'numbercards'
+cards: <int> # Anzahl der Karten (siehe Doku)
+x: <list of floats> # x-Koordinaten der Karten
+y: <list of floats> # y-Koordinaten der Karten
+value: <list of ints> # zahlenwert(e) der Karte(n)
+edit: <list of string> # Konfiguriert, welche Stellen editierbar sind (siehe Doku)
+unfold: <list of bools> # Karte(n) aufgeklappt anzeigen?
 color: <bool> # Darstellung in Farbe? (oder Graustufen)
 colortoggle: <bool> # Schalter zum Wechsel zwischen Farbe/Grau anzeigen?
 alpha: <float> # Transparenz einer Karte, wenn ausgeklappt
-cards: <int> # Anzahl der Karten (siehe Doku)
-x: <float> # x-Koordinate der Karte
-y: <float> # y-Koordinate der Karte
-value: <uint> # zahlenwert der Karte
-edit: <string> # Konfiguriert, welche Stellen editierbar sind (siehe Doku)
-unfold: <bool> # Karte zu Beginn ausgeklappt?
 separator: <char> # Trennzeichen für 3er-Gruppen von Ziffern
 ==========================================================
 >> Results | VAM 'numbercards'
@@ -2940,10 +2934,16 @@ divomathUpdateResults() := (
 				"nc" + cardnr + "_unfolded" + "=" + card:"expanded"
 			)
 		);
-
 		// Go to next card, if any
 		// (toggle button gets checked too, if visible)
 		cardnr = cardnr + 1;
+	);
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
 	);
 
 	// Post results
@@ -3290,21 +3290,6 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 			children=[];
 			self():"expanded" =
 				if(my("expanded"),
-//					new animationobjectwithdelay(
-//						self(),
-//						"alpha",
-//						my("fadealpha"),
-//						1,
-//						fadetime,
-//						if(my("showalways"),"accel","jump"),
-//						foldtime
-//					);
-//					setpropertylater(
-//						self(),
-//						"children",
-//						[],
-//						fadetime + foldtime
-//					);
 					forall(my("children"), child,
 						child:"edit"=false;
 						new animationobject(
@@ -3342,7 +3327,7 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 							);
 							pc:"parent" = self();
 							pc:"color" = if(my("montessori"), // colorful
-								MONTEPALETTE_(mod(my("maxplaces")-place,3) + 1)
+								MONTEPALETTE_(mod(place-1,3) + 1);
 							, // else grey
 								MONTEGREY
 							);
@@ -3373,17 +3358,6 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 						); // end if
 						val = floor(val/10);
 					); // end repeat
-					
-//					new animationobjectwithdelay(
-//						self(),
-//						"alpha",
-//						1,
-//						1,
-//						foldtime,
-//						"accel",
-//						fadetime
-//					);
-
 			  	self():"children" = children;
 					true; // set my("expanded")
 				); // end if(my("expanded")) ~100 lines earlier.
@@ -3396,7 +3370,7 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 				// Change color attribute of children accordingly
 				forall(my("children"),
 					#:"color" = if(my("montessori"), // colorful
-						MONTEPALETTE_(mod(2-#:"maxplaces",3) + 1)
+						MONTEPALETTE_(mod(#:"maxplaces"-1,3) + 1)
 					, // else grey
 						MONTEGREY
 					);
@@ -3433,13 +3407,13 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 if(!usedivomath,
 	xcoords = [3];
 	ycoords = [14];
-	values = [0];
-	edit = [[true, true, true, true]];
+	values = [987654];
+	edit = [[true, true, true, true, true, true]];
 	max = length(edit_1);
 	unfold = true;
 	monte = true;
 	showmontetoggle = true;
-	alpha = 0;
+	alpha = 0.4;
 	separator = "";
 );
 
@@ -3455,8 +3429,6 @@ repeat(numofcards,
 	cards_#:"unfold" = unfold_#;
 );
 
-
-
 // D.1 | Init numbercards
 // ======================
 forall(cards, card,
@@ -3467,44 +3439,43 @@ forall(cards, card,
 		card:"edit"
 	);
 	
-	// Unfold card according to configuration.
-	if(card:"unfold", // card is supposed to be displayed unfolded
-		// @TODO: Refactor, code basically identical to parts of "click".
-		regional(val, offset);
-		val = thing:"value";
-		repeat(thing:"maxplaces", place,
-			offset = (
-				thing:"maxplaces"-place,
-				1.2*(place-thing:"offset"-thing:"maxplaces")
-			);
-			pc = new Placecard(
-				thing:"coord" + (thing:"maxplaces"-place,0),
-				mod(val,10),place
-			);
-			pc:"parent" = thing;
-			pc:"color" = if(thing:"montessori", // colorful
-				MONTEPALETTE_(mod(thing:"maxplaces"-place+1,3) + 1)
-			, // else grey
-				grey(.95)
-			);
-			pc:"coord" = thing:"coord"+offset;
-			pc:"mix" = 1;
-			pc:"edit" = thing:"editable"_place;
-			children = [pc] ++ children;
-			val = floor(val/10);
-		); // end repeat
-		thing:"alpha" = thing:"fadealpha";
-		thing:"children" = children;
-		thing:"expanded" = true;
-	); 
+	// Build Placecards for every card
+	regional(val, offset);
+	val = thing:"value";
+	repeat(thing:"maxplaces", place,
+		offset = if(card:"unfold",
+			(thing:"maxplaces"-place, 1.2*(place-thing:"offset"-thing:"maxplaces")),
+			(thing:"maxplaces"-place, 0)
+		);
+		pc = new Placecard( // least significant first
+			thing:"coord" + (thing:"maxplaces"-place,0),
+			mod(val,10),place
+		);
+
+		pc:"parent" = thing;
+		pc:"color" = if(thing:"montessori", // colorful
+			MONTEPALETTE_(mod(place-1,3)+1)
+		, // else grey
+			MONTEGREY
+		);
+		pc:"coord" = thing:"coord"+offset;
+		pc:"mix" = 1;
+		pc:"edit" = if(card:"unfold", thing:"editable"_place, false);
+		children = [pc] ++ children;
+		val = floor(val/10); // next value
+	); // end repeat
+	thing:"alpha" = alpha;
+	thing:"fadealpha" = alpha;
+	thing:"children" = children;
+	thing:"expanded" = card:"unfold";
+ 
 	obj = obj :> thing; // Add card to obj list.
 );
 
 ); // End VAM-if
-
-;
-//VAM: percentagebar
-// v1
+`
+  + // VAM percentagebar
+  `// v1
 if(vam == "percentagebar",
 
 // A | Documentation
@@ -4110,16 +4081,11 @@ toggles:"showtf-value":"script";
 toggles:"showtf-perc":"script";
 
 ); // end vam-if
-
-;
-//VAM: strapwork
-// v11
+`
+  + // VAM strapwork
+  `// v13
 // Recent changes:
-// - complete rewrite
-// - changed divomath updateresult() logic
-// - added polypadding config option
-// - fixed dropcontainer not being draggable in CindyJS
-// - added divomathSetState()
+// - changed behavior of Patterncontainer to adjust its size based on number of Polys inside
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -4210,6 +4176,13 @@ divomathUpdateResults() := (
 		// Set counters
 		stripcounter = stripcounter + 1;
 		polycounter = 1;
+	);
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
 	);
 
 	divomathSendResult();
@@ -4772,8 +4745,12 @@ new PatternContainer(coord, limit) := (
 	cont:"bordersize" = 0;
 	cont:"ismoveable" = false;
 	cont:"copyonmove" = true;
-	cont:"width" = limit * cont:"polyoffset" * 1.1;
-
+	cont:"width" := (
+		regional(numofpolys);
+		numofpolys = max(1,length(my("strips")_1));
+		
+		numofpolys * 2*size + (numofpolys) * my("polypadding") + .5*size;
+	);
 	cont:"move" := if(my("ismoveable"),
 		// Move self
 		self():"coord" = my("coord") + mousedelta;
@@ -4854,7 +4831,7 @@ repeat(length(vertices),
 // Align with coord of first RegPoly
 if(drawpatterncontainer,
 	regional(patterncontainer);
-	patterncontainer = new PatternContainer(polys_1:"coord" + [-size,2*size], 3);
+	patterncontainer = new PatternContainer(polys_1:"coord" + [-size,2*size], 100);
 );
 
 // D.3 | Create and config Container
@@ -4920,236 +4897,8 @@ obj = obj :> separator;
 // Order to draw (Separator last, so it is on top)
 typeorder = ["Container", "RegPoly", "Separator"];
 );
-
-;
-
-</script>
-<script id="csmousedrag" type="text/x-cindyscript">
-//FW: mousedrag
-// v1
-// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
-
-if(!isundefined(hot),
- //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
-
- if(not(isundefined(hot:"deletecopyifnotmovedandsubstitutebyoriginal")), 
-			hot:"deletecopyifnotmovedandsubstitutebyoriginal"=NADA); 
-		
- //err(dist(mouse().xy,startmouse) +" "+pinchsensitivity/10);
- act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
- oldmouse = mouse().xy;
-);
-
-;
-
-</script>
-<script id="csmouseclick" type="text/x-cindyscript">
-//FW: mouseclick
-// v1
-if(false,
-
-// Der gesamte Code von Cklic wird jetzt bei release ausgeführt
-// solange die Sensitiviät auf Klicks in CindyJS nicht verbessert ist
-
-// Bei IPad und wird press, release UND cklick ausgelöst
-// Will man mausklick, muss man press/release abfangen
-
-// Teste alle Objekte, ob sie hot sind und sende ihnen gegebenfalls ein "click"
-forall(obj,o,
-		if(o:"ishot",
-		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
-			o:"click"; 
-			,
-			obj=obj--[o]; // Kopie wieder löschen
-			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
-			//hot:"click";
-			);
-		//err("click:"+o:"name");
-		);
-);
-
-if(!isundefined(oldaction),
-  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
-  oldaction=NADA;
-);
-
-// Alternative Formulierung (schöner?):
-//forall(select(obj,#:"ishot"),#:"click");
-);
-
-;
-
-</script>
-<script id="csmouseup" type="text/x-cindyscript">
-//FW: mouseup
-// v1
-// Code für RELEASE
-if(!isundefined(hot),
-  //err("released:"+action);
-
-	act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
-
-  //Allgemeiner "drop on" event – entscheiden, ob der vor, nach oder vor und nach act(...) sein soll.
-  if(!isundefined(action),
-		forall(select(obj,o,eval(o:"ishot",coord->mouse())),droptarget, eval(droptarget:"dropevent", dropobject->hot);
-	); 
-	);
-
-  if(isundefined(hot:"sticky"),
-			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
-	);
-  if(!isundefined(hot:"sticky"),
-			if(!(hot:"sticky"),
-			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse),
-			act(hot,action+"pause",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse)
-
-  ););
-);
-
-if(hot:"sticky", oldaction = hot);
-
-
-// Code für CLICK = Release when close
-
-//err(dist(startmouse,mouse().xy)+" "+pinchsensitivity);
-
-if(dist(startmouse,mouse().xy)<pinchsensitivity,
-// then click
-
-forall(obj,o,
-		if(o:"ishot",
-		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
-			o:"click"; 
-			,
-			obj=obj--[o]; // Kopie wieder löschen
-			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
-			//hot:"click";
-			);
-		//err("click:"+o:"name");
-		);
-);
-
-if(!isundefined(oldaction),
-  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
-  oldaction=NADA;
-);
-
-);
-
-;
-
-</script>
-<script id="csmousemove" type="text/x-cindyscript">
-//FW: mousemove
-// v1
-// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
-
-if(!isundefined(oldaction),
- //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
-
- act(oldaction,action+"sticky",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
- oldmouse = mouse().xy;
-
- //err(oldaction);
- clrscr();
- forall(obj, #:"draw");
- forall(objpreview, eval(#:"draw",preview->true));
- repaint();
-
-);
-
-// Handle divomath Result printing
-if(!isundefined(divomathConfig),
-	divomathUpdateResults();
-);
-
-;
-
-</script>
-<script id="csdraw" type="text/x-cindyscript">
-//FW: global drawing
-// v3
-// Recent changes:
-// - changed drawing order for Debug stuff
-
-// Color background.
-fill(screen(), color->'bgcolor);
-
-// Globale Screenparameter
-getscreenparams();
-copyrighttext.xy = (screenbounds()_3).xy-(225,-10)/screenresolution();
-
-// Zeichne alle Objekte, die in der Liste "obj" sind
-// zuerst alle types entsprechend der Typreihenfolge in typeorder, dann den Rest
-forall(typeorder,to,
-		forall(obj,o, if(o:"type"==to, o:"draw"))
-);
-
-forall(obj,o,
-		if(not(contains(typeorder,o:"type")),o:"draw")
-);
-
-// DEBUGGING
-if('debuglevel > 1,
-	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
-	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
-	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
-);
-
-
-if('debuglevel > 9, 
-	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
-);
-
-;
-
-</script>
-<script id="cstick" type="text/x-cindyscript">
-//FW: tick
-// v1
-animations = select(animations, a,
-	regional(λ,γ,value,now);
-  now=seconds();
-  if(isundefined(a:"exec"),
-
-  λ = min(1,(now-(a:"starttime"))/((a:"endtime")-(a:"starttime")));
- if(λ>0,
-	if (a:"timeflow" == "linear",  
-				//default  
-	,
-	if (a:"timeflow" == "accel",
-			λ = 5/2*λ^3-3/2*λ^5;
-	,
-	if (a:"timeflow" == "jump",
-			if(λ<1, λ=0);
-	,
-	)));
-	if (a:"timeflow" == "set",
-		(a:"object"):(a:"property") = if(λ<1, a:"startvalue",a:"endvalue"),
-		if (isundefined(a:"movepath"), 
-			  (a:"object"):(a:"property") = a:"endvalue"* λ + a:"startvalue" * (1 - λ)
-				,
-				(a:"object"):(a:"property")=eval((a:"movepath"):"f",start->a:"startvalue",end->a:"endvalue",α->λ)
-		);
-	);
-);
-
-  );
- 	// forall(ANI u,a, call(a,"recalc:"));
-	running = now < a:"endtime";
-	if (!running & !isundefined(a:"command"), a:"object":(a:"command"));
-	if (!running & a:"kill", obj = select(obj,# != a:"object"));
-	running
-);
-
-if(length(animations)==0, stopanimation());
-  
-;
-
-</script>
-<script id="csmousedown" type="text/x-cindyscript">
-//FW: mousedown
-// v2
+`,
+  mousedown: `// v2
 mousedown = !mousedown;
 mousepressedtime=seconds();
 
@@ -5202,15 +4951,130 @@ if(length(hotlist)>0,
 ,
     hot = NADA; // explizit auf "undefiniert" setzen.
 );
+`,
+  mousemove: `// v2
+// Recent changes:
+// - removed call to divomatUpdateResults(). Has to be called in VAM at the right time.
 
-;
+// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
 
-</script>
-<script id="cskeydown" type="text/x-cindyscript">
-//FW: keypressed
-// v2
-println(key());
-if(key() == "k", // Debug print divomath details
+if(!isundefined(oldaction),
+ //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
+
+ act(oldaction,action+"sticky",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+ oldmouse = mouse().xy;
+
+ //err(oldaction);
+ clrscr();
+ forall(obj, #:"draw");
+ forall(objpreview, eval(#:"draw",preview->true));
+ repaint();
+
+);
+`,
+  mousedrag: `// v1
+// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
+
+if(!isundefined(hot),
+ //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
+
+ if(not(isundefined(hot:"deletecopyifnotmovedandsubstitutebyoriginal")), 
+			hot:"deletecopyifnotmovedandsubstitutebyoriginal"=NADA); 
+		
+ //err(dist(mouse().xy,startmouse) +" "+pinchsensitivity/10);
+ act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+ oldmouse = mouse().xy;
+);
+`,
+  mouseclick: `// v1
+if(false,
+
+// Der gesamte Code von Cklic wird jetzt bei release ausgeführt
+// solange die Sensitiviät auf Klicks in CindyJS nicht verbessert ist
+
+// Bei IPad und wird press, release UND cklick ausgelöst
+// Will man mausklick, muss man press/release abfangen
+
+// Teste alle Objekte, ob sie hot sind und sende ihnen gegebenfalls ein "click"
+forall(obj,o,
+		if(o:"ishot",
+		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+			o:"click"; 
+			,
+			obj=obj--[o]; // Kopie wieder löschen
+			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
+			//hot:"click";
+			);
+		//err("click:"+o:"name");
+		);
+);
+
+if(!isundefined(oldaction),
+  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+  oldaction=NADA;
+);
+
+// Alternative Formulierung (schöner?):
+//forall(select(obj,#:"ishot"),#:"click");
+);
+`,
+  mouseup: `// v1
+// Code für RELEASE
+if(!isundefined(hot),
+  //err("released:"+action);
+
+	act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+
+  //Allgemeiner "drop on" event – entscheiden, ob der vor, nach oder vor und nach act(...) sein soll.
+  if(!isundefined(action),
+		forall(select(obj,o,eval(o:"ishot",coord->mouse())),droptarget, eval(droptarget:"dropevent", dropobject->hot);
+	); 
+	);
+
+  if(isundefined(hot:"sticky"),
+			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+	);
+  if(!isundefined(hot:"sticky"),
+			if(!(hot:"sticky"),
+			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse),
+			act(hot,action+"pause",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse)
+
+  ););
+);
+
+if(hot:"sticky", oldaction = hot);
+
+
+// Code für CLICK = Release when close
+
+//err(dist(startmouse,mouse().xy)+" "+pinchsensitivity);
+
+if(dist(startmouse,mouse().xy)<pinchsensitivity,
+// then click
+
+forall(obj,o,
+		if(o:"ishot",
+		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+			o:"click"; 
+			,
+			obj=obj--[o]; // Kopie wieder löschen
+			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
+			//hot:"click";
+			);
+		//err("click:"+o:"name");
+		);
+);
+
+if(!isundefined(oldaction),
+  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+  oldaction=NADA;
+);
+
+);
+`,
+  keydown: `// v2
+
+if(key() == "K", // Debug print divomath details
 	println("=============DIVOMATH SETTINGS=============");
 	println("divomath base object: " + divomathConfig);
 	println("Screenbounds: " + screenbounds());
@@ -5224,51 +5088,108 @@ if(key() == "k", // Debug print divomath details
 	println("SetState overwrite: " + divomathSetState());
 	println("==========================================="); 
 );
+`,
+  multidown: ``,
+  multidrag: ``,
+  multiup: ``,
+  tick: `// v1
+animations = select(animations, a,
+	regional(λ,γ,value,now);
+  now=seconds();
+  if(isundefined(a:"exec"),
 
-;
+  λ = min(1,(now-(a:"starttime"))/((a:"endtime")-(a:"starttime")));
+ if(λ>0,
+	if (a:"timeflow" == "linear",  
+				//default  
+	,
+	if (a:"timeflow" == "accel",
+			λ = 5/2*λ^3-3/2*λ^5;
+	,
+	if (a:"timeflow" == "jump",
+			if(λ<1, λ=0);
+	,
+	)));
+	if (a:"timeflow" == "set",
+		(a:"object"):(a:"property") = if(λ<1, a:"startvalue",a:"endvalue"),
+		if (isundefined(a:"movepath"), 
+			  (a:"object"):(a:"property") = a:"endvalue"* λ + a:"startvalue" * (1 - λ)
+				,
+				(a:"object"):(a:"property")=eval((a:"movepath"):"f",start->a:"startvalue",end->a:"endvalue",α->λ)
+		);
+	);
+);
 
-</script>
-    <script type="text/javascript">
-var cdy = CindyJS({
-  scripts: "cs*",
-  defaultAppearance: {
-    dimDependent: 0.7,
-    fontFamily: "sans-serif",
-    lineSize: 1,
-    pointSize: 5.0,
-    textsize: 12.0
-  },
-  angleUnit: "°",
-  geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.023845007451564825, 0.1835952911197616], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
-  ],
-  animation: {
-    autoplay: false,
-    controls: false,
-    speed: 0.8350515463917526,
-    speedRange: [0.0, 1.0],
-    accuracy: 1
-  },
+  );
+ 	// forall(ANI u,a, call(a,"recalc:"));
+	running = now < a:"endtime";
+	if (!running & !isundefined(a:"command"), a:"object":(a:"command"));
+	if (!running & a:"kill", obj = select(obj,# != a:"object"));
+	running
+);
+
+if(length(animations)==0, stopanimation());
+`,
+  move: ``,
+  draw: `// v3
+// Recent changes:
+// - changed drawing order for Debug stuff
+
+// Color background.
+fill(screen(), color->'bgcolor);
+
+// Globale Screenparameter
+getscreenparams();
+copyrighttext.xy = (screenbounds()_3).xy-(225,-10)/screenresolution();
+
+// Zeichne alle Objekte, die in der Liste "obj" sind
+// zuerst alle types entsprechend der Typreihenfolge in typeorder, dann den Rest
+forall(typeorder,to,
+		forall(obj,o, if(o:"type"==to, o:"draw"))
+);
+
+forall(obj,o,
+		if(not(contains(typeorder,o:"type")),o:"draw")
+);
+
+// DEBUGGING
+if('debuglevel > 1,
+	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
+	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
+	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
+);
+
+
+if('debuglevel > 9, 
+	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
+);
+`,
+},
+defaultAppearance: {
+  dimDependent: 0.7,
+  fontFamily: "sans-serif",
+  lineSize: 1,
+  pointSize: 5.0,
+  textsize: 12.0
+},
+angleUnit: "°",
+geometry: [],
+animation: {
   autoplay: false,
-  animcontrols: false,
-  ports: [{
-    width: 903,
-    height: 519,
-    id: "CSCanvas",
-    transform: [{visibleRect: [-0.24352143619260658, 16.67310099798713, 29.076459481397222, -0.1785823865412448]}],
-    axes: true,
-    grid: 0.5,
-    background: "rgb(255,255,255)"
-  }],
-  csconsole: false,
-  images: {
-    "turtle.png": "data:image/png;base64,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"
-  },
-  cinderella: {build: 2091, version: [3, 0, 2091]}
+  controls: false,
+  speed: 0.5,
+  speedRange: [0.0, 1.0],
+  accuracy: 1
+},
+autoplay: false,
+animcontrols: false,
+ports: [{
+  width: 747,
+  height: 516,
+  id: "CSCanvas",
+  transform: [{visibleRect: [-0.14428501372721858, 16.432459896711006, 23.807027264991067, -0.11222167734339224]}],
+  background: "rgb(255,255,255)"
+}],
+csconsole: false,
+cinderella: {build: 2075, version: [3, 0, 2075]}
 });
-    </script>
-</head>
-<body>
-    <div id="CSCanvas"></div>
-</body>
-</html>

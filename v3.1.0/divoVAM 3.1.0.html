@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     
-    <title>divoVAM 3.0.0 - preview.cdy</title>
+    <title>divoVAM 3.1.0.cdy</title>
     <style type="text/css">
         * {
             margin: 0px;
@@ -93,7 +93,8 @@ mousepressedtime='mousepressedtime=false;
 
 // C | Overwrite VAM choice locally
 
-vam = "numbercards"; // comment before production
+vam = "strapwork"; // comment before production
+
 ;
 //FW: constants
 // v7
@@ -263,6 +264,7 @@ modes= []; // globale Modi, ist vermutlich gar nicht gebraucht,
 
 // bugfix (legacy)
 preview=false;
+
 ;
 //FW: animations
 // v1
@@ -364,16 +366,17 @@ killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(1
 
 coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
 );
+
 ;
 //FW: helper functions
-// v9
+// v10
 // Recent changes:
 // - added values() function
 // - added ellipse() functions
 // - added defaultto() function
 // - added drawtextbox() function
 // - overloaded getboundingbox(3) to get boundingbox for textbox drawing
-// - added dmdefaultto() function for handling 'dmstate and 'dmprevans keys
+// - added defaultstateto() function for handling 'dmstate and 'dmprevans keys
 // - removed label bg in drawtextbox() -> does not work in HTML for some reason
 
 // Convenience functions
@@ -821,17 +824,29 @@ divomathGetVarState(dmcb) := (
 	);
 );
 
-// Checks 'dmprevans for the "key" and returns corresponding value
-// If not found, checks 'dmstate for "key" and returns value,
+// Checks 'dmstate for "key" and returns value,
 // else returns default "value"
 defaultstateto(key, value) := (
-	// Workaround for CindyJS returning nada on contains(nada, key) thus skipping if AND else branch.
+	regional(resultkey, resultvalue, stateobject, statevalue);
+	
+	// Get config overwrites for forward referencing from RESULT structure (if any)
+	resultkey = "__" + key; // Built key with dunder to separate from other keys of 'dmconf
+	resultvalue = divomathConfig:resultkey; // Get corresponding value if any
+	
+	// Get value from stateobject, if any ( for resetting previous state
+	stateobject = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
+	if(islist(stateobject), stateobject = {}); // 'dmstate is empty list not nada, if divomath site is revisted
+	statevalue = if(contains(keys(stateobject), key), 'dmstate:key);
 
-	'dmstate = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
-	if(islist('dmstate), 'dmstate = {}); // 'dmstate is empty list not nada, if divomath site is revisted
-
-	// Return divomath config regarding *key* or set default *value*
-	if(contains(keys('dmstate), key), 'dmstate:key, value);
+	// Set correct value
+	if(!isundefined(resultvalue),
+		value = resultvalue;
+	, if(!isundefined(statevalue),
+		value = statevalue;
+	));
+	
+	// Return
+	value;
 );
 
 // * | Other
@@ -976,6 +991,7 @@ new VAMobject(type) := (
 	
 	obj; // Return the VAMobject.
 );
+
 ;
 //C: Workbench, WorkbenchElement
 // v1
@@ -1190,6 +1206,7 @@ new WorkbenchElement(center, size, color, copyonmove, label) := (
 
 	obj; // Return WorkbenchElement.
 );
+
 ;
 //C: Button
 // v4
@@ -1204,7 +1221,7 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"height" = height;
 	obj:"cornerradius" = (width+height) / 50;
 	obj:"color"	 = dzlmcolorlight;
-	obj:"bordercolor" = dzlmcolorgold;
+	obj:"bordercolor" = dzl;
 	obj:"fontcolor" = dzlmcolordark;
 	obj:"label"	 = label;
 	obj:"fontsize" = defaultto(fontsize, 12);
@@ -1272,6 +1289,7 @@ new Button(coord,width,height,label,fontsize) := (
 
 	obj; // Return the button.
 );
+
 ;
 //C: Toggle
 // v1
@@ -1332,8 +1350,6 @@ new Toggle(coord,width,state,label,fontsize) := (
 	o; // Return the toggle.
 );
 
-//sw = new Toggle([3,3],1,true,"Color",8);
-//obj = obj :> sw;
 ;
 //C: Keyboard
 // v1
@@ -1452,6 +1468,7 @@ new Keyboard(coord, subtype, keysize, target) := (
 
 	o; // Return Keyboard
 );
+
 ;
 //C: TextInput
 // v2
@@ -1534,6 +1551,7 @@ new TextInput(coord, label, keyboardtype) := (
 
 	o;
 );
+
 ;
 //C: ProgressCircle
 // v1
@@ -1648,6 +1666,7 @@ new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
 
 	obj; // Return ProgressCircle
 );
+
 ;
 //C: ScrollBar
 // v3
@@ -1830,6 +1849,7 @@ new HorizontalScrollbar(coord, width) := (
 
 	obj; // Return Scrollbar;
 );
+
 ;
 //VAM: default
 // v1
@@ -1910,9 +1930,10 @@ o:"click" := (
 obj = obj :> o;
 'debuglevel = 10;
 );
+
 ;
 //VAM: divisors
-// v9
+// v10
 // last changes:
 // - included config for drawing UI Buttons or not ("drawbuttons")
 // - fixed color config
@@ -1931,7 +1952,7 @@ if(vam == "divisors", // change accordingly
 >> Konfigurierbarer Zustand | VAM 'divisors'
 color: <string> # eine repräsentierte Farbe (siehe Doku)
 size: <float> # Größe der Blobs
-blobmargin: <float> # Abstand der Blobs in einem Band
+blobmargin: <float> # Abstand der Blobs innerhalb eines Bandes
 stripmargin: <float> # Abstand der Bänder untereinander
 timing: <float> # Geschwindigkeit der Animation
 blobs: <uint> # Anzahl der Blobs zu Beginn
@@ -1976,6 +1997,25 @@ displayresult = defaultstateto("displayresult", true); // Display result text
 displaydescription = defaultstateto("displaydescription", true); // Display description text
 displayblobcount = defaultstateto("displayblobcount", true); // Display blob count text
 displaydivisorcount = defaultstateto("displaydivisorcount", true); // Display divisor count text
+
+// Configure result handling and setState.
+// Overwrite divomath result updating function.
+divomathUpdateResults() := (
+	divomathClearResult();
+
+	// Proper result reporting here (for validation)
+	// @TODO
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
+	);
+
+	// Post results
+	divomathSendResult();
+);
 
 // Overwrite divomath setState()
 divomathSetState() := (
@@ -2750,7 +2790,7 @@ new Blob() := (
 
 	o; // Return blob.
 );
-println(size);
+
 // D | Initialization
 // D.0 | SL Config
 // ===============
@@ -2802,15 +2842,12 @@ if(drawbuttons,
 
 // DEBUG REMOVE @TODO
 world:"updateglobalscaling"; // is that still necessary?
-println("@REMOVE PRINTS");
-
-
 
 ); // end vam-if
 
 ;
 //VAM: numbercards
-// v14
+// v15
 // last changes:
 // - switched color button look. Now grey if cards are colorful, and colorful if cards are grey.
 // - changed look of greyed color button to be greyscale MONTEPALETTE used in colored option.
@@ -2829,15 +2866,15 @@ if(vam == "numbercards",
 //'doctextpos = [9,15.5];
 'doc = "
 >> Konfigurierbarer Zustand | VAM 'numbercards'
+cards: <int> # Anzahl der Karten (siehe Doku)
+x: <list of floats> # x-Koordinaten der Karten
+y: <list of floats> # y-Koordinaten der Karten
+value: <list of ints> # zahlenwert(e) der Karte(n)
+edit: <list of string> # Konfiguriert, welche Stellen editierbar sind (siehe Doku)
+unfold: <list of bools> # Karte(n) aufgeklappt anzeigen?
 color: <bool> # Darstellung in Farbe? (oder Graustufen)
 colortoggle: <bool> # Schalter zum Wechsel zwischen Farbe/Grau anzeigen?
 alpha: <float> # Transparenz einer Karte, wenn ausgeklappt
-cards: <int> # Anzahl der Karten (siehe Doku)
-x: <float> # x-Koordinate der Karte
-y: <float> # y-Koordinate der Karte
-value: <uint> # zahlenwert der Karte
-edit: <string> # Konfiguriert, welche Stellen editierbar sind (siehe Doku)
-unfold: <bool> # Karte zu Beginn ausgeklappt?
 separator: <char> # Trennzeichen für 3er-Gruppen von Ziffern
 ==========================================================
 >> Results | VAM 'numbercards'
@@ -2940,10 +2977,16 @@ divomathUpdateResults() := (
 				"nc" + cardnr + "_unfolded" + "=" + card:"expanded"
 			)
 		);
-
 		// Go to next card, if any
 		// (toggle button gets checked too, if visible)
 		cardnr = cardnr + 1;
+	);
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
 	);
 
 	// Post results
@@ -3342,7 +3385,7 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 							);
 							pc:"parent" = self();
 							pc:"color" = if(my("montessori"), // colorful
-								MONTEPALETTE_(mod(my("maxplaces")-place,3) + 1)
+								MONTEPALETTE_(mod(my("maxplaces")-place+1,3) + 1)
 							, // else grey
 								MONTEGREY
 							);
@@ -4113,13 +4156,9 @@ toggles:"showtf-perc":"script";
 
 ;
 //VAM: strapwork
-// v11
+// v13
 // Recent changes:
-// - complete rewrite
-// - changed divomath updateresult() logic
-// - added polypadding config option
-// - fixed dropcontainer not being draggable in CindyJS
-// - added divomathSetState()
+// - changed behavior of Patterncontainer to adjust its size based on number of Polys inside
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -4210,6 +4249,13 @@ divomathUpdateResults() := (
 		// Set counters
 		stripcounter = stripcounter + 1;
 		polycounter = 1;
+	);
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
 	);
 
 	divomathSendResult();
@@ -4772,8 +4818,12 @@ new PatternContainer(coord, limit) := (
 	cont:"bordersize" = 0;
 	cont:"ismoveable" = false;
 	cont:"copyonmove" = true;
-	cont:"width" = limit * cont:"polyoffset" * 1.1;
-
+	cont:"width" := (
+		regional(numofpolys);
+		numofpolys = max(1,length(my("strips")_1));
+		
+		numofpolys * 2*size + (numofpolys) * my("polypadding") + .5*size;
+	);
 	cont:"move" := if(my("ismoveable"),
 		// Move self
 		self():"coord" = my("coord") + mousedelta;
@@ -4854,7 +4904,7 @@ repeat(length(vertices),
 // Align with coord of first RegPoly
 if(drawpatterncontainer,
 	regional(patterncontainer);
-	patterncontainer = new PatternContainer(polys_1:"coord" + [-size,2*size], 3);
+	patterncontainer = new PatternContainer(polys_1:"coord" + [-size,2*size], 100);
 );
 
 // D.3 | Create and config Container
@@ -5143,7 +5193,7 @@ animations = select(animations, a,
 );
 
 if(length(animations)==0, stopanimation());
-  
+
 ;
 
 </script>
@@ -5209,8 +5259,8 @@ if(length(hotlist)>0,
 <script id="cskeydown" type="text/x-cindyscript">
 //FW: keypressed
 // v2
-println(key());
-if(key() == "k", // Debug print divomath details
+
+if(key() == "K", // Debug print divomath details
 	println("=============DIVOMATH SETTINGS=============");
 	println("divomath base object: " + divomathConfig);
 	println("Screenbounds: " + screenbounds());
@@ -5240,7 +5290,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.023845007451564825, 0.1835952911197616], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, 0.1907600596125186, 0.1835952911197616], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -5253,9 +5303,9 @@ var cdy = CindyJS({
   animcontrols: false,
   ports: [{
     width: 903,
-    height: 519,
+    height: 491,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.24352143619260658, 16.67310099798713, 29.076459481397222, -0.1785823865412448]}],
+    transform: [{visibleRect: [-0.24352143619260658, 16.67310099798713, 29.076459481397222, 0.7305643085778197]}],
     axes: true,
     grid: 0.5,
     background: "rgb(255,255,255)"
