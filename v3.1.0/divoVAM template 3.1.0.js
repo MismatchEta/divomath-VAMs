@@ -1962,7 +1962,7 @@ displaydivisorcount = defaultstateto("displaydivisorcount", true); // Display di
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
-divomathUpdateResults() := (
+divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
 
 	// Proper result reporting here (for validation)
@@ -2553,6 +2553,9 @@ new World() := (
 			s_(-1):"coord" = s_(-2):"coord" - [0,diagonal_2 + my("stripmargin")];
 			s_(-1):"positionchildren";
 		);
+
+		// Update divomath states/results
+		divomathUpdateResults();
 	);
 
 	// Use with eval()
@@ -2755,8 +2758,8 @@ if(!usedivomath,
 	divisor = 5;
 	drawblobbuttons = false;
 	drawdivbuttons = true;
-	drawbar = false;
-	color = [DZLMCOLORGOLD, DARKGREEN];
+	drawbar = true;
+	color = [DIVOBLUE, DIVOYELLOW];
 );
 
 // Create World
@@ -2890,16 +2893,16 @@ separator = defaultstateto("separator", ""); // Separator for thousands
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
-divomathUpdateResults() := (
+divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
 
 	regional(cardnr, placevaluenames);
 	cardnr = 1; // for naming results of multiple cards
 	placevaluenames = ["E","Z","H","T","ZT","HT","M","ZM","HM"];
 	forall(if(obj_(-1):"type"=="Button",obj -- [obj_(-1)],obj), card,
-		// Add number value as a whole		
+		// Add number value as a whole
 		divomathAddResult("nc"+cardnr, card:"value"); // numbercard value
-		if('debuglevel > 1, 
+		if('debuglevel > -1, 
 			println(">Result added: "+"nc"+cardnr + "=" + card:"value")
 		);
 		// Add individual place values by hand.
@@ -2966,7 +2969,7 @@ divomathSetState() := (
 		"color" : monte, // Record colored/uncolored status
 		"colortoggle" : showtogglemonte, // Record button drawing status
 		"alpha" : alpha, // Record cards alpha
-		"separator" : QUOTE + separator + QUOTE // Record cards alpha
+		"separator" : QUOTE + separator + QUOTE // cards separator character
 	};
 
 	state;
@@ -3379,6 +3382,9 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 
 			// handle click on children
 			forall(my("children"), if(#:"ishot", #:"click"));
+
+			// Send results/state to divomath
+			divomathUpdateResults();
 	);
 
 	o:"getaction" := (
@@ -4083,9 +4089,10 @@ toggles:"showtf-perc":"script";
 ); // end vam-if
 `
   + // VAM strapwork
-  `// v13
+  `// v15
 // Recent changes:
-// - changed behavior of Patterncontainer to adjust its size based on number of Polys inside
+// - changed visuals of Separator to incoorporate an ellipse instead of a circle at the bottom
+// - add call to divomathUpdateResults() to Containers "movepolysintoplace" method
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -4140,7 +4147,7 @@ polypadding = defaultstateto("polypadding", .5); // padding between RegPolys
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
-divomathUpdateResults() := (
+divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
 
 	regional(todivomath, strips, stripcounter, polycounter, separators, sepisnext);
@@ -4348,17 +4355,8 @@ new Separator(coord, height, parent) := (
 		blobscale = .6;
 		hitbox = [];
 
-		hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
-
-		// not wanted by customer
-		//repeat(my("parent"):"#strips" - 1, // create middle squares
-		//	offset = #/my("parent"):"#strips" * [0,my("parent"):"height"];
-		//	hitbox = hitbox :> regularpolygon(my("coord") + offset, my("width"), 4, 0);
-		//);
-
-		//offset = [0,my("parent"):"height"];
-		//hitbox = hitbox :> regularpolygon(my("coord")+offset, blobscale * my("width"), 100, PI/4); // top square
-
+		//hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
+		hitbox = hitbox :> ellipse(my("coord")-[0,1.5*blobscale*my("width")], .6, .3);
 		barscale = .2;
 		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
 	);
@@ -4429,7 +4427,6 @@ new Separator(coord, height, parent) := (
 
 	sep; // Return
 );
-
 
 // Multiline Container to hold RegPolys
 new Container(coord, numofstrips, limits) := (
@@ -4505,7 +4502,7 @@ new Container(coord, numofstrips, limits) := (
 					my("width"),
 					my("stripheight")
 				),
-				color->if(isodd(#),grey(.94),grey(1))	
+				color->if(isodd(#),grey(.94),grey(.98))	
 			);
 
 			// ...also draw indicators for infinte strips
@@ -4552,13 +4549,14 @@ new Container(coord, numofstrips, limits) := (
 	cont:"drop" := ( // handles stuff getting dropped on a container --> eval with object as "dropobject"
 		if(dropobject:"type" == "RegPoly", my("droppoly"),
 		if(dropobject:"type" == "Container" & dropobject:"subtype" == "Pattern", my("dropcontainer"),
-		if(dropobject:"type" == "Separator", my("dropseparator"),
+		if(dropobject:"type" == "Separator", my("dropseparator"), // not needed
 		// else
 		println("Dropped a " + dropobject:"type" + " ... nothing to do");
 		)));
 	);
 
 	cont:"droppoly" := ( // eval with dropobject (from own "drop" method)
+
 		// For safety
 		if(!contains(obj,dropobject), obj = obj :> dropobject);
 
@@ -4567,6 +4565,7 @@ new Container(coord, numofstrips, limits) := (
 		stripys = apply(my("refpoints"), #_2 - (size+my("stripmargin")/2)); // y-coord of bottom edge of each strip
 		stripindex = 0; // index of hot strip
 		forall(stripys, if(mouse().xy_2 > #, stripindex = stripindex + 1)); // go up strips and count along if mouse is higher
+		stripindex = stripindex;
 		hotstrip = my("strips")_stripindex; // VALUE COPY of strip, reassign later
 
 		// Find position, where to insert dropobject
@@ -4613,12 +4612,14 @@ new Container(coord, numofstrips, limits) := (
 		regional(polys);
 
 		polys = dropobject:"strips"_1;
-		forall(polys, eval(my("droppoly"), dropobject->#));
+		forall(polys,
+			eval(my("droppoly"), dropobject->#);
+		);
 	);
 
 // CONVENIENCE METHODS
 // =====================
-	cont:"movepolysintoplace" := ( // Animate Polygons to appropriate position for a *all* strips
+	cont:"movepolysintoplace" := ( // Animate Polygons to appropriate position for *all* strips
 		regional(offset, strip, refpoint, poly);
 		
 		offset = my("scrollbar"):"adjustedvalue"; // value to shift all polys to the left by
@@ -4643,6 +4644,9 @@ new Container(coord, numofstrips, limits) := (
 				);
 			);
 		);
+
+		// Update divomath states/results
+		divomathUpdateResults();
 	);
 
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
