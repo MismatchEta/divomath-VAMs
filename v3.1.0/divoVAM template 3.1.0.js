@@ -340,7 +340,7 @@ coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(rand
 );
 `
   + // FW: helper functions
-  `// v10
+  `// v11
 // Recent changes:
 // - added values() function
 // - added ellipse() functions
@@ -349,6 +349,7 @@ coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(rand
 // - overloaded getboundingbox(3) to get boundingbox for textbox drawing
 // - added defaultstateto() function for handling 'dmstate and 'dmprevans keys
 // - removed label bg in drawtextbox() -> does not work in HTML for some reason
+// - 
 
 // Convenience functions
 // A | VAM object functions
@@ -795,14 +796,17 @@ divomathGetVarState(dmcb) := (
 	);
 );
 
-// Checks 'dmstate for "key" and returns value,
+// Checks 'dmstate and 'dmprevans for "key" and returns value,
 // else returns default "value"
 defaultstateto(key, value) := (
-	regional(resultkey, resultvalue, stateobject, statevalue);
-	
+	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue);
+
 	// Get config overwrites for forward referencing from RESULT structure (if any)
 	resultkey = "__" + key; // Built key with dunder to separate from other keys of 'dmconf
 	resultvalue = divomathConfig:resultkey; // Get corresponding value if any
+
+	// Check 'dmprevans for if there already was an interaction from a previous session
+	prevansvalue = if(contains(keys('dmprevans), key), 'dmprevans:key);
 	
 	// Get value from stateobject, if any ( for resetting previous state
 	stateobject = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
@@ -810,11 +814,10 @@ defaultstateto(key, value) := (
 	statevalue = if(contains(keys(stateobject), key), 'dmstate:key);
 
 	// Set correct value
-	if(!isundefined(resultvalue),
-		value = resultvalue;
-	, if(!isundefined(statevalue),
-		value = statevalue;
-	));
+	if(!isundefined(resultvalue), value = resultvalue, // First, try overwrite value if any
+		if(!isundefined(prevansvalue), value = prevansvalue, // Second, try previous answer if any
+			if(!isundefined(statevalue), value = statevalue; // Lastly, try using state if any
+	))); // if all fails use value from param
 	
 	// Return
 	value;
