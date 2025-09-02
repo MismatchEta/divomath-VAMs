@@ -73,9 +73,9 @@ mousepressedtime='mousepressedtime=false;
 //vam = "numbercards"; // comment before production
 `
   +  // FW: constants
-  `// v8
+  `// v9
 // last changes:
-// - fixed Montecolors (GREEN <-> BLUE)
+// - added DIVOYELLOW
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -113,6 +113,7 @@ divoschwarz=DIVOBLACK = grey(0);
 divorot=DIVORED = (235,85,78)/255;
 divoblau=DIVOBLUE = (83,125,156)/255;
 DIVODARKBLUE = (6,67,86)/255;
+DIVOYELLOW = (252,175,81)/255;
 
 divopalette=DIVOPALETTE = [
 	DIVOBLUE,
@@ -121,7 +122,8 @@ divopalette=DIVOPALETTE = [
 	DIVOGREEN,
 	DIVOVIOLET,
 	DIVOGREY,
-	DIVOBLACK
+	DIVOBLACK,
+	DIVOYELLOW
 ];
 
 // A.4. | Montessori colors
@@ -1897,13 +1899,14 @@ obj = obj :> o;
 );
 `
   +  // VAM divisors
-  `// v11
+  `// v12
 // last changes:
 // - draw line instead of rectangle to separate UI Elements at the bottom
 // - Generate random position of Blobs properly inside of worlds viewport
 // - removed "drawbuttons" and replaced it with "drawblobbuttons" and "drawdivbuttons" to control those separately
 // - added "drawbar" to control access to the bar
 // - changed default timing from 1 to .5
+// - fixed bar reappearing when reloading a page --> added "drawbar" to state reporting
 
 if(vam == "divisors", // change accordingly
 
@@ -2001,6 +2004,7 @@ divomathSetState() := (
 		"drawblobbuttons" : drawblobbuttons,
 		"drawdivbuttons" : drawdivbuttons,
 		"displaycalc" : displaycalc,
+		"drawbar" : drawbar,
 		"displayresult" : displayresult,
 		"displaydescription" : displaydescription,
 		"displayblobcount" : displayblobcount,
@@ -4092,10 +4096,13 @@ toggles:"showtf-perc":"script";
 ); // end vam-if
 `
   + // VAM strapwork
-  `// v15
+  `// v17
 // Recent changes:
 // - changed visuals of Separator to incoorporate an ellipse instead of a circle at the bottom
 // - add call to divomathUpdateResults() to Containers "movepolysintoplace" method
+// - added golden bg to bottom RegPolys
+// - changed layout (aligned Patterncontainer top left, Reset button top right)
+// - added submission reporting to divomath for entire strip as string
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -4153,7 +4160,7 @@ polypadding = defaultstateto("polypadding", .5); // padding between RegPolys
 divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
 
-	regional(todivomath, strips, stripcounter, polycounter, separators, sepisnext);
+	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
 	stripcounter = 1;
 	polycounter = 1;
 	strips = reverse(container:"strips"); // all strips (top to bottom)
@@ -4162,7 +4169,11 @@ divomathUpdateResults() := if(usedivomath,
 	// Add divomath result for every Poly of every strip in the form
 	// "<stripno>.<runningno>:<regpolyname>"
 	forall(strips, strip, // Check every strip
+		stripasstring = "";
 		forall(strip, poly, // Check every Poly/Separator
+
+			// Build string from poly-ids for clean row-wise reporting
+			stripasstring = stripasstring + (poly:"original":"id"+1);
 
 			// Get [key, ID of original]
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
@@ -4183,9 +4194,14 @@ divomathUpdateResults() := if(usedivomath,
 			);
 
 		);
+		// Report entire strip as string and reset
+		divomathAddResult("row" + stripcounter, stripasstring);
+		println("Submit: " + stripasstring);
+		stripasstring = "";
+		
 		// Set counters
 		stripcounter = stripcounter + 1;
-		polycounter = 1;
+		polycounter = 1;		
 	);
 
 	// Export state as results as well for forward referencing
@@ -4559,7 +4575,6 @@ new Container(coord, numofstrips, limits) := (
 	);
 
 	cont:"droppoly" := ( // eval with dropobject (from own "drop" method)
-
 		// For safety
 		if(!contains(obj,dropobject), obj = obj :> dropobject);
 
@@ -4809,7 +4824,7 @@ if(!usedivomath,
 	limit = [2,3,-1];
 	state = ["3,6", "3,1,3", "1,6,9,1,3,5,1,1,1,1,1,1,1"];
 	vertices = [2,3,4,5,6,7,8,9,10,11,12];
-	drawpatterncontainer = true;
+	drawpatterncontainer = false;
 	drawseparator = true;
 	polypadding = 1;
 );
@@ -4833,19 +4848,33 @@ repeat(length(vertices),
 	'screenref = 'screenref + (2*1.1*size+polypadding) * [1,0]; // next center to draw RegPoly
 );
 
+// Add bg highlight for polys
+regional(bg);
+bg = {
+	"type" : "bg",
+	"shape": [
+	(screenbounds()_4),
+	(screenbounds()_3),
+	(screenbounds()_3) + 2*('marginbottom+size) * [0,1,0],
+	(screenbounds()_4) + 2*('marginbottom+size) * [0,1,0]
+	]
+};
+bg:"draw" := fillpoly(my("shape"),	color-> DZLMCOLORGOLD, alpha-> .2);
+
 // D.2 | Create PatternContainer
 // =============================
-// Align with coord of first RegPoly
+// Align at the top
 if(drawpatterncontainer,
 	regional(patterncontainer);
-	patterncontainer = new PatternContainer(polys_1:"coord" + [-size,2*size], 100);
+	patterncontainer = new PatternContainer([0,0], 100);
 );
+patterncontainer:"coord" = (screenbounds()_1).xy + ['marginleft,-'marginbottom-patterncontainer:"height"];
 
 // D.3 | Create and config Container
 // =================================
-// Align with coord of Patterncontainer
+// Align with coord of bg
 regional(container, polycopy, counter);
-container = new Container(patterncontainer:"coord" + [0,patterncontainer:"height"+1.5*size], rows, limit);
+container = new Container((bg:"shape"_4).xy + ['marginleft,.6+'marginbottom], rows, limit); // .6 is axis length of Separators' ellipse
 
 // Fill Container with predefined RegPolys
 counter = 1; // start at first strip
@@ -4876,9 +4905,9 @@ if(drawseparator,
 // ==================
 regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
-'screenref = 'screenref - [2*size+'marginleft, size+'marginbottom]; // coord of Button
+'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new Button(patterncontainer:"coord" + [container:"width" - 2*size,0], 2*size, size, ANTICLOCKWISEARROW, 26);
+btn = new Button('screenref - [2*size,size], 2*size, size, ANTICLOCKWISEARROW, 26);
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
@@ -4894,6 +4923,7 @@ btn:"script" := (
 
 // E | Build obj
 // =============
+obj = obj :> bg;
 obj = obj :> btn; // Reset button
 obj = obj :> container;
 obj = obj :> patterncontainer;
@@ -4902,7 +4932,7 @@ obj = obj ++ flatten(container:"strips"); // Initial Polys of container build at
 obj = obj :> separator;
 
 // Order to draw (Separator last, so it is on top)
-typeorder = ["Container", "RegPoly", "Separator"];
+typeorder = ["bg", "Container", "RegPoly", "Separator"];
 );
 `,
   mousedown: `// v2
