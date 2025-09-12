@@ -1,0 +1,16 @@
+// v2
+
+if(key() == "K", // Debug print divomath details
+	println("=============DIVOMATH SETTINGS=============");
+	println("divomath base object: " + divomathConfig);
+	println("Screenbounds: " + screenbounds());
+	println("Config: " + 'dmconf);
+	println("State: " + 'dmstate);
+	println("Prev Answer: " + 'dmprevans);
+	println("bgcolor: " + 'bgcolor);
+	println("debuglevel: " + 'debuglevel);
+	println("isVIEWER?: " + 'dmisviewer);
+	println("-------------------------------------------");
+	println("SetState overwrite: " + divomathSetState());
+	println("==========================================="); 
+);

@@ -1,0 +1,48 @@
+// v2
+// Recent changes:
+// - usedivomath added as flag for storyline config
+
+// Access divomath editor settings
+'dmconf = divomathConfig.configuration;
+'dmstate = divomathConfig.divomathVarState;
+'dmprevans = divomathPreviousAnswer;
+'dmisviewer = divomathConfig.runtime == "VIEWER"; // otherwise "EDITOR" (or nada)
+
+usedivomath = !isundefined('dmconf); // Flag for setting VAM specific non divomath config overwrites on init
+
+// @Overwrite
+// Builds a state object to be used by divomathGetVarState()
+divomathSetState() := (
+	regional(state);
+
+	// Build a state object, to be transfered to divomath.
+	// should be nada if state is not supposed to change or should equal 'dmstate.
+	// see helper functions (Section E)
+	state = nada;
+	if('debuglevel > 9,
+		println("(!) Overwrite divomathSetState() in current VAM.");
+	);
+		
+	state; // Return state;
+);
+
+// @Overwrite
+// Update divomath results to be used for validation.
+divomathUpdateResults() := (
+	if('debuglevel > 9,
+		println("(!) Overwrite divomathUpdateResults() in current VAM.");
+	);
+);
+
+// Set vam by divomath, else default
+vam = if(!isundefined('dmconf.vam), 'dmconf.vam, "default");
+
+// Set environment vars
+'bgcolor = if(!isundefined('dmconf.bgcolor),
+	'dmconf.bgcolor,
+	[1,1,1]
+);
+'debuglevel  = if(!isundefined('dmconf.debuglevel),
+	'dmconf.debuglevel,
+	0
+); // 0:no debug, >0:higher precision of debug

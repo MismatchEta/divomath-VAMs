@@ -1,7 +1,7 @@
+> v3.1.12
+
 # divomath VAM Dokumentation
 JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das [Komponentenverhalten](#komponentenverhalten) und den [Zustand](#konfiguration-des-zustands-eines-vams) konfiguriert.
-
-> Version: 3.1.0
 
 ## Komponentenverhalten
 ### Generelles Verhalten
@@ -19,10 +19,10 @@ JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Wi
 
 ### Strings für *vam* Schlüssel
 Folgende Strings sind für *vam* Schlüssel zulässig:
-- divisors (seit: 2.0.0, letzte Änderung: 3.0.0)
-- numbercards (seit: 1.0.0, letzte Änderung: 3.0.0)
-- percentagebar (seit 3.0.0, letzte Änderung: 3.0.0)
-- strapwork (seit: 1.0.0, letzte Änderung: 3.0.0)
+- divisors (seit: 2.0.0, letzte Änderung: 3.1.0)
+- numbercards (seit: 1.0.0, letzte Änderung: 3.1.0)
+- percentagebar (seit 3.0.0, letzte Änderung: 3.1.0)
+- strapwork (seit: 1.0.0, letzte Änderung: 3.1.0)
 
 ### Beispiel
 Eine Minimalkonfiguration zur Darstellung der Zahlenkarten-Komponente ("numbercards").
@@ -223,6 +223,8 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zusta
 
 Ist das **fünfte** Polygon im **ersten** Band gesucht ist der Schlüssel entsprechend "**1.5**". Der zugehörige Wert ist die ID des "Basis-Polygons", sprich desjenigen Polygons aus der unteren Zeile, das an dieser Stelle steht. diese werden von links nach rechts von 1 an durchnummeriert. Kommt für den Schlüssel **1.5** also der Wert **3** zurück, befindet sich an dieser Stelle das dritte Basis-Polygon (von links). Kommt als Wert eine **0** zurück ist an der Stelle ein Trennstrich.
 
+Zusätzlich kann eine ganze Reihe referenziert werden analog zu oben als String. Soll in der 1. Zeile (Schlüssel: **row1**)beispielsweise eine Folge von 5 mal dem *ersten* Polyon stehen dann wäre der zugehörige Wert **11111**. Bei mehrreigen Bändern sind die Schlüssel der Zeilen entsprechend nummeriert als **row1**, **row2** etc.
+
 ## Referenzierung (divomath)
 Jede Komponente kann in ihrem Zustand grundsätzlich Werte andere Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter [Validierung](#validierung) aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM im Top-Level der Zustandsbeschreibung nach Bezeichnern, die denen der unter [Validierung](#validierung) aufgeführten entpsrechen, aber mit zwei Unterstrichen ("__") beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung *"size"*, dann kann dieser (**Top-Level(!)**) durch *"__size"* überschrieben werden. Dieses Verhalten kann dazu genutzt werden, um Zustände anderer Komponenten abzugreifen und zu verwenden. #
 
@@ -230,7 +232,7 @@ Jede Komponente kann in ihrem Zustand grundsätzlich Werte andere Komponenten ve
 Am Bsp. der numbercards: Es seien zwei Folien gegegeben mit den Namen *"ZAHLENKARTEN"* und *"ZAHLENKARTEN-2"* auf denen jeweils die VAM-Komponenten *"vam-karten"* bzw. *"vam-karten2"* angelegt sind. Nachfolgend ein möglicher Zustand von *"vam-karten2"*, um auf das vorige VAM zuzugreifen.
 
 ```yaml
-# Zustand von "vam-karten2"
+# --- Im Zustand von "vam-karten2"
 # Hier werden die Zustände unten überschrieben
 __value: ZAHLENKARTEN/vam-karten/{RESULT_value}
 __unfold: ZAHLENKARTEN/vam-karten/{RESULT_unfold}
@@ -254,21 +256,57 @@ cindyjs:
   separator: .
 ```
 Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird der *"value"* der Zahlenkarte, sowie der Zustand übernommen, ob die Karte eingeklappt ist oder nicht. Dies überschreibt auch die Zustandsdefinition weiter unten, in der *"value"* auf `12123` gesetzt wird und *"unfold"* auf `true`.
+
 ### Sonstiges
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
-### 3.1.1
+### v3.1.0
 - VAM:
   - divisors:
     - Fix: UI unten wird durch eine waagerechte Gerade optisch vom oberen Teil getrennt, nicht durch ein Rechteck
     - Fix: Blobs werden beim Erzeugen zufällig im Viewport der Welt angelegt, nicht irgendwo auf dem Bildschirm
     - Buttons sind jetzt einzeln ausblendbar (~~drawbuttons~~ --> drawblobbuttons & drawdivbuttons)
     - Vertikaler Balken zur Einstellung des Divisors ein-/ausblendbar (drawbar)
-### v3.1.0
-- VAM:
+    - default timing von 1 auf .5 geändert
+    - fix: Balken verschwindet, wenn die Seite neu geladen wird
+  - numbercards:
+    - Fix: Alpha Wert wird auf 1 gesetzt, wenn Seite neu aufgerufen wird
+    - Fix: Zeige immer Placecards, auch beim Start oberhalb der Numbercard
+    - Fix: Falsche Farben und Farbwechsel, wenn zusammengeklappt wird (war falsch in constants definiert)
+    - Aufruf von divomathUpdateResults() an Knopfdrücke gebunden
+    - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
   - strapwork:
     - Musterfolgencontainer nicht mehr fix in seiner Größe. Größe passt sich an den Inhalt an.
+    - Aussehen des Separators angepasst (Ellipse statt Kreis)
+    - Aufruf von divomathUpdateResults() an movepolysintoplace() Methode gebunden
+    - divoYellow farbenen Hintergrund für Grundpolygone eingefügt
+    - Layout angepasst (Container unten, Patterncontainer oben)
+    - Submission reporting für ganze Zeile (als row1, row2, ...) hinzugefügt
+- FW:
+  - global drawing:
+    - Aufruf von divomathUpdateResults() wenn 'fristdraw==true
+  - configuration;
+    - 'firstdraw flag hinzugefügt, die am Ende des drawscripts false gesetzt wird.
+  - constants:
+    - DIVOYELLOW als Farbe hinzugefügt
+    - Fix: Farbdefinition von DIVORED und DIVOBLUE getauscht (waren falschherum)
+  - helper functions:
+    - values() hinzugefügt: Gibt Werte aller Keys eines Objekts als Liste zurück
+    - ellipse() hinzugefügt: Zeichnet Ellipsen basierend auf Achsen und Drehwinkel
+    - defaultto() hinzugefügt: Weist einer Variablen einen Standardwert zu
+    - defaultstateto() hinzugefügt: handlet divomath Zustand Definition aus verschiedenen Quellen
+    - getboundingbox(3) mit neuer Definition überladen
+    - label bg aus drawtextbox() entfernt --> funktioniert in HTML aus irgendwelchen Gründen nicht
+    - tobool() und isbool() Funktionen hinzugefügt um in bool zu konvertieren und Typ einfach zu prüfen
+  - **new** *keypressed*
+    - hauptsächlich für debugging, zeigt momentan auf Druck von "k" einige hauptsächlich divomath-spezifische Infos an.
+- CLASS:
+  - Button:
+    - Attribute labelheight und fontfamily hinzugefügt
+  - TextInput:
+    - Attribute labelpadding und fontfamily hinzugefügt
+
 ### v3.0.0
 - neues VAM: "percentagebar", noch ohne Validierung, Persistenz des Zustandes beim Wechseln der Folie in divomath oder Referenzierung für divomath
 - VAM:

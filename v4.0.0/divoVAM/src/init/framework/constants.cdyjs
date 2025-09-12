@@ -1,0 +1,140 @@
+// v9
+// last changes:
+// - added DIVOYELLOW
+
+// Predefined Constants
+// - Convention: Captilize constants
+// - Second copy of variable which does not follow convention for legacy use
+
+// A | Preddefined colors
+// A.0 | General colors
+darkred=DARKRED=(228,26,28)/255;
+darkblue=DARKBLUE=(55,126,184)/255;
+darkgreen=DARKGREEN=(77,175,74)/255;
+
+// A.1 | DZLM colors
+dzlmcolorlight=DZLMCOLORLIGHT = (207,221,225)/255;
+dzlmcolordark=DZLMCOLORDARK = (70,120,132)/255;
+dzlmcolorgold=DZLMCOLORGOLD = (239,182,96)/255;
+dzlmchipblue=DZLMCOLORBLUE = (127,127,247)/255;
+dzlmchipred=DZLMCOLORRED = (239,134,131)/255;
+
+// A.2 | Colors representing place values
+placecolorred=PLACECOLORRED = (102,194,165)/255;
+placecolorgreen=PLACECOLORGREEN = (252,141,98)/255;
+placecolorblue=PLACECOLORBLUE = (141,160,203)/255;
+
+placevaluepalette=PLACEVALUEPALETTE = [
+	PLACECOLORGREEN,  // Hundreds
+	PLACECOLORBLUE,		// Tens
+	PLACECOLORRED			// Units
+];
+
+// A.3 | Divomath colors
+divogreen=DIVOGREEN = (129,239,104)/255;
+divoviolett=DIVOVIOLET = (150,59,216)/255;
+divograu=DIVOGREY = (130,149,192)/255;
+divoschwarz=DIVOBLACK = grey(0);
+divorot=DIVORED = (235,85,78)/255;
+divoblau=DIVOBLUE = (83,125,156)/255;
+DIVODARKBLUE = (6,67,86)/255;
+DIVOYELLOW = (252,175,81)/255;
+
+divopalette=DIVOPALETTE = [
+	DIVOBLUE,
+	DIVODARKBLUE,
+	DIVORED,
+	DIVOGREEN,
+	DIVOVIOLET,
+	DIVOGREY,
+	DIVOBLACK,
+	DIVOYELLOW
+];
+
+// A.4. | Montessori colors
+MONTEGREEN = (100,228,178)/255;
+MONTEBLUE = (108,169,255)/255;
+MONTERED = (240,150,112)/255;
+MONTEGREY = (242,242,242)/255;
+
+MONTEPALETTE = [
+	MONTEGREEN, MONTEBLUE, MONTERED
+];
+
+// A.* | Color palettes
+// Color palettes consisting of colors above
+vampalette=VAMPALETTE= [
+	DARKRED,
+	DARKBLUE,
+	DARKGREEN,
+	DZLMCOLORGOLD,
+	DZLMCOLORDARK
+];
+
+COLORMAP = {
+	"DARKRED" : DARKRED, "DARKBLUE" : DARKBLUE, "DARKGREEN" : DARKGREEN,
+	"DZLMCOLORGOLD" : DZLMCOLORGOLD, "DZLMCOLORDARK" : DZLMCOLORDARK,
+	"PLACECOLORGREEN" : PLACECOLORGREEN,
+	"PLACECOLORBLUE" : PLACECOLORBLUE,
+	"PLACECOLORRED" : PLACECOLORRED,
+	"DIVOGREEN" : DIVOGREEN, "DIVOVIOLET" : DIVOVIOLET, "DIVOGREY" : DIVOGREY,
+	"DIVOBLACK" : DIVOBLACK, "DIVORED" : DIVORED, "DIVOBLUE" : DIVOBLUE
+};
+
+// B | System info
+// B.0 | Version information
+VERSION = version();
+cindyjs=ISCINDYJS = VERSION_1=="CindyJS"; // true, if CindyJS is used
+
+// B.1 | Screen size
+// [width, height] of the the Cindy window
+pixelxy=WINDOWSIZE = 
+	[
+		(screenbounds()_2_1-screenbounds()_1_1)*screenresolution(),
+		(screenbounds()_2_2-screenbounds()_3_2)*screenresolution()
+	];
+
+// C | Fonts
+// C.1 | Available Fonts
+fonts=FONTS = if(cindyjs,[],fontfamilies());
+
+schulfont=SCHULFONT = "Arial";
+//if(contains(fonts,"DejaVu Sans Mono"), schulfont=SCHULFONT = "DejaVu Sans Mono");
+//if(contains(fonts,"Helvetica Neue"), schulfont=SCHULFONT = "Helvetica Neue");
+//if(contains(fonts,"Schulbuch Nord Pro"), schulfont=SCHULFONT = "Schulbuch Nord Pro");
+if(contains(fonts,"Gruschudru basic"), schulfont=SCHULFONT = "Gruschudru basic");
+
+monofont=MONOFONT ="Courier";//"Arial"; //Courier, Monaco
+
+// C.2 | Unicode characters
+checkbox0=CB0 = unicode("2610");
+checkbox1=CB1 = unicode("2612");
+cdot=CDOT = unicode("00B7");
+QUOTE = unicode("0022");
+LEFTARROW = unicode("2190");
+RIGHTARROW = unicode("2192");
+UPARROW = unicode("2191");
+DOWNARROW = unicode("2193");
+DOWNARROWTIPLEFT = unicode("21B2");
+DOWNARROWTIPRIGHT = unicode("21B3");
+ANTICLOCKWISEARROW = unicode("21BA");
+CLOCKWISEARROW = unicode("21BB");
+
+ARROWS = [LEFTARROW, RIGHTARROW, UPARROW, DOWNARROW,
+DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
+
+// D | Other
+E  = exp(1);
+PI = 3.141592653589793238462643383279;
+PHI = (1 + sqrt(5)) / 2;
+
+VALUEMAP = {
+"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", "6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", "11" : "Elfer", "12" : "Zwölfer"
+};
+
+HEXMAP = {
+	"0":0,"1":1,"2":2,"3":3,"4":4,
+	"5":5,"6":6,"7":7,"8":8,"9":9,
+	"a":10,"b":11,"c":12,"d":13,"e":14,"f":15,
+	"A":10,"B":11,"C":12,"D":13,"E":14,"F":15
+};

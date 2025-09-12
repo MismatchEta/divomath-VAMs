@@ -16,4 +16,4 @@
 - **?** Wenn ich Formen mit dem Mustercontainer einfüge, dann werden sie beim Verlassen und neu Aufrufen einer Seite nicht wieder richtig geladen. Beim einzelnen Einfügen passt es aber.
 
 # übergeordnet
-- Validierung auf IPad/ Mobil OS funktioniert gar nicht
+- **erledigt** Validierung auf IPad/ Mobil OS funktioniert gar nicht

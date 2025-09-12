@@ -1,0 +1,53 @@
+// v1
+// Code für RELEASE
+if(!isundefined(hot),
+  //err("released:"+action);
+
+	act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+
+  //Allgemeiner "drop on" event – entscheiden, ob der vor, nach oder vor und nach act(...) sein soll.
+  if(!isundefined(action),
+		forall(select(obj,o,eval(o:"ishot",coord->mouse())),droptarget, eval(droptarget:"dropevent", dropobject->hot);
+	); 
+	);
+
+  if(isundefined(hot:"sticky"),
+			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+	);
+  if(!isundefined(hot:"sticky"),
+			if(!(hot:"sticky"),
+			act(hot,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse),
+			act(hot,action+"pause",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse)
+
+  ););
+);
+
+if(hot:"sticky", oldaction = hot);
+
+
+// Code für CLICK = Release when close
+
+//err(dist(startmouse,mouse().xy)+" "+pinchsensitivity);
+
+if(dist(startmouse,mouse().xy)<pinchsensitivity,
+// then click
+
+forall(obj,o,
+		if(o:"ishot",
+		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+			o:"click"; 
+			,
+			obj=obj--[o]; // Kopie wieder löschen
+			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
+			//hot:"click";
+			);
+		//err("click:"+o:"name");
+		);
+);
+
+if(!isundefined(oldaction),
+  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+  oldaction=NADA;
+);
+
+);

@@ -1,0 +1,919 @@
+// v12
+// last changes:
+// - draw line instead of rectangle to separate UI Elements at the bottom
+// - Generate random position of Blobs properly inside of worlds viewport
+// - removed "drawbuttons" and replaced it with "drawblobbuttons" and "drawdivbuttons" to control those separately
+// - added "drawbar" to control access to the bar
+// - changed default timing from 1 to .5
+// - fixed bar reappearing when reloading a page --> added "drawbar" to state reporting
+
+if(vam == "divisors", // change accordingly
+
+// A | Documentation
+//'doctextpos = [9,15.5];
+'doc = "
+>> Konfigurierbarer Zustand | VAM 'divisors'
+color: <string> # eine repräsentierte Farbe (siehe Doku)
+size: <float> # Größe der Blobs
+blobmargin: <float> # Abstand der Blobs innerhalb eines Bandes
+stripmargin: <float> # Abstand der Bänder untereinander
+timing: <float> # Geschwindigkeit der Animation
+blobs: <uint> # Anzahl der Blobs zu Beginn
+maxblobs: <uint> # Maximale Anzahl erlaubter Blobs
+divisor: <uint> # Gruppengröße zu Beginn
+maxcols: <uint> # Maximal erlaubte Gruppengröße
+displaycalc: <bool> # Formel anzeigen? ('a : b')
+displayresult: <bool> # Ergebnis anzeigen? ('= c Rest d')
+drawblobbuttons: <bool> # Draw blob Button controls?
+drawdivbuttons: <bool> # Draw divisor Button controls?
+drawbar: <bool> # Draw vertical bar for divisor controls?
+displaydescription: <bool> # Beschreibung anzeigen?
+displayblobcount: <bool> # Anzahl Blobs anzeigen?
+displaydivisorcount: <bool> # Gruppengröße anzeigen?
+==========================================================
+>> Results | VAM 'divisors'
+B I S H E R   K E I N E
+";
+
+// B | Divomath config
+// States
+regional(item, color, padding, stripmargin, timing, blobs, maxblobs, divisor, maxcols,
+	sequentialorder, displaycalc, displayresult, displaydescription,
+	displayblobcount, displaydivisorcount
+);
+
+item = 'dmstate.color;
+color = if(!isundefined(item), apply(item, COLORMAP:#), [DIVORED, DIVOGREY]); // Color of Blobs and Strips as [str,str]
+
+size = defaultstateto("size", .7); // Size of Blobs.
+padding = defaultstateto("blobmargin", .2); // Padding between blobs in a strip.
+stripmargin = defaultstateto("stripmargin", .5); // Vertical margin between strips.
+timing = defaultstateto("timing", .5); // Timing of animations.
+blobs = defaultstateto("blobs", 0); // Inital blob count.
+maxblobs = defaultstateto("maxblobs", 100); // Maximum blob count.
+divisor = defaultstateto("divisor", 1); // Inital divisor.
+maxcols = defaultstateto("maxcols", 10); // Maximum number of divisors (columns).
+sequentialorder = defaultstateto("sequentialorder", false); // Reordering strategy when divisors changes
+
+// UI and display configs
+drawblobbuttons = defaultstateto("drawblobbuttons", true); // Draw Button UI Elements for Blob count
+drawdivbuttons = defaultstateto("drawdivbuttons", true); // Draw Button UI Elements for div
+drawbar = defaultstateto("drawbar", true); // Draw vertical bar for changing div
+displaycalc = defaultstateto("displaycalc", true); // Display calculation text
+displayresult = defaultstateto("displayresult", true); // Display result text
+displaydescription = defaultstateto("displaydescription", true); // Display description text
+displayblobcount = defaultstateto("displayblobcount", true); // Display blob count text
+displaydivisorcount = defaultstateto("displaydivisorcount", true); // Display divisor count text
+
+// Configure result handling and setState.
+// Overwrite divomath result updating function.
+divomathUpdateResults() := if(usedivomath,
+	divomathClearResult();
+
+	// Proper result reporting here (for validation)
+	// @TODO
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
+	);
+
+	// Post results
+	divomathSendResult();
+);
+
+// Overwrite divomath setState()
+divomathSetState() := (
+	regional(cards, state);
+	cards = select(obj, #:"type"=="numbercard"); // all the cards
+	
+	// Return current state
+	state = {
+		"size" : size, // Size of Blobs
+		"blobmargin" : padding, // Padding between blobs in a strip
+		"stripmargin" : stripmargin, // Margin between strips
+		"timing" : timing, // Animation timing
+		"blobs" : world:"#allblobs", // Initial Blob count
+		"maxblobs" : maxblobs, // Maximum Blob count
+		"divisor" : world:"#divisors", // Initial number of divisors
+		"maxcols" : maxcols, // Max number of divisors
+		"sequentialorder" : sequentialorder, // Reording strategy on divisor change
+		"drawblobbuttons" : drawblobbuttons,
+		"drawdivbuttons" : drawdivbuttons,
+		"displaycalc" : displaycalc,
+		"drawbar" : drawbar,
+		"displayresult" : displayresult,
+		"displaydescription" : displaydescription,
+		"displayblobcount" : displayblobcount,
+		"displaydivisorcount" : displaydivisorcount
+	};
+
+	state;
+);
+
+
+// GLOBAL VARS
+'globalscaling = 1; // Adjusts size of stuff, gets set by world:"updateglobalscaling"
+
+// C | Class definitions
+// C.1 | Handler for positioning and drawing
+new World() := (
+	regional(o, btncolors);
+	o = new VAMobject("World");
+
+	// Fields
+	o:"coord" = nada;
+	o:"font" = "Be Vietnam";
+	o:"blobs" = [];
+	o:"#blobs" := length(my("blobs"));
+	o:"#allblobs" := (
+		regional(numofblobs);
+		numofblobs = my("#blobs");
+		forall(my("strips"), numofblobs = numofblobs + #:"size");
+		numofblobs;
+	);
+	o:"strips" = [];
+	o:"#strips" := length(my("strips"));
+	o:"#divisors" = 0;
+	o:"refheight" = 2.5 + if(screenbounds()_4_2 < 0, -screenbounds()_4_2, 0); // eyeballed height of bottom UI elements
+	o:"shape" = (
+		regional(shape, margin);
+		shape = reverse(apply(screenbounds(),#.xy)); // whole screen
+		
+		// Remove bottom UI
+		shape_1 = shape_1 + [0, o:"refheight"];
+		shape_2 = shape_2 + [0, o:"refheight"];
+
+		// Add some margins to each side
+		margin = .5;
+		shape_1 = shape_1 + margin*[1,1];
+		shape_2 = shape_2 + margin*[-1,1] - [2, 0];  // also add room for bar
+		shape_3 = shape_3 + margin*[-1,-1] - [2, 0];  // also add room for bar
+		shape_4 = shape_4 + margin*[1,-1];
+		
+		shape;
+	);
+
+	o:"center" = o:"shape"_1 + 0.5 * (o:"shape"_3 - o:"shape"_1);
+	o:"width" = o:"shape"_2_1 - o:"shape"_1_1;
+	o:"height" = o:"shape"_4_2 - o:"shape"_1_2;
+	// Helper fields for proper scaling
+	o:"contentwidth" := if(length(my("strips")) > 0, // height of all strips combined		
+		my("strips")_1:"shape"_2_1 - my("strips")_1:"shape"_1_1; // right corner - left corner
+	,
+		0 // 0, if no strips
+	);
+	o:"contentheight" := if(length(my("strips")) > 0, // height of all strips combined
+		length(my("strips")) * my("strips")_1:"height" + (length(my("strips"))-1) * my("stripmargin");
+	,
+		0 // if no strips
+	);
+
+	o:"padding" = padding / 2 * 'globalscaling;
+	o:"stripmargin" := stripmargin * 'globalscaling;
+	
+	o:"updateglobalscaling" := ( // update scaling based on available height/width, call accordingly
+
+		'globalscaling = 1; // reset scaling for proper recalculation of scaling factor
+		
+		if(my("contentheight") > 0 & my("contentwidth") > 0, // only if strips exist
+			'globalscaling = min([1, my("height") / my("contentheight"), my("width") / my("contentwidth")]);
+		,
+			'globalscaling = 1 // else set to 1
+		);
+	);
+
+	// Inner objects: UI elements
+	// ==========================
+	// === UI: Bar to change divisors
+	o:"bar" = ( 
+		regional(bar);
+		bar = new VAMobject("Bar");
+		bar:"parent" = o;
+		bar:"ismoveable" = true;
+		bar:"width" = .1;
+		bar:"color" = DIVODARKBLUE;
+		bar:"height" := my("parent"):"contentheight";
+		bar:"padleft" = 2*o:"padding";
+
+		bar:"coord" := nada; // Gets assigned by my("alignbar")
+		bar:"alignbar" := ( // (Re-)sets bar position
+			self():"coord" := my("parent"):"center" + .5 * [my("parent"):"contentwidth", -my("parent"):"contentheight"] + [my("padleft"), 0];
+		);
+		bar:"alignbar"; // Initially set coord
+		
+		bar:"shape" := (
+			regional(parts);
+			parts = {};
+
+			// Create vertical bar that is as tall as all strips combined
+			parts:"bar" = rectangle(my("coord"), my("width"), my("height"));
+
+			// Create circle
+			regional(center, radius);
+			radius = .7;
+			center = my("coord") + [my("width"),0] + [radius+.2,my("height")/2];
+			parts:"circle" = {"M": center, "r": radius};
+
+			// Create vertical line through center of the circle
+			parts:"circleline" = {"A": center - [0,1.1*radius], "B": center + [0,1.1*radius]};
+
+			// Create triangles pointing left and right
+			// (scaling numbers are chosen by eye)
+			trigoffset = [radius/2.3,0];
+			parts:"lefttrig" = regularpolygon(center-trigoffset, radius/3, 3, PI/6);
+			parts:"righttrig" = regularpolygon(center+1.05*trigoffset, radius/3, 3,-PI/6);
+
+			parts; // Return shape object
+		);
+
+		bar:"hitbox" := my("shape"):"circle";
+		bar:"ishot" := dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r" & my("parent"):"#strips" > 0;
+
+		bar:"move" := if(my("ismoveable"),
+			// Set position based on mouse coords
+			set my("coord", [
+				max(coord_1,my("parent"):"strips"_1:"coord"_1),
+				my("parent"):"strips"_(-1):"shape"_1_2
+			]);
+
+			// Decrease divisor count if above 1 AND bar touches strips
+			regional(stripedge);
+			stripedgeX = my("parent"):"strips"_1:"coord" + [my("parent"):"strips"_1:"width",0];
+			stripedgeX = stripedgeX_1;
+			if(my("parent"):"#divisors" > 1 & stripedgeX > my("shape"):"bar"_1_1,
+				my("parent"):"divisor-":"script";
+			);
+
+			// Calculate gap for triggering increasing divisor count
+			regional(gap, requiredwidth);
+			gap = my("shape"):"bar"_1_1;
+			gap = gap - my("parent"):"strips"_1:"shape"_2_1;
+			requiredwidth = new Blob():"size";
+
+			// Increase divisor count if gap is big enough AND there is still more than one strip
+			if(gap > requiredwidth & my("parent"):"#strips" > 1 & my("parent"):"#divisors" < maxcols,
+				my("parent"):"divisor+":"script";
+			);
+		);
+
+		bar:"moveend" := set my("coord", [ // Reset coord of bar
+				my("parent"):"strips"_1:"shape"_2_1 + my("padleft"), 
+				my("parent"):"strips"_(-1):"shape"_1_2
+			]);
+
+		bar:"draw" := if(my("parent"):"#strips" > 0,
+			// Draw vertical bar
+			fillpoly(my("shape"):"bar", color -> my("color"));
+
+			// Draw base circle (hitbox)
+			fill(circle(my("shape"):"circle":"M", my("shape"):"circle":"r"), color -> my("color"));		
+
+			// Draw line through circle
+			draw(my("shape"):"circleline":"A", my("shape"):"circleline":"B", size -> 3, color -> grey(1)
+			);
+
+			// Draw triangles
+			fillpoly(my("shape"):"lefttrig", color -> grey(1));
+			fillpoly(my("shape"):"righttrig", color -> grey(1));
+		);
+
+		bar; // Return bar
+	);
+	
+	// === UI: Button for adding a blob
+	o:"blob+" = (
+		regional(btn);
+		btn = new Button([2.6,.5],1,1,"+",22);
+		btn:"handle" = o;
+		btn:"show" := my("handle"):"#allblobs" < maxblobs;
+		btn:"cornerradius" = .5; // circle
+		btn:"color" = DIVOBLUE;
+		btn:"bordercolor" = btn:"color" / 2; // darker border
+		btn:"fontcolor" = grey(1);
+		btn:"script" := (
+			regional(blob);
+			my("handle"):"makeblob";
+			blob = my("handle"):"blobs"_(-1);
+			if(my("handle"):"#divisors" > 0,
+				my("handle"):"moveblobstostrips"
+			);
+			my("handle"):"bar":"alignbar";
+		);
+
+		btn; // Return Button
+	);
+
+	// === UI: Button for removing a blob
+	o:"blob-" = (
+		regional(btn);
+		btn = new Button([1.1,.5],1,1,"-",22);
+		btn:"handle" = o;
+		btn:"show" := if(my("handle"):"#allblobs" > 0,true,false);
+		btn:"cornerradius" = .5; // circle
+		btn:"color" = DIVOBLUE;
+		btn:"bordercolor" = btn:"color" / 2; // darker border
+		btn:"fontcolor" = grey(1);
+		btn:"script" := ( 
+			// Remove last blob from last strip and reconfigure
+			eval(my("handle"):"removeblob",numofblocks->1);
+			if(my("handle"):"#strips" > 0,
+				my("handle"):"strips"_(-1):"drawstrip" = false;
+			);
+			my("handle"):"removeemptystrips";
+			my("handle"):"bar":"alignbar";
+		);
+		btn; // Return Button
+	);
+
+	// === UI: Button for increasing strip size
+	o:"divisor+" = (
+		regional(btn);
+		btn = new Button([20,.5],1,1,"+",22);
+		btn:"handle" = o;
+		btn:"show" := my("handle"):"#divisors" < maxcols;
+		btn:"cornerradius" = .5; // circle
+		btn:"color" = DIVOBLUE;
+		btn:"bordercolor" = btn:"color" / 2; // darker border
+		btn:"fontcolor" = grey(1);
+		btn:"script" := (
+			my("handle"):"#divisors" = my("handle"):"#divisors" + 1;
+			my("handle"):"refillstrips";
+			my("handle"):"bar":"alignbar";
+		);
+		btn; // Return Button
+	);
+
+	// === UI: Button for decreasing strip size
+	o:"divisor-" = (
+		regional(btn);
+		btn = new Button([18.5,.5],1,1,"-",22);
+		btn:"handle" = o;
+		btn:"show" := my("handle"):"#divisors" > 1;
+		btn:"cornerradius" = .5; // circle
+		btn:"color" = DIVOBLUE;
+		btn:"bordercolor" = btn:"color" / 2; // darker border
+		btn:"fontcolor" = grey(1);
+		btn:"script" := (
+			my("handle"):"#divisors" = my("handle"):"#divisors" - if(
+				my("handle"):"#divisors" > 0, 1, 0
+			);
+			my("handle"):"refillstrips";
+			my("handle"):"bar":"alignbar";
+		);
+		btn; // Return Button
+	);
+
+	o:"uielements" := [
+		my("bar"),
+		my("blob+"), my("blob-"),
+		my("divisor+"), my("divisor-")
+	];
+	
+	// Methods
+	o:"makeblob" := (
+		set my("blobs", my("blobs") :> new Blob());
+		my("blobs")_(-1):"parent" = self();
+	);
+	o:"makestrip" := (
+		set my("strips", my("strips") :> new Strip(nada));
+		my("strips")_(-1):"parent" = self();
+	);
+	o:"removeemptystrips" := (
+		set my("strips", select(my("strips"),#:"size" > 0));
+		my("positionstrips"); // Redraw
+	);
+	
+	// Draw strips and (free) blobs
+	o:"draw" := (	
+		forall(my("blobs"),#:"draw");
+		forall(my("strips"),#:"draw");
+		
+		// Draw line to visualy separate bottom UI elements
+		//fillpoly(rectangle([-1,-1],35,3.5), color->grey(.95));
+		//drawpoly(rectangle([-1,-1],35,3.5), color->grey(0));
+		draw(join([0,2.5],[1,2.5]), color->grey(0));
+		// Draw total blob count
+		if(displayblobcount,
+		drawtext([0.3,1.7],"Gesamtanzahl: " + my("#allblobs"), size->16, family->my("font"));
+		);
+
+		// Draw divisor count
+		if(displaydivisorcount,
+			regional(numofdivisors);
+			numofdivisors = "Gruppengröße";
+			numofdivisors = numofdivisors + if(
+				my("#divisors") > 0, ": " + my("#divisors"), ""
+			);
+			drawtext([17.6,1.7],numofdivisors, size->16, family->my("font"));
+		);
+
+		// Draw calculation texts
+		if(my("#divisors") > 0,
+			regional(b,d,m, text, bottomleftx);
+			b = my("#blobs");
+			forall(my("strips"), b = b + #:"size");
+			d = my("#divisors");
+			m = mod(b,d);
+			bottomleftx = 8.5;
+			text = "";
+
+			// - "a : b"
+			if(displaycalc,
+				bottomleftx = 8.5;
+				text = b + "  :  " + d;
+				drawtext([bottomleftx,1.7],
+					text,
+					size->16,
+					bold->true,
+					family->my("font")
+				);
+			);
+
+			// - " = c"
+			if(displayresult,
+				bottomleftx = bottomleftx+.1+pixelsize(text)_1/screenresolution();
+				text = "   =  " + floor(b/d);
+				drawtext([bottomleftx,1.7],
+					text,
+					size->16,
+					bold->true,
+					family->my("font")
+				);
+			);
+			
+			// - " Rest d"
+			if(displayresult & m != 0,
+				bottomleftx = bottomleftx+pixelsize(text)_1/screenresolution()+.2;
+				text = "   R " + m;
+				drawtext([bottomleftx,1.7],
+					text,
+					color->DIVOBLUE,
+					size->16,
+					family->my("font")
+				);
+			);
+			
+			if(displaydescription,
+				// - "c <b-er> passen in a."
+				bottomleftx = 8.5;
+				text = floor(b/d) + " " + VALUEMAP:d;
+				text = text + if(floor(b/d) == 1, " passt ", " passen ");
+				text = text + " in " + b + ".";
+				drawtext([bottomleftx,1],
+					text,
+					size->16,
+					family->my("font")
+				);
+
+				// - "Es bleiben d übrig."
+				if(m != 0,
+					text = "Es bleib";
+					text = text + if(m == 1,"t ", "en ");
+					text = text + m + " übrig.";
+					drawtext(
+						[bottomleftx,.3], 
+						text,
+						color->DIVOBLUE,
+						size->16,
+						family->my("font")
+					);
+				);
+			);
+		);
+
+		// Debug draw
+		if('debuglevel > 0,
+			drawpoly(my("shape"), color->grey(.7));
+			draw([my("shape")_1, my("shape")_3], color->grey(.7));
+			draw([my("shape")_2, my("shape")_4], color->grey(.7));
+			draw(my("center"), color->[.8,0,0]);
+		);
+	);
+
+	o:"refillstrips" := ( // Refill Strips, when divisor count changes
+		regional(div);
+		div = my("#divisors");	
+
+		if(sequentialorder, // Move Blobs along sequentially
+			regional(tostrip);
+
+			// Return blobs from all Strips to World
+			forall(reverse(my("strips")),
+				set my("blobs", #:"children" ++ my("blobs"));
+			);
+
+			// Remove all Strips
+			set my("strips", []);
+
+			// Refill strips
+			repeat(ceil(my("#blobs")/div), // Create Strips rounding up.
+				tostrip = []; // blobs that go into each Strip
+				repeat(div, d, if(my("#blobs") >= d, // fill list and catch it's end
+					tostrip = tostrip :> my("blobs")_d;
+				));
+				my("makestrip"); // make a new Strip
+				eval( // put blobs in Strip
+					my("putblob"),
+					strip->my("strips")_(-1),
+					blobs->tostrip
+				);
+			);
+		, // Move Blobs "naturally"
+			regional(spareblobs, diff);
+			spareblobs = [];
+			
+			// Calculate if Strips shrink or grow
+			if(my("#strips") != 0,
+				diff = my("strips")_1:"size" - div,
+				diff = -div
+			);
+
+			// Handle shrinking Strips
+			if(diff > 0,
+				// In all full Strips...
+				forall(my("strips"), 
+					if(#:"size" > div,
+						// ..return overflowing Blobs to World
+						set my("blobs", my("blobs") ++ #:"children"_(div+1..#:"size"));	
+				
+						// ...remove overflowing Blobs from Strip
+						#:"children" = #:"children"_(1..div);
+					);
+				);
+
+				// Fill last strip or create new one
+				forall(my("blobs"),
+					// Create new Strip if last one is full
+					if(my("strips")_(-1):"size" >= div,
+						my("makestrip");
+					);
+					// Put Blob in last strip
+					eval(my("putblob"),strip->my("strips")_(-1),blobs->#);
+				);
+			);
+
+			// Handle growing strips
+			if(diff < 0,
+				// Point to first and last Strip for iterating
+				regional(current, last, i);
+				i = 1;
+
+				// Create a Strip if none exists
+				if(my("#strips") == 0, my("makestrip"));
+
+				// Move free Blobs to current Strips
+				my("moveblobstostrips");
+
+				current = my("strips")_i;
+				last = my("strips")_(-1);
+
+				// Move Blobs from first to current Strip until full
+				while(current != last,
+					diff = current:"size" - div;
+
+					// Move to next Strip, if already full
+					if(diff == 0 & my("strips")_(i+1):"size" > 0,
+						i = i + 1;
+						current = my("strips")_i;
+						diff = current:"size" - div;
+					);
+
+					// Move one strip "up", if last one is empty
+					if(last:"size" == 0, 
+						my("removeemptystrips");
+						last = my("strips")_(-1);
+					);
+
+					// Move Blob to current strip to fill it up
+					if(diff < 0,
+						eval(my("popblob"),strip->last, index->-1);
+						eval(my("putblob"),strip->current,blobs->my("blobs")_(-1));
+					);
+				);
+			);
+		);
+
+		// Toggle strip drawing for all Strips depending on if it is full or not
+		forall(my("strips"),
+			#:"drawstrip" = if(#:"size" == div, true, false)
+		);
+
+		// Redraw	
+		my("positionstrips");
+	);
+
+	o:"moveblobstostrips" := ( // Move free Blobs to Strips
+		regional(div, strip);
+		div = my("#divisors");
+
+		// Create a strip if none exist
+		if(my("#strips") == 0, my("makestrip"));
+		strip = my("strips")_(-1);
+
+		// Move Blobs to Strips until none remain
+		while(my("#blobs") > 0,
+
+			// Create new Strip if current one is full
+			if(strip:"size" >= div, 
+				my("makestrip");
+				strip = my("strips")_(-1);
+			);
+			
+			// Move a Blob to selected Strip
+			eval(my("putblob"),strip->strip,blobs->my("blobs")_1);
+		);
+
+		// Toggle strip drawing for all Strips depending on if it is full or not
+		forall(my("strips"),
+			#:"drawstrip" = if(#:"size" == div, true, false)
+		);
+
+		// Redraw	
+		my("positionstrips");
+	);
+
+	o:"positionstrips" := ( // Align Strips in World
+		// Update global scaling factor
+		my("updateglobalscaling");
+
+		// Position accordingly
+		regional(s, diagonal, yposition);
+		s = my("strips");
+
+		repeat(length(s),
+			diagonal = s_#:"shape"_3 - s_#:"shape"_1; // bottom left to top right
+			yposition = length(s)/2 - # + .25 * my("stripmargin");
+			s_#:"coord" = my("center") - 0.5 * diagonal; // center strips on screen
+			s_#:"coord"_2 = my("center")_2 + // shift up or down
+				(diagonal_2 + my("stripmargin")) * yposition; // depending on yposition
+			s_#_"coord"_2 = s_#_"coord"_2; // center in available space (regarding UI)
+
+			s_#:"positionchildren"; // reposition blobs for every strip
+		);
+
+		// Re-align last strip to be left aligned
+		if(length(s) > 1,
+			s_(-1):"coord" = s_(-2):"coord" - [0,diagonal_2 + my("stripmargin")];
+			s_(-1):"positionchildren";
+		);
+
+		// Update divomath states/results
+		divomathUpdateResults();
+	);
+
+	// Use with eval()
+	o:"putblob" := (
+		// Handles putting blobs in strips.
+		// eval with a "strip" and a blob or list of "blobs".
+		eval(strip:"put",children->list(blobs));
+		set my("blobs", my("blobs") -- list(blobs));
+	);
+	
+	o:"popblob" := (
+		// Handles returning Blobs back to World from Strip.
+		// eval with a "strip" to pop from and optional "index"
+		index = if(isundefined(index),1,index);
+		set my("blobs", my("blobs") :> strip:"children"_index);
+		eval(strip:"remove",children->list(strip:"children"_index));
+		
+		my("blobs")_(-1); // Return popped Blob
+	);
+
+	o:"removeblob" := (
+		// Handles deletion of Blobs.
+		// eval with a number of blobs ("numofblobs") to remove.
+		
+		// Remove free blobs first (starting at the end of the list)
+		while(numofblocks > 0 & my("#blobs") > 0,
+			set my("blobs", my("blobs") -- [my("blobs")_(-1)]);
+			numofblocks = numofblocks - 1;
+		);
+
+		// Continue removing from strips, starting from the last one
+		forall(reverse(my("strips")), strip,
+			if(numofblocks > 0,
+				forall(reverse(strip:"children"),
+					if(numofblocks > 0,
+						strip:"children" = strip:"children" -- [#];
+						numofblocks = numofblocks - 1;
+					);
+				);
+				my("positionstrips");
+			);
+		);
+	);	
+
+	o; // Return World;
+);
+
+// C.2 | Blob container representing sets of divisor-many or remainder-many Blobs
+new Strip(coord) := (
+	regional(o);
+	o = new VAMobject("Strip");
+	
+	o:"coord" = if(!isundefined(coord),coord,[6,6]); // bottom left corner
+	o:"color" = color_1; // color of strip
+	o:"drawstrip" = true; // draw connecting strip between children
+	o:"children" = []; // contains Blobs
+	o:"size" := length(my("children"));
+	o:"padding" := padding * 'globalscaling; // horizontal distance between adjacent Blobs
+	o:"width" := if(my("size")>0,
+		my("size") * (my("children")_1):"size" * 2 + (my("size")-1) * my("padding");
+	,
+		0
+	);
+	o:"height" := if(my("size")>0,(my("children")_1):"size" * 2, 0);
+	o:"shape" := rectangle(my("coord"),my("width"),my("height"));
+
+	// Use with eval()
+	o:"put" := (
+		// Put list of elements in the strip.
+		// eval children with a list of blobs or single blob
+		children = list(children);
+		forall(children,
+			// add new parent
+			#:"parent" = self();
+			// add as child if not already a child of self
+			if(!contains(my("children"), #),
+				set my("children",my("children") :> #);
+			);
+			// Align children inside strip
+			my("positionchildren");
+		);
+	);
+
+	o:"remove" := ( 
+		// Remove child or list of children from list of children of the strip.
+		// eval children with a list of blobs or single blob.
+		children = list(children);		
+		// Reset parent of Blob to own parent (should be World) 
+		forall(children, #:"parent" = my("parent"));
+		// remove children from childeren-list
+		set my("children", my("children") -- children);
+		// recalculate new blob positions
+		my("positionchildren");
+	);
+
+	o:"positionchildren" := (
+		regional(children);
+		children = my("children");
+
+		// animation
+		repeat(my("size"),
+			new animationobject(
+				children_#, //object
+				"coord", // property
+				children_#:"coord", // startvalue
+				my("coord") + [
+					(2*#-1)*children_#:"size" + (#-1)*my("padding"),
+					children_#:"size"
+				];, // endvalue
+				timing, // duration
+				"accel" // timeflow
+			);
+		);
+
+//		// w/o animation
+//		repeat(my("size"),
+//			children_#:"coord" = my("coord") + [
+//					(2*#-1)*children_#:"size" +
+//						(#-1)*my("padding"),
+//					children_#:"size"
+//				];
+//		);
+	);
+
+	o:"draw" := (
+		// Debug: Draw bounding box
+		if('debuglevel > 0, 
+			drawpoly(my("shape"));
+			draw(my("coord"));
+		);
+
+		// Draw strip between children
+		if(my("drawstrip") & my("size") > 0,
+			regional(strip, radius, delta);
+			strip = my("shape");
+			radius = my("children")_1:"size";
+			delta = radius / 8;
+
+			strip_1 = strip_1 + [radius,delta];
+			strip_2 = strip_2 - [radius,-delta];
+			strip_3 = strip_3 - [radius,delta];
+			strip_4 = strip_4 + [radius,-delta];
+			fillpoly(strip,alpha->0.3,color->my("color"));
+		);
+
+		// Draw children
+		forall(my("children"),#:"draw");
+	);
+	
+	o; // Return o;
+);
+
+// C.3 | Displayable element
+new Blob() := (
+	regional(o);
+	o = new VAMobject("Blob");
+	
+	o:"ismoveable" = false;
+	o:"size" := size * 'globalscaling;
+	o:"parent" = nada;
+	o:"color" := if(!isundefined(my("parent"):"drawstrip"),
+			if(my("parent"):"drawstrip",color_1,color_2),
+			color_2;
+		);
+	o:"ishot" := mouse().xy_1 - my("coord")_1 < my("size");
+	o:"coord" = ( // Set coordinate randomly inside viewport
+		regional(screen);
+
+		screen = world:"shape";
+		[
+			screen_1_1+o:"size" + randominteger(screen_3_1 - screen_1_1),
+			screen_1_2+o:"size" + randominteger(screen_3_2 - screen_1_2)
+		];
+	);
+
+	o:"draw" := (
+		// Draw to be used by parent
+		fill(
+			circle(my("coord"),my("size")),
+			color->my("color")
+		);
+		
+		//draw( // draw border
+		//	circle(my("coord"),my("size")),
+		//	color->grey(0.2),
+		//	size->3.5
+		//);
+	);
+
+	o; // Return blob.
+);
+
+// D | Initialization
+// D.0 | SL Config
+// ===============
+if(!usedivomath,
+	size = .7;
+	timing = .5;
+	blobs = 30;
+	divisor = 5;
+	drawblobbuttons = false;
+	drawdivbuttons = true;
+	drawbar = true;
+	color = [DIVOBLUE, DIVOYELLOW];
+);
+
+// Create World
+world = new World();
+obj = obj :> world;
+
+// Remove animation, if there are blobs and strips at the beginning.
+if(blobs > 0 & divisor > 0,
+	help = timing;
+	timing = .00001;
+);
+
+// Template behavior
+world:"#divisors" = divisor;
+repeat(blobs, world:"makeblob");
+if(divisor != 0,
+	repeat(ceil(blobs/divisor), // Create strips rounding up.
+		tostrip = []; // blobs that go into each strip
+		repeat(divisor, d, if(world:"#blobs" >= d, // fill list and catch it's end
+			tostrip = tostrip :> world:"blobs"_d
+		));
+		world:"makestrip"; // make a new strip
+		eval(world:"putblob",strip->world:"strips"_(-1),blobs->tostrip); // put in blobs
+	);
+);
+
+// toggle strip drawing for last blob depending on if it is full or not
+if(mod(blobs,divisor) != 0,world:"strips"_(-1):"drawstrip" = false);
+
+world:"positionstrips";
+
+// Reset animation speed
+if(!isundefined(help), timing = help);
+
+// Draw UI Elements
+if(drawbar,
+	obj = obj :> world:"bar";
+);
+if(drawblobbuttons,
+	obj = obj :> world:"blob+";
+	obj = obj :> world:"blob-";
+);
+if(drawdivbuttons,
+	obj = obj :> world:"divisor+";
+	obj = obj :> world:"divisor-";
+);
+
+// DEBUG REMOVE @TODO
+world:"updateglobalscaling"; // is that still necessary?
+
+); // end vam-if

@@ -1,0 +1,80 @@
+// v2
+// Recent changes:
+// - added fields "fontfamily" and "labelpadding" for more control when drawing Text Entry Box
+
+new TextInput(coord, label, keyboardtype) := (
+	regional(o);
+	o = new VAMobject("textinput");
+	o:"coord" = coord;
+	o:"keyboardcoord" = coord;
+	o:"label" = label;
+	o:"width" = 2;
+	o:"height" = .6;
+	o:"value" = "";
+
+	o:"keyboardtype" = keyboardtype; // see Keyboard class
+	o:"keyboard" = nada;
+	o:"keyboardoffset" = [5,0];
+	o:"fontsize" = 14;
+	o:"fontfamily" = nada;
+	o:"labelpadding" = .2;
+
+	o:"isclickable" = true;
+	o:"ismoveable" = false;
+	
+	o:"hitbox" := rectangle(my("coord"), my("width"), my("height"));
+	o:"shape" := o:"hitbox";
+
+	o:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+
+	o:"draw" := (
+		// Draw TextInput box
+		fillpoly(my("shape"), color->(245,233,196)/255);
+		drawtext(
+			my("coord") + [0.15, 0.15],
+			my("value"),
+			color->grey(0),
+			size->my("fontsize")
+		);
+
+		// Draw label
+		regional(box, boxwidth, boxheight);
+		box = getboundingbox(my("label"), [0,0], my("fontsize"), my("fontfamily"));
+		boxwidth = box_2_1 - box_1_1;
+		boxheight = box_4_2 - box_1_2;
+
+		drawtextbox(
+			my("coord") - [boxwidth+my("labelpadding"), -.12],
+			my("label"),
+			my("fontsize"),
+			my("fontfamily"),
+			grey(1)
+		);
+	);
+
+	o:"setValue":= self():"value" = my("keyboard"):"value";
+
+	o:"click" := if(my("isclickable"),
+		if(!isundefined(my("keyboard")),
+			obj = obj -- [my("keyboard")];
+			self():"keyboard" = nada;
+		,
+			self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), "numeric", 1, self());
+			my("keyboard"):"value" = my("value");
+			obj = obj :> my("keyboard");
+		);
+	);
+
+	// Hooks from Keyboard class
+	// gets evaled with "key"
+	o:"onkeypress" := ( // set own value
+		self():"value" = value;
+	);
+
+	// gets evaled with "value"
+	o:"onupdate" := (	// Destroy keyboard
+		self():"keyboard" = nada;
+	);
+
+	o;
+);

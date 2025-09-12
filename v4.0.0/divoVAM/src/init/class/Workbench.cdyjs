@@ -1,0 +1,212 @@
+// v1
+//**Class Workbench:
+//* A rectengular area where objects can be stored and copied from.
+//*	Copies that are dragged back to the workbench get destroyed.
+//* @param coords: bottom left corner of the Workbench
+//* @param width:	 width of the Workbench
+//* @param height: height of the Workbench
+//* @param color:	 color of the Workbench
+//**
+new Workbench(coords, width, height, color) := (
+	regional(obj);
+	obj = new VAMobject("Workbench");
+	obj:"color"  	 = color;
+	obj:"coord"    = coords;
+	obj:"width"    = width;
+	obj:"height"   = height;
+	obj:"children" = []; // Fill with VAM objects.
+	obj:"sizeofchildren" = 0; // sum of sizes of all children.
+	obj:"align"		 = "right";
+	obj:"shape"  	:= rectangle(self():"coord",self():"width",self():"height");
+	obj:"ishot"	 	:= inrectangle(self():"shape", mouse());
+	obj:"draw"  	:= (
+		drawpoly(
+			self():"shape",
+			size->bordersize, 
+			color->self():"color"
+		);
+		fillpoly(
+			self():"shape", 
+			color->self():"color", 
+			alpha->if(self():"ishot",0.2,0.1)
+		);
+	);
+
+	obj:"drawchild" := (
+		regional(child);
+		child = currentchild; // Use with 'eval(..., currentchild->self())'.
+
+		if(self():"align" = "right",
+			println("TO DRAW: " + child);
+		, // else
+		err("Only right align is implemented right now.");
+		);
+	);
+
+	obj:"dropevent" := (
+			if(dropobject:"type"=="WorkbenchElement" & !dropobject:"copyonmove",
+ 			  new animation(dropobject,"scale",dropobject:"scale",0.3,0.05,"linear", 0, true);
+				//obj = obj -- [dropobject];
+			);
+	 );
+
+	obj; // Return Workbench.
+);
+
+//**Class Workbench:
+//* Workbench with fixed position on the left side of the screen and fixed size or size relative to screen width/height.
+//* @param 		 type: "fixed" or "relative" depending if a fixed size or a relative size (in relation to the screen height/width) is preferred.
+//* @param 		 size: Size of the Workbench (if type="fixed" in absolute terms, if type=" relative" in percent of screen width/size)
+//* @param position: one of "left", "right", "top", "bottom"
+//**
+new Workbench(wbtype, size, position) := (
+	if(!contains(["fixed","relative"],wbtype),
+		// Raise error, if type is wrong
+		err("wbtype has to be 'fixed' or 'relative'");
+	, // else
+		if (!contains(["left", "right", "top", "bottom"],position),
+			// Raise error, if position is wrong
+			err("position has to be 'left', 'right', 'top', 'bottom'");
+		, //else
+			// Create Workbench
+				regional(obj);
+				obj = new Workbench(0,0,0,DZLMCOLORDARK);
+				obj:"position"	= position;
+				obj:"wbtype" 		= wbtype;
+				obj:"size" 			= size;
+
+				obj:"coord" := (
+					regional(coords);
+					// LEFT and BOTTOM is independet of choice of 'type'
+					if(contains(["left","bottom"],self():"position"),
+						coords = (screenbounds()_4).xy;
+					);
+					
+					// FIXED for RIGHT and TOP
+					if(self():"wbtype" == "fixed",
+						if(self():"position" == "right",
+							// FIXED size on the RIGHT side
+							coords = (screenbounds()_3).xy - [self():"size",0];
+						);
+						if(self():"position" == "top",
+							// FIXED size on TOP
+							coords = (screenbounds()_1).xy - [0,self():"size"];
+						);
+					);
+
+					// RELATIVE for RIGHT and TOP
+					if(self():"wbtype" == "relative",
+						if(self():"position" == "right",
+							// RELATIVE size on the RIGHT side
+							coords = (screenbounds()_3).xy - [self():"size" * |screenbounds()_4_1 - screenbounds()_2_1|,0];
+						);
+						if(self():"position" == "top",
+							// RELATIVE size on TOP
+							coords = (screenbounds()_1).xy - [0,self():"size" * |screenbounds()_4_2 - screenbounds()_2_2|];
+						);
+					);
+					coords; // Return result.
+				);
+
+				obj:"width"		:= (
+					regional(width);
+					if(contains(["top","bottom"],self():"position"),
+						// If TOP or BOTTOM use width of entire canvas
+						width = |screenbounds()_4_1 - screenbounds()_2_1|;
+					, // else (LEFT or RIGHT)
+						if(self():"wbtype" == "fixed",
+							// If FIXED, width is equal to size field.
+							width = self():"size";
+						, // else (RELATIVE)
+							width = self():"size" * |screenbounds()_4_1 - screenbounds()_2_1|;
+						);
+					);
+					width; // Return result.
+				);
+
+				obj:"height"	:= (
+					regional(height);
+					if(contains(["left","right"],self():"position"),
+						// If LEFT or RIGHT use width of entire canvas
+						height = |screenbounds()_4_2 - screenbounds()_2_2|;
+					, // else (TOP or BOTTOM)
+						if(self():"wbtype" == "fixed",
+							// If FIXED, width is equal to size field.
+							height = self():"size";
+						, // else (RELATIVE)
+							height = self():"size" * |screenbounds()_4_2 - screenbounds()_2_2|;
+						);
+					);
+					height; // Return result.
+				);
+
+				obj; // Return Workbench.
+		);
+	);
+);
+
+//**Class Workbench:
+//* Basic workbench with relative layout, positioned on the left, taking 15% of the canvas.
+//**
+new Workbench() := new Workbench("relative", 0.15, "left");
+
+//**Class WorkbenchElement:
+//* 
+//**
+new WorkbenchElement(center, size, color, copyonmove, label) := (
+	regional(obj);
+	obj = new VAMobject("WorkbenchElement");
+	obj:"coord"		 		= center;
+	obj:"size"		 		= size;
+	obj:"label"				= label;
+	obj:"img"					= nada;
+	obj:"cornerradius"= size/10;
+	obj:"color"				= color;
+	obj:"ismoveable"	= true;
+	obj:"copyonmove"	= copyonmove;
+	obj:"scale"				= 1;
+	obj:"parent"			= nada; // Should be a Workbench object
+
+	obj:"shape" := (
+		// Shape consists of 2 rectangles and 4 circles for rounded corners
+		rectangle(
+			apply(self():"coord", (#-self():"scale"*self():"size"/2)),
+			self():"scale"*self():"size",
+			self():"scale"*self():"size"
+		);
+	);
+	obj:"ishot" := inrectangle(self():"shape", mouse());
+	obj:"draw" := (
+		drawpoly(self():"shape", size->bordersize, color->self():"color");
+		fillpoly(
+			self():"shape", 
+			color->self():"color", 
+			alpha->if(self():"ishot",1,0.8)
+		);
+		drawimage(
+			self():"coord",
+			self():"img",
+			scale->self():"scale"
+		);
+		drawtext(
+			apply(self():"coord",
+				#-self():"scale"*self():"size"/2+'bordersize
+			),
+			self():"label",
+			size->self():"size"*7*self():"scale"
+		);
+	);
+	obj:"clickcopy" := if(self():"copyonmove", self():"copy");
+	obj:"copy"  		:= (
+		regional(r);
+		r = new WorkbenchElement(
+			self():"coord",
+			self():"size",
+			self():"color",
+			false,
+			self():"label"
+		)
+	);
+
+	obj; // Return WorkbenchElement.
+);

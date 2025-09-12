@@ -1,0 +1,27 @@
+defaultAppearance: {
+  dimDependent: 0.7,
+  fontFamily: "sans-serif",
+  lineSize: 1,
+  pointSize: 5.0,
+  textsize: 12.0
+},
+angleUnit: "°",
+geometry: [],
+animation: {
+  autoplay: false,
+  controls: false,
+  speed: 0.5,
+  speedRange: [0.0, 1.0],
+  accuracy: 1
+},
+autoplay: false,
+animcontrols: false,
+ports: [{
+  width: 747,
+  height: 516,
+  id: "CSCanvas",
+  transform: [{visibleRect: [-0.14428501372721858, 16.432459896711006, 23.807027264991067, -0.11222167734339224]}],
+  background: "rgb(255,255,255)"
+}],
+csconsole: false,
+cinderella: {build: 2075, version: [3, 0, 2075]}

@@ -1,0 +1,837 @@
+// v17
+// Recent changes:
+// - changed visuals of Separator to incoorporate an ellipse instead of a circle at the bottom
+// - add call to divomathUpdateResults() to Containers "movepolysintoplace" method
+// - added golden bg to bottom RegPolys
+// - changed layout (aligned Patterncontainer top left, Reset button top right)
+// - added submission reporting to divomath for entire strip as string
+
+// Parkettierung / Bandornamente
+if(vam == "strapwork",
+
+// A | Documentation
+//'doctextpos = [9,15.5];
+'doc = "
+>> Konfigurierbarer Zustand | VAM 'strapwork'
+size: <float> # Größe der Elemente (Polygone, Container)
+polys: <list> # Konfiguration der Polygone (siehe Doku)
+polycolors: <list> # Farben der Polygone
+rows: <int> # Anzahl der Streifen/Bänder
+state: <list> # rows viele Strings, die Konfiguration des Containers vorgeben (siehe Doku)
+limit: <list> # Max. Anzahl Polygone pro Band (siehe Doku)
+borders: <bool> # Ränder der Polygone zeichnen?
+drawseparator: <bool> # Marker zeichnen?
+==========================================================
+>> Results | VAM 'strapwork'
+...siehe Doku
+";
+
+// shared local constants and vars
+regional(shapemap, colormap, 'polyid, 'stripid);
+SHAPEMAP = { // Maps shape names (use k+"gon" for k>8)
+	"0":"circle", "3":"triangle", "4":"square", "5":"pentagon",
+	"6":"hexagon", "7":"heptagon", "8":"octagon", "100": "circle"
+};
+COLORMAP = { // Maps color names
+	"1":"blue", "2": "darkblue", "3":"red", "4":"green",
+	"5":"violet", "6":"greyish", "7":"black"
+};
+
+'polyid = 0; // for identifying RegPolys (mainly for debugging)
+
+// B | Divomath config
+// ===================
+// States
+regional (size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
+
+size = defaultstateto("size", 1); // Configure general size of Polys and Container
+vertices = defaultstateto("polys", [0,3,6]); // Configure number of RegPolys or list of number of vertices
+colors = defaultstateto("polycolors", 1..100); // Configure colors of the RegPolys
+rows = defaultstateto("rows", 1); // Configure number of rows/strips in Container
+state = defaultstateto("state", apply(1..rows, "")); // Configure predefined RegPoly per strip
+limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPolys per row/strip (-1 => no limit)
+
+// Configure look and feel
+drawpatterncontainer = defaultstateto("drawpatterncontainer", true); // - Pattern Container
+drawseparator = defaultstateto("drawseparator", true); // - Separator
+drawborders = defaultstateto("drawborders", true);// - Borders of RegPolys
+polypadding = defaultstateto("polypadding", .5); // padding between RegPolys
+
+// Configure result handling and setState.
+// Overwrite divomath result updating function.
+divomathUpdateResults() := if(usedivomath,
+	divomathClearResult();
+
+	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
+	stripcounter = 1;
+	polycounter = 1;
+	strips = reverse(container:"strips"); // all strips (top to bottom)
+	separators = separator:"copies"; // list of Separator copies
+
+	// Add divomath result for every Poly of every strip in the form
+	// "<stripno>.<runningno>:<regpolyname>"
+	forall(strips, strip, // Check every strip
+		stripasstring = "";
+		forall(strip, poly, // Check every Poly/Separator
+
+			// Build string from poly-ids for clean row-wise reporting
+			stripasstring = stripasstring + (poly:"original":"id"+1);
+
+			// Get [key, ID of original]
+			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
+
+			// Push Poly to divomath
+			divomathAddResult(todivomath_1, todivomath_2);
+			polycounter = polycounter + 1;
+
+			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
+			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
+			sepisnext = length(sepisnext) > 0;
+
+			// if Separator is next, push a 0 to divomath
+			if(sepisnext,
+				todivomath = [stripcounter + "." + polycounter, 0];
+				divomathAddResult(todivomath_1, todivomath_2);
+				polycounter = polycounter + 1;
+			);
+
+		);
+		// Report entire strip as string and reset
+		divomathAddResult("row" + stripcounter, stripasstring);
+		stripasstring = "";
+		
+		// Set counters
+		stripcounter = stripcounter + 1;
+		polycounter = 1;		
+	);
+
+	// Export state as results as well for forward referencing
+	regional(dmstate);
+	dmstate = divomathSetState();
+	forall(keys(dmstate), #,
+		divomathAddResult(#, dmstate:#);
+	);
+
+	divomathSendResult();
+);
+
+// Overwrite divomath setState()
+divomathSetState() := (
+	regional(state);
+	state = {
+		"size" : size,
+		"polys" : vertices,
+		"polycolors" : colors,
+		"rows" : rows,
+		"limit" : limit,
+		"drawpatterncontainer" : drawpatterncontainer,
+		"drawseparator" : drawseparator,
+		"drawborders" : drawborders,
+		"polypadding" : polypadding
+	};
+	
+	// Configure "size" state
+	// Get current size and built list compatible with config, i.e. ["3,6", "1,1,1", "1,2,3,1"] for 3 strips
+	regional(currentsize);
+	currentsize = []; 
+		
+	forall(container:"strips", stripspolys, // loop over every strip
+		currentsize = currentsize :> QUOTE; // Set blank new state config string for a strip with a QUOTE (")
+		
+		forall(stripspolys, // loop over every poly
+			currentsize_(-1) = currentsize_(-1) + (#:"original":"id" + 1); // append corresponding originals ID (+1) to state string
+			currentsize_(-1) = currentsize_(-1) + ","; // separate by comma
+		);
+
+		if(length(currentsize_(-1)) > 1, 
+			currentsize_(-1)_(-1) = QUOTE; // Replace last comma with closing quotation mark
+		,
+			currentsize_(-1) = QUOTE + QUOTE; // Add a quotation mark at the end
+		);
+	);
+
+	state:"state" = currentsize; // Add size attribute to state
+	
+	state; // Return
+);
+
+// CLASS RegPoly: Provides a means to render a regular polygon based on its center and the radius of the circumcircle* and
+// having it interactable (i.e. being able to "move", "copy" and interact with a container on "moveend".
+// Uses regularpolygon() function but scales and rotates the result depending on the parity of vertices
+// (even: rotate by PI/4, scale up so that radius is edge to opposite edge, odd: no rotation, scale -> 2*radius = edge to opposite edge).
+// *is not circumcircle in the resulting RegPoly
+new RegPoly(center,radius,vertices,rotation,palettecolor):= ( 
+	regional(regpoly);
+	regpoly = new VAMobject("RegPoly");
+	regpoly:"inputradius"	= radius; // backup only, for copy creation
+	regpoly:"inputrotation"= rotation; // backup only, for copy creation
+	
+	regpoly:"id" = 'polyid; 'polyid = 'polyid +1;
+	regpoly:"name"				= ( // Name for posting to divomath
+		if(vertices < 9 % vertices == 100, SHAPEMAP:vertices, vertices + "-gon") + // name of shape
+		"_" + 
+		COLORMAP:(mod(palettecolor-1,	length(DIVOPALETTE)) + 1); // generic name of color ("blue", "red", ...)
+	);
+	
+	regpoly:"vertices"		= if(vertices < 3, 100, vertices); // if no vertices approximate a circle
+	regpoly:"coord" 			= center;
+	regpoly:"radius" 			= if(iseven(regpoly:"vertices"),
+		radius / cos(PI/regpoly:"vertices"), // length edge to edge = 2 * radius
+		radius * 2 / (1 + cos(PI/regpoly:"vertices")) // length corner to edge = 2 * radius
+	);
+	regpoly:"center"			:= my("coord") - [ // coord adjusted so that all RegPolys are aligned at the bottom edge
+		0, // deltax
+		if(iseven(my("vertices")), 
+			0, // even parity RegPolys are aligned. Base circle is inner circle.
+			my("radius") * sin(PI / my("vertices")) * (1 - cos(PI / my("vertices"))) / (1 + cos(PI / my("vertices")))			// voodoo magic for odd parity
+		);
+	];
+	regpoly:"rotation"		= rotation + if(iseven(regpoly:"vertices"),  // custom rotation AND...
+		PI/regpoly:"vertices", // ...rotate even Polys, so they are not corner up
+		0
+	);
+	regpoly:"ismoveable" 	= true;
+	regpoly:"copyonmove"	= false;
+	regpoly:"parent" 			= nada; // Workbench or Container or similar
+	regpoly:"colorkey"		= palettecolor;
+	regpoly:"color" 			= DIVOPALETTE_(mod(palettecolor-1,	length(DIVOPALETTE)) + 1);
+
+	regpoly:"shape" := regularpolygon(
+				my("center"), // center
+				my("radius"), // radius
+				my("vertices"), // vertices, is 100 for a circle
+				my("rotation") // rotation
+	);
+	regpoly:"hitbox" := my("shape");
+
+	regpoly:"draw" := (
+		fillpoly(my("shape"),color->my("color"));
+		if(drawborders,drawpoly(my("shape"),color->grey(0),size->bordersize));
+
+		// Debug
+		if('debuglevel > 0, 
+			draw(my("center"));
+			drawtext(my("center")+[.2,0], my("id"),color->grey(1));
+			draw(my("coord"), color->grey(.9));
+		);
+	);
+
+	regpoly:"ishot" := inpoly(my("shape"),mouse().xy);
+
+	regpoly:"copy" := (
+		regional(polycopy);
+		polycopy = new RegPoly(
+			my("coord"),
+			my("inputradius"),
+			my("vertices"),
+			my("inputrotation"),
+			my("colorkey");
+		);
+
+		polycopy:"original" = self(); // Reference to copyable RegPoly for divomath result adding
+
+		polycopy; // Return copy of RegPoly
+	);
+	
+	regpoly:"moveend" := if(my("ismoveable"), // Handle dropped RegPolys
+		// Get Container the Poly is dropped on
+		regional(polydroptarget);
+		polydroptarget = select(obj, #:"type" == "Container" & #:"ishot"); // possibly multiple Containers
+		polydroptarget = if(length(polydroptarget)>0, polydroptarget_1); // select first Container
+
+		// Removes Poly from parent if dropped somewhere else
+		if(my("parent") != droptarget,
+			eval(my("parent"):"remove", poly->self());
+			self():"parent"=NADA;
+		);
+
+		// Call drop-handler from Container
+		eval(polydroptarget:"drop",dropobject->self());
+
+		// Remove stray RegPolys from obj
+		if(isundefined(my("parent")), obj = obj -- [self()]);
+	);
+
+	regpoly; // Return the RegPoly
+);
+
+new Separator(coord, height, parent) := (
+	regional(sep);
+	sep = new VAMobject("Separator");
+	
+	sep:"coord" = coord;
+	sep:"parent" = parent; // should be a Container
+	parent:"childseparator" = sep;
+	sep:"original" = nada; // reference for copies of Separator
+	sep:"timing" = parent:"timing";
+	sep:"color" = grey(.3);
+	sep:"ismoveable" = false;
+	sep:"copyonmove" = true;
+	sep:"width" = .4;
+	sep:"copies" = [];
+
+	sep:"hitbox" := ( // mutliple polys
+		regional(hitbox, offset, barscale, blobscale);
+		blobscale = .6;
+		hitbox = [];
+
+		//hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
+		hitbox = hitbox :> ellipse(my("coord")-[0,1.5*blobscale*my("width")], .6, .3);
+		barscale = .2;
+		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
+	);
+	sep:"ishot" := contains(apply(my("hitbox"), inpoly(#,mouse().xy)), true); // mouse in one the parts of the hitbox
+
+	sep:"shape" := my("hitbox");
+	sep:"draw" := // draw all Polys
+		forall(my("shape"), fillpoly(#, color->my("color")));
+
+	sep:"move" := if(my("ismoveable"),
+		self():"coord" = my("coord") + [mousedelta_1, 0]; // move only along x-axis
+		self():"coord"_1 = max(my("parent"):"coord"_1,my("coord")_1); // limit to the left
+		self():"coord"_1 = min(my("parent"):"coord"_1+my("parent"):"width",my("coord")_1); // limit to the right
+	);
+
+	sep:"moveend" := if(my("ismoveable"),
+		regional(x, strips, position, polyX);
+		x = my("coord")_1; // own x-coord for proper alignment
+		strips = my("parent"):"strips"; // strips of RegPolys to compare against
+
+		// Get position where to insert Separator
+		position = apply(strips, s, apply(s, #:"coord"_1 < x)); // [][] of true/false depending on, if RegPoly is left of dropped Separator
+		position = apply(position, s, select(s, #)); // throw away all "false" (Polys right of dropped Separator)
+		position = apply(position, s, length(s)); // count trues (number of Polys left of dropped Separator)
+		position = max(position); // max number of trues (position of rightmost element still left of Separator, may be zero)
+
+		// Get reference x-coordinate of RegPoly
+		if(position > 0,
+			polyX = select(strips, length(#) >= position)_1; // first strip with enough RegPolys for correct positioning
+			polyX = polyX_position; // RegPoly at appropriate position of that strip
+			polyX = polyX:"coord"_1; // its x-coord
+		); // polyX nada, if position is 0 (Separator dropped before first Poly or no Poly in Container)
+
+		// Handle storage of dropped Separator
+		if(isundefined(polyX), // if there is no useful place to insert Separator...
+			// ...remove from 'copies' and obj
+			self():"original":"copies" = my("original"):"copies" -- [self()];
+			obj = obj -- [self()];
+
+		, // else: Move into position, i.e. set x-coord of dropped Separator
+			new animationobject(
+				self(),
+				"coord",
+				my("coord"),
+				[polyX + size + .5 * my("parent"):"polypadding", my("coord")_2],
+				my("timing"),
+				"accel"
+			);
+		);
+	);
+
+	sep:"copy" := (
+		regional(copy);
+		copy = new Separator(my("coord"),my("height"), my("parent"));
+		copy:"ismoveable" = true;
+		copy:"copyonmove" = false;
+		copy:"original" = self(); // thing i am copied from (different from parent => Container)
+
+		self():"copies" = my("copies") ++ [copy];
+
+		copy;
+	);
+
+	sep:"popall" := (
+		obj = obj -- my("copies");
+		self():"copies" = [];
+	);
+
+	sep; // Return
+);
+
+// Multiline Container to hold RegPolys
+new Container(coord, numofstrips, limits) := (
+	regional(cont);
+	cont = new VAMobject("Container");
+
+	cont:"stripmargin" = .3; // distance to left and right border, half the distance is used to next strip
+	cont:"polypadding" = polypadding;
+	cont:"polyoffset" = 2*size + cont:"polypadding"; // distance between center of two RegPolys in a strip
+
+	cont:"coord" = coord;
+	cont:"childseparator" = nada; // gets set when initialising Separator
+	cont:"#strips" = numofstrips; // int: number of strips
+	cont:"strips" = ( // Stores RegPolys per strip
+		regional(strips);
+		strips = [];
+		repeat(cont:"#strips", strips = strips :> []);
+	);
+
+	cont:"limits" = limits; // [] int: size limits of strips
+	cont:"hardpolylimit" = ( // Calc how many Polys can at most be drawn in a line on screen
+		regional(hasinfinite, hardpolylimit);
+		hasinfinite = contains(apply(limits,# < 0), true); // flag wheter container has an infinite strip
+
+		if(hasinfinite, // calc limit based on screen width
+			hardpolylimit = screenbounds()_2_1 - coord_1; // width from left edge of container to right edge of screen
+			hardpolylimit = hardpolylimit - 2 * cont:"stripmargin"; // subtract distance to left and right edge from assignable space
+			hardpolylimit = hardpolylimit - size; // subtract a size as space to the right to place the next RegPoly
+			hardpolylimit = hardpolylimit / (2*size+cont:"polypadding"); // see how often Poly+padding fits inside assignable space
+			hardpolylimit = floor(hardpolylimit); // round down, since you won't fit a fraction of a RegPoly
+
+		, // else: calc limit based on max limit from limits
+			hardpolylimit = max(limits);
+		);
+	);
+
+	cont:"refpoints" := ( // [] Point: reference points for strip beginnings
+		regional(ref, dx, dy);
+		ref = [];
+		repeat(my("#strips"),
+			dx = size + my("stripmargin");
+			dy = (2*#-1) * (size + my("stripmargin")/2);
+			ref = ref :> my("coord") + [dx, dy];
+		);
+		ref;
+	);
+
+	cont:"height" = (2*size + cont:"stripmargin") * cont:"#strips";
+	cont:"stripheight" = cont:"height" / cont:"#strips";
+	cont:"width" = (
+		regional(width);
+
+		width = 2*cont:"stripmargin"; // margin to the left and right
+		width = width + size; // space for next Poly
+		width = width + (2*size + cont:"polypadding")*cont:"hardpolylimit"; // size for max Polys
+	);
+
+	cont:"ismoveable" = false;
+	cont:"isclickable" = false;
+	cont:"bordersize" = 3;
+	cont:"timing" = .2; // animation time
+
+	cont:"hitbox" := my("shape");
+	cont:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+
+	cont:"shape" := rectangle(my("coord"), my("width"),	my("height"));
+	cont:"draw" := (
+		// Loop over strips...
+		repeat(my("#strips"),
+			// ...and fill strip with some background color
+			fillpoly(rectangle(
+					my("coord") + (#-1) * [0,my("stripheight")],
+					my("width"),
+					my("stripheight")
+				),
+				color->if(isodd(#),grey(.94),grey(.98))	
+			);
+
+			// ...also draw indicators for infinte strips
+			if(my("limits")_# < 0,
+				fillpoly(
+					regularpolygon(my("refpoints")_# + [my("width")-size-2.5*my("stripmargin"),0], size/4, 3, -30°),
+					color->if(iseven(#),grey(0.94),grey(1))
+				);
+			);
+		);
+
+		// Draw border
+		//drawpoly(my("shape"), color->grey(.3), size->my("bordersize"));
+
+		// Debug draw
+		if('debuglevel > 0,
+			draw(my("coord"));
+			repeat(length(my("refpoints")), // draw refpoints and an appropriatly sized circle around each
+				draw(my("refpoints")_#);
+				drawcircle(my("refpoints")_#,size, color->grey(.85));
+				drawtext(my("refpoints")_#+[.2,0],my("limits")_#,color->grey(.7));
+			);
+		);
+	);
+
+// Eval Methods
+// ============
+	cont:"remove" := ( // Removes RegPoly from *any* strip, eval with "poly" as RegPoly
+		self():"strips" = apply(my("strips"), # -- [poly]);
+	
+		// Realign Polys
+		my("scrollbar"):"adjustedvalue" = round(my("scrollbar"):"value"); // update to animate correctly on removing
+		my("movepolysintoplace");
+
+		// Toggle scrollbar visibility (on overflowing strip)
+		my("scrollbar"):"setvisibility";
+	);
+
+	cont:"appendtostrip" := ( // eval with RegPoly "poly" and strip index "index" as int
+		self():"strips"_index = my("strips")_index :> poly;
+		poly:"parent" = self();
+	);
+
+	cont:"drop" := ( // handles stuff getting dropped on a container --> eval with object as "dropobject"
+		if(dropobject:"type" == "RegPoly", my("droppoly"),
+		if(dropobject:"type" == "Container" & dropobject:"subtype" == "Pattern", my("dropcontainer"),
+		if(dropobject:"type" == "Separator", my("dropseparator"), // not needed
+		// else
+		println("Dropped a " + dropobject:"type" + " ... nothing to do");
+		)));
+	);
+
+	cont:"droppoly" := ( // eval with dropobject (from own "drop" method)
+		// For safety
+		if(!contains(obj,dropobject), obj = obj :> dropobject);
+
+		// Find correct strip based on mouse coords
+		regional(stripys, stripindex, hotstrip);
+		stripys = apply(my("refpoints"), #_2 - (size+my("stripmargin")/2)); // y-coord of bottom edge of each strip
+		stripindex = 0; // index of hot strip
+		forall(stripys, if(mouse().xy_2 > #, stripindex = stripindex + 1)); // go up strips and count along if mouse is higher
+		stripindex = stripindex;
+		hotstrip = my("strips")_stripindex; // VALUE COPY of strip, reassign later
+
+		// Find position, where to insert dropobject
+		regional(position);
+		position = select(hotstrip, mouse().xy_1 > #:"coord"_1 & dropobject != #); // all Polys left of the mouse
+		position = 1 + length(position); // count them, add one --> next position to insert
+
+		// Remove dropobject from whatever strip its in
+		self():"strips" = apply(my("strips"),# = # -- [dropobject]); // Remove from strip fields
+		hotstrip = select(hotstrip, # != dropobject); // Remove from local hotstrip copy
+
+		// (Re)Set strip contents
+		hotstrip = hotstrip_(1..position-1) ++ // Assemble Polys BEFORE the dropobject
+			[dropobject] ++ // Append dropobject 
+			hotstrip_(position..length(hotstrip)); // Append Polys AFTER the dropobject
+
+		// Set RegPolys parent to Container
+		dropobject:"parent"= self();
+
+		// Reassign hotstrip to corresponding field
+		self():"strips"_stripindex = hotstrip;
+
+		// Remove overflowing elements at size limit of container
+		regional(len, lim, overflowcontent);
+		hotstrip = my("strips")_stripindex;
+		len = length(hotstrip);
+		lim = my("limits")_stripindex;
+		
+		if(lim > -1 & length(hotstrip) > my("limits")_stripindex, // Check if overflowing
+			overflowcontent = hotstrip_(1+min(len,lim)..len); // Get overflowing RegPolys
+			obj = obj -- hotstrip_(1+min(len,lim)..len); //// Remove overflowing RegPolys from obj
+			self():"strips"_stripindex = my("strips")_stripindex -- overflowcontent; // Remove overflowing RegPolys from strip
+		);
+
+		// Animate RegPolys in ALL strips to new position
+		my("scrollbar"):"adjustedvalue" = round(my("scrollbar"):"value"); // update to animate correctly on removing
+		my("movepolysintoplace");
+
+		// Toggle scrollbar visibility (on overflowing strip)
+		my("scrollbar"):"setvisibility";
+	);
+
+	cont:"dropcontainer" := ( // eval with dropobject (from own "drop" method)
+		regional(polys);
+
+		polys = dropobject:"strips"_1;
+		forall(polys,
+			eval(my("droppoly"), dropobject->#);
+		);
+	);
+
+// CONVENIENCE METHODS
+// =====================
+	cont:"movepolysintoplace" := ( // Animate Polygons to appropriate position for *all* strips
+		regional(offset, strip, refpoint, poly);
+		
+		offset = my("scrollbar"):"adjustedvalue"; // value to shift all polys to the left by
+		if(isundefined(offset), offset = 0); // if there is no scrollbar consider it to be 0
+
+		// Handle which Polys are drawn (i.e. are put into and removed from obj)
+		my("displaysubset");
+
+		repeat(length(my("strips")), // Loop over every strip and refpoint
+			strip = my("strips")_#;
+			refpoint = my("refpoints")_#;
+
+			repeat(length(strip), polyindex, // Loop over every RegPoly per strip
+				poly = strip_polyindex;
+				new animationobject(
+					poly,
+					"coord",
+					poly:"coord",
+					refpoint + (polyindex-1-offset) * [my("polyoffset"),0],
+					my("timing"),
+					"accel"
+				);
+			);
+		);
+
+		// Update divomath states/results
+		divomathUpdateResults();
+	);
+
+	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
+		regional(polys);
+		polys = [];
+		forall(my("strips"), strip, // iterate over strips
+			forall(strip, // inside strips iterate over RegPolys
+				polys = polys :> #; // add Poly to list
+				eval(my("remove"), poly->#); // Remove Poly from strip
+			);
+		);
+
+		obj = obj -- polys; // Remove all Polys from obj
+
+		polys; // Return
+	);
+
+	cont:"displaysubset" := ( // Displays only a subset of RegPolys (and Separators) (for scrolling)
+		regional(offset, polystodisplay);
+
+		offset = my("scrollbar"):"adjustedvalue"; // offset by which to select Polys by
+		if(isundefined(offset), offset = 0); // if there is no scrollbar consider it to be 0
+
+		// Handle displaying
+		forall(my("strips"), polys, // loop over every strip
+			// remove all polys
+			obj = obj -- polys;
+			
+			// get all polys that are to be displayed
+			polystodisplay = polys_(1+offset..min(length(polys),my("hardpolylimit")+offset));
+
+			// Put chosen polys back into obj
+			obj = obj ++ polystodisplay;
+		);
+
+		polystodisplay; // Return it (just cause)
+	);
+
+// Somewhat more elaborate fields (i.e. separate objects)
+// ======================================================
+	cont:"showscrollbar" := my("scrollbar"):"max" > 0; // flag to show bar, if there is need to be able to scroll
+
+	cont:"scrollbar" = (
+		regional(offset, bar);
+
+		// Create bar
+		offset = [1.2*cont:"stripmargin", .5*cont:"stripmargin" + cont:"height"];
+		bar = new HorizontalScrollbar(cont:"coord"+offset, cont:"width"-offset_1);
+		
+		// Config bar
+		bar:"parent" = cont;
+		bar:"hasbuttons" = true;
+		bar:"max" := max(0,max(apply(my("parent"):"strips",length(#))) - my("parent"):"hardpolylimit");
+
+		bar:"precision" := 1/max(1,my("max"));
+
+
+		bar:"adjustedvalue" = round(bar:"value"); // rounded value, reset in "script", to have an event fire on change
+		bar:"setvisibility" := ( // sets if bar is visible (called from parent when removing or adding Poly)
+			if(my("parent"):"showscrollbar",
+				obj = select(obj, # != self()) :> self(), // put self() in obj EXACTLY once
+				obj = select(obj, # != self()) // remove self() from obj
+			);
+		);
+
+		// Create script to change position of all of parents polys and Separators
+		bar:"script" := (
+			regional(adjval, currval);
+			adjval = my("adjustedvalue"); // Current adjusted value
+			currval = my("value"); // Current value (executes "script" in the first place)
+			
+			// Change adjusted value and toggle WHICH RegPolys and Separators are drawn WHERE
+			if(adjval != round(currval),
+				self():"adjustedvalue" = round(currval);
+			);
+
+			my("parent"):"movepolysintoplace";
+		);
+		
+		// Display bar at the start
+		if(cont:"showscrollbar", obj = obj :> bar);
+
+		bar; // Return
+	);
+
+	cont; // Return
+);
+
+new PatternContainer(coord, limit) := (
+	regional(cont);
+	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit?
+	cont = new Container(coord, 1, [limit]);
+
+	// Inherited from Container, don't use
+	obj = obj -- [cont:"scrollbar"];
+	cont:"showscrollbar" = false; // don't ever show scrollbar, scrollbar can't be nada without breaking errors though.
+
+	// Fields
+	cont:"subtype" = "Pattern";
+	cont:"bordersize" = 0;
+	cont:"ismoveable" = false;
+	cont:"copyonmove" = true;
+	cont:"width" := (
+		regional(numofpolys);
+		numofpolys = max(1,length(my("strips")_1));
+		
+		numofpolys * 2*size + (numofpolys) * my("polypadding") + .5*size;
+	);
+	cont:"move" := if(my("ismoveable"),
+		// Move self
+		self():"coord" = my("coord") + mousedelta;
+
+		// Move contents (RegPolys)
+		apply(my("strips")_1,#:"coord" = #:"coord" + mousedelta); // should only have exactly one strip
+	);
+
+	cont:"moveend" := if(my("ismoveable"), // Handle dropped PatternContainer
+		// Get Container the Poly is dropped on
+		regional(droptarget);
+
+		droptarget = select(obj, #:"type" == "Container" & isundefined(#:"subtype") & #:"ishot"); // possibly multiple Containers
+		droptarget = if(length(droptarget)>0,droptarget_1); // select first Container
+
+		// Call drop-handler from droptarget
+		eval(droptarget:"drop", dropobject->self());
+
+		// Remove copy of PatternContainer from obj
+		obj = obj -- [self()];
+
+		// Remove contents from obj too, if no droptarget was found
+		if(isundefined(droptarget), obj = obj -- my("strips")_1);
+	);
+
+	cont:"copy" := (
+		regional(copy, polycopy);
+		copy = new PatternContainer(my("coord"), my("limits")_1);
+		copy:"ismoveable" = true;
+		copy:"copyonmove" = false;
+
+		// Copy RegPolys of original and put in only strip
+		copy:"strips" = [apply(1..length(my("strips")_1), my("strips")_1_#:"copy")];
+
+		obj = obj ++ copy:"strips"_1; // Add copies to obj
+
+		copy;
+	);
+
+	cont; // Return
+);
+
+// D | Initialization
+// ==================
+// SL Config overwrite
+if(!usedivomath,
+	rows = 3;
+	size = 1;
+	limit = [2,3,-1];
+	state = ["3,6", "3,1,3", "1,6,9,1,3,5,1,1,1,1,1,1,1"];
+	vertices = [2,3,4,5,6,7,8,9,10,11,12];
+	drawpatterncontainer = false;
+	drawseparator = true;
+	polypadding = 1;
+);
+
+// Local vars
+regional('screenref, 'padding, 'marginleft, 'marginbottom);
+'screenref = (screenbounds()_4).xy; // bottom left corner of screen
+'marginleft = 1; // distance from left border
+'marginbottom = .5; // distance from bottom border
+'screenref = 'screenref + size * [1,1] + ['marginleft,'marginbottom];
+
+// D.1 | Create Polygons
+// =====================
+regional(polys);
+polys = []; // List of all initial RegPolys
+
+// Create RegPolys and align at the bottom of the screen
+repeat(length(vertices),
+	polys = polys :> new RegPoly('screenref, size, vertices_#, 0, colors_#);
+	polys_(-1):"copyonmove" = true;
+	'screenref = 'screenref + (2*1.1*size+polypadding) * [1,0]; // next center to draw RegPoly
+);
+
+// Add bg highlight for polys
+regional(bg);
+bg = {
+	"type" : "bg",
+	"shape": [
+	(screenbounds()_4),
+	(screenbounds()_3),
+	(screenbounds()_3) + 2*('marginbottom+size) * [0,1,0],
+	(screenbounds()_4) + 2*('marginbottom+size) * [0,1,0]
+	]
+};
+bg:"draw" := fillpoly(my("shape"),	color-> DZLMCOLORGOLD, alpha-> .2);
+
+// D.2 | Create PatternContainer
+// =============================
+// Align at the top
+if(drawpatterncontainer,
+	regional(patterncontainer);
+	patterncontainer = new PatternContainer([0,0], 100);
+);
+patterncontainer:"coord" = (screenbounds()_1).xy + ['marginleft,-'marginbottom-patterncontainer:"height"];
+
+// D.3 | Create and config Container
+// =================================
+// Align with coord of bg
+regional(container, polycopy, counter);
+container = new Container((bg:"shape"_4).xy + ['marginleft,.6+'marginbottom], rows, limit); // .6 is axis length of Separators' ellipse
+
+// Fill Container with predefined RegPolys
+counter = 1; // start at first strip
+state = apply(state, tokenize(#,",")); // Create config from supplied strings from divomath
+
+forall(state, row, // iterate over config for every row
+	forall(select(row, isinteger(#)), polyid, // iterate over every polyid per row that is an integer
+		
+		polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
+
+		eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip
+
+		// (!) Put copy in obj on obj build, so they get drawn on top (see below)
+	);
+	counter = counter + 1; // next cycle --> next strip
+);
+container:"movepolysintoplace"; // align polys
+
+// D.4 | Create Separator
+// ======================
+if(drawseparator,
+	regional(separator);
+	separator = new Separator(container:"coord", container:"height", container);
+	container:"rootseparator" = separator;
+);
+
+// D.5 | Reset Button
+// ==================
+regional(btn);
+'screenref = (screenbounds()_2).xy; // top right corner of the screen
+'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
+
+btn = new Button('screenref - [2*size,size], 2*size, size, ANTICLOCKWISEARROW, 26);
+btn:"cornerradius" = size;
+btn:"color" = DIVODARKBLUE;
+btn:"bordercolor" = DIVODARKBLUE;
+btn:"fontcolor" = grey(1);
+btn:"script" := (
+	// Remove all RegPolys
+	forall(select(obj, #:"type" == "Container"), #:"popall");
+	'polyid = 0;
+	
+	// Remove all Separators
+	forall(select(obj, #:"type" == "Separator" & isundefined(#:"original")), #:"popall");
+);
+
+// E | Build obj
+// =============
+obj = obj :> bg;
+obj = obj :> btn; // Reset button
+obj = obj :> container;
+obj = obj :> patterncontainer;
+obj = obj ++ polys;
+obj = obj ++ flatten(container:"strips"); // Initial Polys of container build at Container init
+obj = obj :> separator;
+
+// Order to draw (Separator last, so it is on top)
+typeorder = ["bg", "Container", "RegPoly", "Separator"];
+);

@@ -207,7 +207,7 @@ PHI = (1 + sqrt(5)) / 2;
 VALUEMAP = {
 "1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", "6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", "11" : "Elfer", "12" : "Zwölfer"
 };
-
+v3.1.0/divoVAM template 3.1.0.js
 HEXMAP = {
 	"0":0,"1":1,"2":2,"3":3,"4":4,
 	"5":5,"6":6,"7":7,"8":8,"9":9,

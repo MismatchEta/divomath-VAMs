@@ -1,0 +1,29 @@
+// v1
+// Base Class for VAMobject
+new VAMobject(type) := (
+	regional(obj);
+	obj = {
+		"coord" 			: [0,0],
+		"type"  		  : type,
+		"ismoveable"  : false,
+		"copyonmove"	: false,
+		"isclickable" : false,
+		"getaction" 	: "move",
+		"color" 			: VAMPALETTE_1
+	};
+	obj:"name" 			:= self():"type"+self():"coord";
+	obj:"ishot" 		:= dist(self():"coord",mouse().xy) < 1;
+	obj:"move"  		:= if(self():"ismoveable", self():"coord" = coord);
+	obj:"moveend"		:= nada;
+	obj:"clickcopy" := if(self():"copyonmove", self():"copy");
+	obj:"copy"  		:= (regional(r); r = new VAMobject(my("type")));
+	obj:"draw"			:= fill(
+		circle(self():("coord"),1),
+		color->self():"color"
+	);
+	obj:"click"			:= if(self():"isclickable", 
+		self():"color" = apply(self():"color",|1-#|)
+	);
+	
+	obj; // Return the VAMobject.
+);
