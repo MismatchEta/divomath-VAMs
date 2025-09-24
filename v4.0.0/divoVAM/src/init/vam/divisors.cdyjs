@@ -1,4 +1,4 @@
-// v12
+// v13
 // last changes:
 // - draw line instead of rectangle to separate UI Elements at the bottom
 // - Generate random position of Blobs properly inside of worlds viewport
@@ -6,6 +6,7 @@
 // - added "drawbar" to control access to the bar
 // - changed default timing from 1 to .5
 // - fixed bar reappearing when reloading a page --> added "drawbar" to state reporting
+// - added divomath workaround for receiving config info
 
 if(vam == "divisors", // change accordingly
 
@@ -46,24 +47,56 @@ item = 'dmstate.color;
 color = if(!isundefined(item), apply(item, COLORMAP:#), [DIVORED, DIVOGREY]); // Color of Blobs and Strips as [str,str]
 
 size = defaultstateto("size", .7); // Size of Blobs.
+size = parse(size+"");
+
 padding = defaultstateto("blobmargin", .2); // Padding between blobs in a strip.
+padding = parse(padding+"");
+
 stripmargin = defaultstateto("stripmargin", .5); // Vertical margin between strips.
+stripmargin = parse(stripmargin+"");
+
 timing = defaultstateto("timing", .5); // Timing of animations.
+timing = parse(timing+"");
+
 blobs = defaultstateto("blobs", 0); // Inital blob count.
+blobs = parse(blobs+"");
+
 maxblobs = defaultstateto("maxblobs", 100); // Maximum blob count.
+maxblobs = parse(maxblobs+"");
+
 divisor = defaultstateto("divisor", 1); // Inital divisor.
+divisor = parse(divisor+"");
+
 maxcols = defaultstateto("maxcols", 10); // Maximum number of divisors (columns).
+maxcols = parse(maxcols+"");
+
 sequentialorder = defaultstateto("sequentialorder", false); // Reordering strategy when divisors changes
+sequentialorder = tobool(sequentialorder); // dm reports back "" when false, reset properly
 
 // UI and display configs
 drawblobbuttons = defaultstateto("drawblobbuttons", true); // Draw Button UI Elements for Blob count
+drawblobbuttons = tobool(drawblobbuttons);
+
 drawdivbuttons = defaultstateto("drawdivbuttons", true); // Draw Button UI Elements for div
+drawdivbuttons = tobool(drawdivbuttons);
+
 drawbar = defaultstateto("drawbar", true); // Draw vertical bar for changing div
+drawbar = tobool(drawbar);
+
 displaycalc = defaultstateto("displaycalc", true); // Display calculation text
+displaycalc = tobool(displaycalc);
+
 displayresult = defaultstateto("displayresult", true); // Display result text
+displayresult = tobool(displayresult);
+
 displaydescription = defaultstateto("displaydescription", true); // Display description text
+displaydescription = tobool(displaydescription);
+
 displayblobcount = defaultstateto("displayblobcount", true); // Display blob count text
+displayblobcount = tobool(displayblobcount);
+
 displaydivisorcount = defaultstateto("displaydivisorcount", true); // Display divisor count text
+displaydivisorcount = tobool(displaydivisorcount);
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -112,7 +145,6 @@ divomathSetState() := (
 
 	state;
 );
-
 
 // GLOBAL VARS
 'globalscaling = 1; // Adjusts size of stuff, gets set by world:"updateglobalscaling"

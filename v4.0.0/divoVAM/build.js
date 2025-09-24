@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const eventOrder = require('./src/eventOrder.js');
 
-const filename = path.join(__dirname, 'vam.cdjs');
+const filename = path.join(__dirname, 'vam.cdyjs');
 
 // Beginning Wrapper
 let output = `() => ({

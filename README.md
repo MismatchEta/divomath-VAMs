@@ -261,6 +261,13 @@ Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird d
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+### v4.0.0
+- VAM:
+  - neues VAM: percentagebar
+  - divisors:
+    - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
+    - 
+- build Prozess des divomath codes in separates Skript ausgelagert
 ### v3.1.0
 - VAM:
   - divisors:
