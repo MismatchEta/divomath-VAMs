@@ -1,6 +1,9 @@
-// v2
+// v4
+// Recent changes:
+// - added call to divomathUpdateResults() on "S"-Key
+// - added function to increment/decrement debuglevel with +/- keys
 
-if(key() == "K", // Debug print divomath details
+if(key() == "k" % key() == "K", // Debug print divomath details
 	println("=============DIVOMATH SETTINGS=============");
 	println("divomath base object: " + divomathConfig);
 	println("Screenbounds: " + screenbounds());
@@ -14,3 +17,10 @@ if(key() == "K", // Debug print divomath details
 	println("SetState overwrite: " + divomathSetState());
 	println("==========================================="); 
 );
+
+if(key() == "s" % key() == "S", 
+	divomathUpdateResults();
+);
+
+if(key() == "+", 'debuglevel = 'debuglevel + 1; println("'debuglevel++: " + 'debuglevel));
+if(key() == "-", 'debuglevel = 'debuglevel - 1; println("'debuglevel--: " + 'debuglevel));

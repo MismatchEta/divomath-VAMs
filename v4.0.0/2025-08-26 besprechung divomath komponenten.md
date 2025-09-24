@@ -1,12 +1,12 @@
 # strapwork
-- In Validierung wird der Marker nicht angezeigt.
+- **erledigt** In Validierung wird der Marker nicht angezeigt.
 - Marker kann auch nicht referenziert werden.
 - Wenn Polygone aus Mustercontainer eingefügt werden, werden sie auch nicht referenziert.
-- Mustercontainer wieder nach unten
-- kein DZLMgoldener Hintergrund, sondern schwarzer Rahmen ohne Füllung
+- **erledigt** Mustercontainer wieder nach unten
+- **erledigt** kein DZLMgoldener Hintergrund, sondern schwarzer Rahmen ohne Füllung
 - Bildchen von Händen zusätzlich zu vernünftigen Figuren
 - Mustercontainer erweitern (siehe letztes Gespräch unten)
-
+- **erledigt**Wenn Polyone aus Mustercontainer eingefügt, dann Ordnung wild (weil nach Mauszeigerposition geordnet, siehe letztes Gespräch unten)
 --------------------------
 
 übergeordnet:

@@ -1,6 +1,7 @@
-// v2
+// v3
 // Recent changes:
 // - usedivomath added as flag for storyline config
+// - moved behind helper functions
 
 // Access divomath editor settings
 'dmconf = divomathConfig.configuration;

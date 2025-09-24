@@ -1,5 +1,10 @@
-// v1
+// v2
+// Recent changes:
+// - set mousedown to false
+
 // Code für RELEASE
+mousedown = false;
+
 if(!isundefined(hot),
   //err("released:"+action);
 

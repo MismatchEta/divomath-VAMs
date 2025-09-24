@@ -1,6 +1,8 @@
-// v4
+// v5
 // Recent changes:
-// - added labelheight and fontfamily fields
+// - Fixed colors
+// - Added isfloating and move-script to simulate floating button
+
 new Button(coord,width,height,label,fontsize) := (
 	regional(obj);
 	obj = new VAMobject("Button");
@@ -9,9 +11,9 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"width"  = width;
 	obj:"height" = height;
 	obj:"cornerradius" = (width+height) / 50;
-	obj:"color"	 = dzlmcolorlight;
-	obj:"bordercolor" = dzl;
-	obj:"fontcolor" = dzlmcolordark;
+	obj:"color"	 = DZLMCOLORLIGHT;
+	obj:"bordercolor" = DZLMCOLORDARK;
+	obj:"fontcolor" = DZLMCOLORDARK;
 	obj:"label"	 = label;
 	obj:"fontsize" = defaultto(fontsize, 12);
 	obj:"fontfamily" = nada;
@@ -22,6 +24,7 @@ new Button(coord,width,height,label,fontsize) := (
 	);
 
 	obj:"ismoveable" = false;
+	obj:"isfloating" = false;
 	obj:"hasshadow" = true;
 	obj:"hasborder" = true;
 	obj:"show" = true;
@@ -74,7 +77,11 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"drawafter" := nada;
 	obj:"ishot" := if(my("show"),inrectangle(my("hitbox"),mouse().xy));
   obj:"click"	:= my("script");
-  obj:"script" := println("Implement obj:script"); 
+  obj:"script" := println("Implement obj:script");
+
+	obj:"move" := if(my("isfloating"),
+		self():"coord" = my("coord") + mousedelta;
+	);
 
 	obj; // Return the button.
 );

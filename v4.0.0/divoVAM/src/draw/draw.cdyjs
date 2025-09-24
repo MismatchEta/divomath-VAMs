@@ -1,4 +1,4 @@
-// v3
+// v4
 // Recent changes:
 // - changed drawing order for Debug stuff
 
@@ -30,3 +30,9 @@ if('debuglevel > 1,
 if('debuglevel > 9, 
 	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
 );
+
+// Send divomath results first time the scene is drawn
+if(usedivomath & 'firstdraw, divomathUpdateResults());
+
+// Set flag to remember first call to draw script is done
+'firstdraw = false;

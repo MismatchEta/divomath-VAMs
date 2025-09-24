@@ -1,10 +1,22 @@
-// v2
+// v5
+// Recent changes:
+// - put after helper functions
+// - added 'urlparams to store alle search parameters from cindyjs
+// - changed vam switch to be configurable via URLparam
+// - added debugging output
+
 // Vars for configuring VAM behavior
 // Convention - starts with single quote (')
 
+// get URL search parameters
+'urlparams = NADA;
+if(ISCINDYJS,	'urlparams = getURLparams());
+
 // A | Common flags
 'isdebugging=isdebugging = false;	// Toggle debugging. (legacy)
-'debuglevel = 0; // local overwrite for debuglevel set by divomath
+'debuglevel = 2; // local overwrite for debuglevel set by divomath
+if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debuglevel"));
+
 'mousepressedtime=mousepressedtime=false;
 'firstdraw = true; // for handling stuff that should only happen on first call of draw script
 
@@ -14,6 +26,18 @@
 'doc = "No docstring for VAM.";
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
-// C | Overwrite VAM choice locally
 
-//vam = "numbercards"; // comment before production
+
+// C | Overwrite VAM choice locally
+vam = "strapwork"; // comment before production
+if(!isundefined('urlparams:"vam"), vam = 'urlparams:"vam");
+
+if('debuglevel > 3,
+	println("=== Configuring global setting ===");
+	println("> 'debuglevel: " + 'debuglevel);
+	println("> using CindyJS: " + ISCINDYJS);
+	println("> supplied URL parameters: " + 'urlparams);
+	println("> load VAM: " + vam);
+	println("> in divomath environment: " + usedivomath);
+	println("=== Setup done ===");
+);

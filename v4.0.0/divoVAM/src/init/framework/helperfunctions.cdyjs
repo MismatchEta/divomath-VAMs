@@ -1,13 +1,9 @@
-// v13
+// v17
 // Recent changes:
-// - added values() function
-// - added ellipse() functions
-// - added defaultto() function
-// - added drawtextbox() function
-// - overloaded getboundingbox(3) to get boundingbox for textbox drawing
-// - added defaultstateto() function for handling 'dmstate and 'dmprevans keys
-// - removed label bg in drawtextbox() -> does not work in HTML for some reason
-// - added isbool() and tobool() function
+// - inpoly(): added check for solution of linear solve to be undefined
+// - added postValue() for exchanging messages with browser
+// - added incircle() to check if a point is in a circle given by center and radius
+// - added getURLparam() and getURLparams() to get URL search parameters
 
 // Convenience functions
 // A | VAM object functions
@@ -138,7 +134,7 @@ regularpolygon(center, radius, vertices, rotation) := (
 		1..vertices,
 		center + radius * (
 			sin(rotation + #*2*PI / vertices),
-			cos(rotation + #*2*π/vertices))
+			cos(rotation + #*2*PI/vertices))
 		)
 	)
 );
@@ -212,6 +208,7 @@ getboundingbox(poly) := (
 //** Checks if a point is inside a polygon (by ray casting)
 //**
 inpoly(poly, point) := (
+//println("!!" + poly);
 	regional(rayStart, rayDir, edgeStart, edgeDir, 
 		A, solution, numIntersections
 	);
@@ -226,7 +223,7 @@ inpoly(poly, point) := (
 	// Iterate over all edges and check for count intersections with ray.
 	numIntersections = 0;
 	repeat(length(poly),
-		// If not at the last vertex get edge by looking ahead one.
+		// If not at the last vertex get edge by looking ahead one.	
 		if(# != length(poly),
 			edgeStart = poly_#;
 			edgeDir = poly_(#+1) - poly_#;
@@ -234,17 +231,19 @@ inpoly(poly, point) := (
 			edgeStart = poly_#;
 			edgeDir = poly_1 - poly_#;
 		);
-		
+	
 		// Check ray and edge for intersection
 		A = [[rayDir_1, -edgeDir_1], [rayDir_2, -edgeDir_2]];
 		solution = linearsolve(A, edgeStart - rayStart);
-		
+
 		// Count as intersection if both entries of solution are in [0,1].
-		if(solution_1 >= 0 & solution_1 <= 1 &
-			solution_2 >= 0 & solution_2 <= 1,
-			numIntersections = numIntersections + 1;
-		);
-	);	
+		if(!isundefined(solution),
+			if(solution_1 >= 0 & solution_1 <= 1 &
+				solution_2 >= 0 & solution_2 <= 1,
+				numIntersections = numIntersections + 1;
+			);
+		);	
+	); // End repeat
 
 	// Return	true if odd number of intersections
 	mod(numIntersections, 2) == 1;
@@ -333,6 +332,33 @@ rectinrectangle(rect1,rect2,border):=inrectangle(rect1,rect2_1,border) &
 															inrectangle(rect1,rect2_3,border) &
 															inrectangle(rect1,rect2_4,border);
 
+inroundedrectangle(coord, width, height, cornerradius, point) := (
+	regional(isinside);
+	inside = false; // assume point is outside
+
+	if(inrectangle(rectangle(coord,width,height),point), // is in bounding rectangle
+		inside = true;
+		if(	inrectangle(rectangle(coord,cornerradius,cornerradius),point) & 
+				!incircle(coord+cornerradius*[1,1],cornerradius,point),
+			inside = false; // outside of bottom left circle
+		);
+		if(	inrectangle(rectangle(coord+[width-cornerradius,0],cornerradius,cornerradius),point) & 
+				!incircle(coord+[width-cornerradius, cornerradius],cornerradius,point),
+			inside = false; // outside of bottom right circle
+		);
+		if(	inrectangle(rectangle(coord+[width-cornerradius,height-cornerradius],cornerradius,cornerradius),point) & 
+				!incircle(coord+[width-cornerradius, height-cornerradius],cornerradius,point),
+			inside = false; // outside of top right circle
+		);
+		if(	inrectangle(rectangle(coord+[0,height-cornerradius],cornerradius,cornerradius),point) & 
+				!incircle(coord+[cornerradius, height-cornerradius],cornerradius,point),
+			inside = false; // outside of top left circle
+		);
+	);
+
+	inside; // false
+);
+
 // B.2 | Triangle
 //**Check if a given point [x,y] is in a triangle.
 //* @param rect: [A,B,C] list of [x,y]-points of triangle
@@ -358,6 +384,8 @@ rotate(point, angle, center) := (
 	];
 	point + center;
 );
+
+incircle(center, radius, point) := dist(center, point) <= radius;
 
 // Returns a list of points along an elliptical arc
 // Parameters:
@@ -610,3 +638,56 @@ tobool(expression) := (
 	result;
 );
 isbool(expression) := (expression == true % expression == false);
+
+
+// Storyline functions
+msgtoken = "sl_cjs_v1"; // security feature
+
+postValue(name, value) := (
+	javascript("
+		window.parent.postMessage(
+			{
+				type: 'CJS_TO_SL_SET',
+				token: '" + msgtoken + "',
+				name: '" + name + "',
+				value: " + value + "
+			},
+			'*'
+		);
+	");
+	println("Msg sent, Payload: name='"+name+"', value="+value);
+);
+
+// Web / CindyJS / Browser functions
+// Get URL search parameter based on key
+getURLparam(key) := (
+	regional(valueincs);
+	javascript("
+    var params = new URLSearchParams(window.location.search);
+    var value = String(params.get('" + key + "'));
+		var csquery = 'valueincs = ';
+		csquery += '"+QUOTE+"';
+		csquery += value;
+		csquery += '"+QUOTE+"';
+		cdy.evokeCS(csquery);
+	");
+	valueincs; // Return value
+);
+
+// Get all URL search parameters
+getURLparams() := (
+	regional(urlparams);
+	urlparams = {};
+	javascript("
+    var params = new URLSearchParams(window.location.search);
+		for (let [k,v] of params.entries()) {
+			// stringify key and value
+			var key = '"+QUOTE+"' + k + '"+QUOTE+"';
+			var val = '"+QUOTE+"' + v + '"+QUOTE+"';
+			// Build command: urlParams.key = val;
+			var csquery = 'urlparams:' + key + '=' + val;
+			cdy.evokeCS(csquery);
+		};
+	");
+	urlparams; // Return value
+);

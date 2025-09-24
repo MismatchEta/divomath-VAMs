@@ -1,5 +1,8 @@
 // v2
-mousedown = !mousedown;
+// Recent changes:
+// - set mousedown to true
+
+mousedown = true;
 mousepressedtime=seconds();
 
 // Finde alle Elemente, die beweglich sind, wenn die Maus an der aktuellen Stelle ist (mouse().xy)
@@ -19,35 +22,34 @@ if(!isundefined(oldaction),
 
 // Wenn es ein Element in der Hotlist gibt, dann finde die relative Distanz zwischen Referenzpunkt und Maus.
 if(length(hotlist)>0,
-		hot = hotlist_(length(hotlist));
-    startmouse = mouse().xy;
-    oldmouse = mouse().xy;
-		//err("pressed:"+hot:"name");
+	hot = hotlist_(length(hotlist));
+	startmouse = mouse().xy;
+	oldmouse = mouse().xy;
+	//err("pressed:"+hot:"name");
+	clickcopy = hot:"clickcopy";
+	if(not(isundefined(clickcopy)),
+		//clickcopy:"clickcopy"=NADA;
+		obj = obj :> clickcopy;
+		hot=clickcopy;
+	);
 
-    clickcopy = hot:"clickcopy";
-		if(not(isundefined(clickcopy)),
-				//clickcopy:"clickcopy"=NADA;
-				obj = obj :> clickcopy;
-        hot=clickcopy;
-		);
-	
-    startcoord = hot:"coord";
-	  localcoord = startmouse - hot:"coord";
+	startcoord = hot:"coord";
+	localcoord = startmouse - hot:"coord";
 
-		action=eval(hot:"getaction",coord->startmouse, delta->localcoord, mouse -> mouse().xy);
+	action=eval(hot:"getaction",coord->startmouse, delta->localcoord, mouse -> mouse().xy);
 
-		//err("pressed:"+action);//err(hot:"moveable");
+	//err("pressed:"+action);//err(hot:"moveable");
 
-		//obj = (obj -- [hot])++ [hot];
-		// dieses Movetofront geht so nicht, zerstört andere Stellen, die 
-		// mit globalem typeorder-Konzept arbeiten
-		//if(ifdefined(hot:"movetofront",true),obj = (obj -- [hot])++ [hot]);
-		//err(hot:"movetofront");
+	//obj = (obj -- [hot])++ [hot];
+	// dieses Movetofront geht so nicht, zerstört andere Stellen, die 
+	// mit globalem typeorder-Konzept arbeiten
+	//if(ifdefined(hot:"movetofront",true),obj = (obj -- [hot])++ [hot]);
+	//err(hot:"movetofront");
 
-		//err(sum(apply(obj,#:"name"+" ")));
+	//err(sum(apply(obj,#:"name"+" ")));
 
-		// angefasste Elemente kommen nach vorn
-		x=0; //verhindert das seltsame Verhalten, dass bei Drücken nicht gezeichnet wird
+	// angefasste Elemente kommen nach vorn
+	x=0; //verhindert das seltsame Verhalten, dass bei Drücken nicht gezeichnet wird
 ,
-    hot = NADA; // explizit auf "undefiniert" setzen.
+	hot = NADA; // explizit auf "undefiniert" setzen.
 );

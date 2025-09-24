@@ -1,0 +1,982 @@
+// v1
+
+// Distributivfeld
+if(vam == "distributive",
+
+// A | Documentation
+//'doctextpos = [9,15.5];
+'doc = "
+	...
+=======================================================
+configuration:
+  ...
+=======================================================
+";
+
+// global vars
+'atomsize = 1; // muss vom User konfigurierbar sein
+'atomradius = .5; // muss vom User konfigurierbar sein (via POST von URL)
+'atomcolors = {
+	"blue" : (40,111,255)/255,
+	"green" : (50,202,48)/255,
+	"orange" : (255,129,29)/255,
+	"purple" : (165,57,255)/255
+};
+'atomverticalpadding = .1;
+'atomhorizontalpadding = .1;
+'groupspacing = .2;
+'cutwidth = .3;
+'gridmoveable = true;
+'buttonsize = 2;
+'buttonpadding = .4;
+'lblpadding = .3;
+'animationspeed = .15;
+
+// B.1 | Divomath config
+// States
+
+// Configure result handling and setState.
+// Overwrite divomath result updating function.
+divomathUpdateResults() := if(usedivomath,);
+
+// Overwrite divomath setState()
+divomathSetState() := ();
+
+// C | Classes
+// C.1 | Atom: Thing that gets arranged into a rectangle
+new Atom(c, parent) := (
+	regional(atom);
+	atom = new VAMobject("Atom");
+	atom:"coord" = if(isundefined(c),[0,0],c);
+	atom:"size" = 'atomsize;
+	atom:"color" = 'atomcolors:"blue";
+	atom:"radius" = 'atomradius;
+	atom:"parent" = parent;
+	atom:"left" = nada;
+	atom:"right" = nada;
+	atom:"up" = nada;
+	atom:"down" = nada;
+	atom:"neighbors" := {
+		"up": my("up"),
+		"down": my("down"),
+		"left": my("left"),
+		"right": my("right")
+	};
+
+	atom:"shape" := roundedrectangle(my("coord"),my("size"),my("size"),my("radius"));
+	atom:"hitbox" := atom:"shape";
+
+	atom:"ishot" := inroundedrectangle(my("coord"),my("size"),my("size"),my("radius"),mouse().xy);
+
+	atom:"draw" := ( // can be evaled with 'atomalpha
+		if(isundefined('atomalpha), 'atomalpha = 1);
+		fill(my("shape"), color->my("color"), alpha->'atomalpha);
+
+		if('debuglevel>0, draw(my("coord")));
+	);
+
+	atom:"click" := println("beep " + random());
+
+	atom; // Return Atom
+);
+
+// C.2 | Grid: ...of Atoms
+new Grid(c, rows, cols) := (
+	regional(grid);
+	grid = new VAMobject("Grid");
+	grid:"coord" = c;
+	grid:"rows" = max(1,rows);
+	grid:"cols" = max(1,cols);
+	grid:"verticalpadding" = 'atomverticalpadding;
+	grid:"horizontalpadding" = 'atomhorizontalpadding;
+	grid:"width" := my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
+	grid:"height" := my("grid")_(-1)_1:"coord"_2 + 'atomsize - my("coord")_2;
+	grid:"ismoveable" := 'gridmoveable % my("tool") != "hand";
+
+	// group, paintbucket and scissors controls
+	grid:"cutwidth" = 'cutwidth;
+	grid:"flags" = {
+		"group-by": "NONE", // "NONE", "ROW" or "COLUMN" depending on how atoms should be visually grouped by increasing the padding
+		"color-row": nada, // MAX index of colored row
+		"color-col": nada, // MIN index of colored col
+		"cut-row": false, // flag, if row is cut (bigger gap)
+		"cut-col": false // flag, if column is cut (bigger gap)
+	};
+
+	// Scissors controls
+	grid:"linetreshold" = 'atomsize; // treshold, at which line is either VERTICAL or HORIZONTAL
+	grid:"linedirection" = nada; // "VERTICAL" or "HORIZONTAL" depending on linetreshold
+	grid:"linestart" = nada; // point
+	grid:"lineend" = nada; // point
+
+	grid:"grid" = (
+		regional(atoms, newatom);
+		atoms = []; // stores grid of Atoms
+
+		repeat(rows, rowindex,
+			atoms = atoms :> [];
+			repeat(cols, colindex,
+				newatom = new Atom(c + 'atomsize*[colindex-1,rowindex-1] + [(colindex-1)*'atomverticalpadding,(rowindex-1)*'atomhorizontalpadding], grid);
+				newatom:"color" = 'atomcolors:"blue";
+				atoms_rowindex = atoms_rowindex :> newatom;
+			);
+		);
+		atoms; // Assign array of Atoms
+	);
+
+	grid:"hitbox" := rectangle(my("coord"), my("width"), my("height")); // Rounded rectangle just fitting around all Atoms
+	grid:"shape" := roundedrectangle(my("coord"), my("width"), my("height"), 'atomradius); // Rounded rectangle just fitting around all Atoms
+	
+	grid:"ishot" := if(my("tool") == "hand",
+		inroundedrectangle(my("coord"), my("width"), my("height"), 'atomradius, mouse().xy);
+	,
+		true; // always true, so whole canvas can be drawn on
+	);
+	grid:"draw" := (
+		regional(m, rowindex, colindex);
+		m = mouse().xy;		
+
+		// Draw all Atoms
+		forall(my("grid"), row,
+			forall(row, atom,	atom:"draw");
+		);
+
+		// Draw line, when tool is scissors
+		if(my("tool") != "hand",
+			draw(my("linestart"), my("lineend"),
+				color->if(my("tool") == "bucket", DZLMCOLORGOLD, grey(.5)),
+				size->if(my("tool") == "bucket", 20, 4),
+				dashtype->if(my("tool") == "bucket", 0, 2);
+			);
+		);
+
+		// Debug Draw
+		if('debuglevel > 0,
+			draw(my("shape"), size->3, dashtype->1);
+			draw(my("coord"), size->4, color->[0,0,1]);
+		);
+	);
+
+// === Interaction with Grid
+	grid:"move" := if(my("ismoveable"),
+		if(my("tool") == "hand",
+			// Move Atoms
+			forall(my("grid"), row,
+				forall(row, atom,
+					atom:"coord" = atom:"coord" + mousedelta;
+				);
+			);
+		
+			// Move grid itself (i.e. own coord and hitbox)
+			self():"coord" = my("coord") + mousedelta;
+		);
+		
+		if(my("tool") != "hand",
+			regional(m);
+			m = mouse().xy;
+
+			// Set starting point of cut
+			if(isundefined(my("linestart")), self():"linestart" = m);
+
+			// Set direction and end point of cut
+			// -1- direction not set yet
+			if(isundefined(my("linedirection")),
+				self():"lineend" = m;
+				if(dist(my("lineend"), my("linestart")) > 'atomsize,
+					regional(distxy);
+					distxy = apply(my("lineend") - my("linestart"), abs(#));
+					self():"linedirection" = if(distxy_1 > distxy_2, "HORIZONTAL", "VERTICAL");
+				);
+			);
+
+			// -2- direction is "horizontal"
+			if(my("linedirection") == "HORIZONTAL",
+				self():"lineend" = [m_1, my("linestart")_2];
+			);
+
+			// -3- direction is "vertical"
+			if(my("linedirection") == "VERTICAL",
+				self():"lineend" = [my("linestart")_1, m_2];
+			);
+		);
+
+	);
+
+	grid:"moveend" := if(my("tool") != "hand",
+		// Get index of active row/col
+		regional(activeindex, ref);
+		ref = my("linestart"); // Reference point for getting active index
+
+		if(my("linedirection") == "VERTICAL" & ref_1 > my("coord")_1 & ref_1 < my("coord")_1 + my("width"),
+			// Check atomcoords in first row and pick closest index w/o going over
+			forall(1..my("cols"), currentcol,
+				if(ref_1 > my("grid")_1_currentcol:"coord"_1, activeindex = currentcol);
+			);
+		);
+		if(my("linedirection") == "HORIZONTAL" & ref_2 > my("coord")_2 & ref_2 < my("coord")_2 + my("height"),
+			// Check atomcoords in first row and pick closest index w/o going over
+			forall(1..my("rows"), currentrow,
+				if(ref_2 > my("grid")_currentrow_1:"coord"_2, activeindex = currentrow);
+			);
+		);
+
+		// Bucket logic ((un-)drawing stuff)
+		if(my("tool") == "bucket" & !isundefined(activeindex),
+			if(my("linedirection") == "VERTICAL",
+				// Set/Unset flag for painting column, depending on if col is drawn over a second time
+				self():"flags":"color-col" = if(my("flags"):"color-col" == activeindex, NADA, activeindex);
+			);
+			if(my("linedirection") == "HORIZONTAL",
+				// Set/Unset flag for painting row, depending on if row is drawn over a second time
+				self():"flags":"color-row" = if(my("flags"):"color-row" == activeindex, NADA, activeindex);
+			);
+			my("repaint"),
+		);
+
+		// Scissors logic ((un-)cutting stuff)
+		if(my("tool") == "scissors",
+			eval(my("cutgrid"), 'activeindex->activeindex, 'direction->my("linedirection"));
+		);
+
+		// Reset scissors vars
+		self():"linestart" = NADA;
+		self():"lineend" = NADA;
+		self():"linedirection" = NADA;
+	);
+
+	grid:"click" := if(my("tool") == "hand", // handles grouping of rows or cols
+		regional(state);
+		state = my("flags"):"group-by";
+
+		if(state == "NONE", // group by "ROW"
+			// Increase y-coord of every atom in second row or higher
+			apply(1..my("rows"), rowindex, apply(my("grid")_rowindex, atom, 
+				// atom:"coord" = atom:"coord" + (rowindex-1)*[0,'groupspacing] // no animation
+				new animationobject(
+					atom,
+					"coord",
+					atom:"coord",
+					atom:"coord" + (rowindex-1)*[0,'groupspacing],
+					'animationspeed,
+					"accel"
+				);
+			));
+
+			// Update state
+			self():"flags":"group-by" = "ROW";
+		);
+
+		if(state == "ROW", // group by "COLUMN"
+			// Decrease y-coord of every atom in second row or higher
+			// Also increase x-coord of every atom in second col or higher
+			apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex, 
+				new animationobject(
+					my("grid")_rowindex_colindex,
+					"coord",
+					my("grid")_rowindex_colindex:"coord",
+					my("grid")_rowindex_colindex:"coord" - (rowindex-1)*[0,'groupspacing] + (colindex-1)*['groupspacing,0],
+					'animationspeed,
+					"accel"
+				);
+			));
+
+			// Update state
+			self():"flags":"group-by" = "COLUMN";
+		);
+
+		if(state == "COLUMN", // ungroup ("NONE")
+			// Decrease x-coord of every atom in second col or higher
+			apply(my("grid"), row, apply(1..my("cols"), atomindex, 
+				// row_atomindex:"coord" = row_atomindex:"coord" - (atomindex-1)*['groupspacing,0] // no animation
+				new animationobject(
+					row_atomindex,
+					"coord",
+					row_atomindex:"coord",
+					row_atomindex:"coord" - (atomindex-1)*['groupspacing,0],
+					'animationspeed,
+					"accel"
+				);
+			));
+
+			// Update state
+			self():"flags":"group-by" = "NONE";
+		);
+
+		// Update expression text
+			my("updateexpression");
+	);
+
+// === Add/remove a column/row
+	grid:"addcol" := (
+		regional(newcoord);
+		self():"cols" = my("cols") + 1; // Increment column count
+
+		// Loop over every row and add an Atom to the right
+		repeat(my("rows"), row,
+			newcoord = self():"grid"_row_(-1):"coord" + ['atomsize+my("verticalpadding"),0];
+			self():"grid"_row = my("grid")_row :> new Atom(newcoord, self());
+		);
+		my("repaint");
+	);
+	
+	grid:"removecol" := if(my("cols")>1,
+		// Set flag for coloring rows and cutting status to undefined and false if not enough rows left
+		if(my("flags"):"color-col" >= my("cols"),
+			self():"flags":"color-col" = NADA;
+			self():"flags":"cut-col" = false;
+		);
+
+		self():"cols" = my("cols") - 1; // Decrement column count
+
+		// Loop over every row and remove rightmost Atom
+		repeat(my("rows"), row,
+			self():"grid"_row = my("grid")_row -- [my("grid")_row_(-1)];
+		);
+		my("repaint");
+	);
+
+	grid:"addrow" := (
+		regional(newcoord);
+		offset = [0, 'atomsize+my("horizontalpadding")]; // offset to move down by for new row
+		self():"grid" = [] <: my("grid"); // Prepend empty row to grid
+
+		self():"coord" = my("coord") - offset;
+
+		self():"rows" = my("rows") + 1; // Increment row count
+
+		// Loop over reference row and fill new first row with Atoms
+		forall(my("grid")_2, atom,
+			self():"grid"_1 = my("grid")_1 :> new Atom(atom:"coord" - offset, self());
+		);
+		
+		// Inrease flag for coloring rows an repaint
+		if(!isundefined(my("flags"):"color-row"), self():"flags":"color-row" = my("flags"):"color-row" + 1);
+		my("repaint");
+	);
+
+	grid:"removerow" := if(my("rows")>1,
+		// Set flag for coloring rows and cutting status to undefined and false if not enough rows left
+		if(my("flags"):"color-row" <= 1,
+			self():"flags":"color-row" = NADA;
+			self():"flags":"cut-row" = false;
+		);
+
+		self():"grid" = my("grid")_(2..length(my("grid")));
+		self():"coord" = my("grid")_1_1:"coord";
+		self():"rows" = my("rows") - 1;
+
+		// Decrease flag for coloring rows and repaint
+		if(!isundefined(my("flags"):"color-row"), self():"flags":"color-row" = my("flags"):"color-row" - 1);
+		my("repaint");
+	);
+
+// === Convenience and Eval Methods
+	grid:"repaint" := ( // Repaints all atoms in a grid based on color-flags
+		regional(rowthresh, colthresh, topleft, topright, bottomleft, bottomright);
+		
+		// Threshold indexes for color change
+		rowthresh = my("flags"):"color-row";
+		if(isundefined(rowthresh), rowthresh = 0); // default, if no threshhold exists
+		colthresh = my("flags"):"color-col";
+		if(isundefined(colthresh), colthresh = my("cols")+1); // default, if no threshhold exists
+
+		// Select topleft and topright subgrid (BLUE, ORANGE)
+		topleft = if(rowthresh < my("rows"), my("grid")_((rowthresh+1)..my("rows")), []); // select complete rows
+		topright = if(colthresh <= my("cols"), apply(topleft, row, row = row_(colthresh..my("cols"))), []); // select cols of topright subgrid
+		topleft = apply(topleft, row, row = row_(1..(colthresh-1))); // cut off columns to the right for final topleft
+
+		// Select bottomleft and bottomright subgrid (GREEN, PURPLE)
+		bottomleft = if(rowthresh > 0, my("grid")_(1..rowthresh), []); // select complete rows
+		bottomright = if(colthresh <= my("cols"), apply(bottomleft, row, row = row_(colthresh..my("cols"))), []); // select cols of bottomright subgrid
+		bottomleft = apply(bottomleft, row, row = row_(1..(colthresh-1))); // cut off columns to the right for final bottomleft
+
+		// Paint everything
+		apply(topleft, row, apply(row, atom, atom:"color" = 'atomcolors:"blue"));
+		apply(topright, row, apply(row, atom, atom:"color" = 'atomcolors:"orange"));
+		apply(bottomleft, row, apply(row, atom, atom:"color" = 'atomcolors:"green"));
+		apply(bottomright, row, apply(row, atom, atom:"color" = 'atomcolors:"purple"));
+	);
+	
+	grid:"updateexpression" := (
+		// Get state of grid
+		regional(groupstate, rowcol, colcol, rowcut, colcut, expr, verbal, r, c, rci, cci);
+		groupstate = my("flags"):"group-by";
+		rowcol = !isundefined(my("flags"):"color-row");
+		colcol = !isundefined(my("flags"):"color-col");
+		rowcut = my("flags"):"cut-row";
+		colcut = my("flags"):"cut-col";
+		
+		// Relevant numbers to display
+		r = my("rows"); // Total rows
+		c = my("cols"); // Total columns
+		rci = my("flags"):"color-row"; // Index of colored row (row color index)
+		cci = my("flags"):"color-col"; // Index of colored columns (column color index)
+
+		// Handle different states in order: GROUPING > ROW COLOR > COL COLOR > ROW CUT > COL CUT
+		// 1 no grouping
+		if(groupstate == "NONE",
+			if(rowcol, // 2 row colored
+				if(colcol, // 3 column colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = (r-rci)*(cci-1) + " + " + (r-rci)*(c-cci+1) + " + " + rci*(cci-1) + " + " + rci*(c-cci+1);
+							verbal = "eine " + (r-rci)*(cci-1) + "er-Gruppe und eine " + (r-rci)*(c-cci+1) + "er-Gruppe und eine " + rci*(cci-1) + "er-Gruppe und eine " + rci*(c-cci+1) + "er-Gruppe.";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						)
+					);
+				, // 3 column not colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					);
+				);
+			, // 2 row not colored
+				if(colcol, // 3 column colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					);
+				, // 3 column not colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = r * c;
+							verbal = value + " Plättchen.";
+						);
+					);
+				);
+			);
+		);
+
+		// 1 grouping by row
+		if(groupstate == "ROW",
+			if(rowcol, // 2 row colored
+				if(colcol, // 3 column colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = (r-rci) + CDOT + (cci-1) + " + " + (r-rci) + CDOT + (c-cci+1) + " + " + rci + CDOT + (cci-1) + " + " + rci + CDOT + (c-cci+1);
+							verbal = (r-rci) + " " + (cci-1) + "er und " + (r-rci) + " " + (c-cci+1) + "er und " + rci + " " + (cci-1) + "er und " + rci + " " + (c-cci+1) + "er.";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + (cci-1) + " + (" + (r-rci) + "+" + rci + ")" + CDOT + (c-cci+1);;
+							verbal = "(" + (r-rci) + "+" + rci + ") " + (cci-1) + "er-Reihen und (" + (r-rci) + "+" + rci + ") " + (c-cci+1) + "er-Reihen.";
+						, // 5 col not cut
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + "(" + (cci-1) + "+" + cci + ")";
+							verbal = (r-rci) + " und " + rci + " (" + (cci-1) + " + " + cci + ")er-Reihen.";
+						)
+					);
+				, // 3 column not colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					);
+				);
+			, // 2 row not colored
+				if(colcol, // 3 column colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					);
+				, // 3 column not colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = r  + CDOT + c;
+							verbal = r  + " " + c + "er.";
+						);
+					);
+				);
+			);
+		);
+
+		// 1 grouping by column
+		if(groupstate == "COLUMN",
+			if(rowcol, // 2 row colored
+				if(colcol, // 3 column colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						)
+					);
+				, // 3 column not colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					);
+				);
+			, // 2 row not colored
+				if(colcol, // 3 column colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					);
+				, // 3 column not colored
+					if(rowcut, // 4 row cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = "@...";
+							verbal = "@...";
+						);
+					, // 4 row not cut
+						if(colcut, // 5 col cut
+							value = "@...";
+							verbal = "@...";
+						, // 5 col not cut
+							value = c + CDOT + r;
+							verbal = c  + " " + r + "er.";
+						);
+					);
+				);
+			);
+		);
+
+		// Set expression handlers value and verbalvalue to built expressions
+		self():"expression":"value" = value + ""; // force string for value, might be int
+		self():"expression":"verbalvalue" = "Ich sehe " + verbal;
+	);
+	
+	grid:"cutgrid" := ( //de-/increases atom distance at coloring edges... eval with 'activeindex for cut position and 'direction of cut from linedirection
+	// example usage: eval(my("cutgrid"), 'activeindex->activeindex, 'direction->my("linedirection"));
+
+		// ROW (un-)cutting
+		if('direction == "HORIZONTAL" & ('activeindex == my("flags"):"color-row" % 'activeindex == my("flags"):"color-row" + 1) & 'activeindex < my("rows"),
+			regional(rows);
+			rows = my("grid")_((my("flags"):"color-row"+1)..my("rows")); // Select rows to alter
+			if(my("flags"):"cut-row",
+				// Uncut row, i.e. move all rows above the index down a little
+				apply(rows, row, apply(row, atom, atom:"coord" = atom:"coord" - [0, my("cutwidth")]));
+			,
+				// Cut row, i.e. move all rows above the index up a little
+				apply(rows, row, apply(row, atom, atom:"coord" = atom:"coord" + [0, my("cutwidth")]));
+			);
+			self():"flags":"cut-row" = !self():"flags":"cut-row"; // change flag state
+		);
+
+		// COLUMN (un-)cutting
+		if('direction == "VERTICAL" & ('activeindex == my("flags"):"color-col" % 'activeindex == my("flags"):"color-col" - 1) & 'activeindex > 1,
+			regional(col);
+			cols = apply(my("grid"), row, row_(my("flags"):"color-col"..my("cols"))); // Select cols to alter
+			if(my("flags"):"cut-col",
+				// Uncut col, i.e. move all cols right of the index left a little
+				apply(cols, row, apply(row, atom, atom:"coord" = atom:"coord" - [my("cutwidth"), 0]));
+			,
+				// Cut col, i.e. move all cols right of the index right a little
+				apply(cols, row, apply(row, atom, atom:"coord" = atom:"coord" + [my("cutwidth"), 0]));
+			);
+			self():"flags":"cut-col" = !self():"flags":"cut-col"; // change flag state
+		);
+	);
+
+	grid:"getactiveindex" := ( // for clicking a single atom ... eval with 'point (usually as mouse().xy))
+		regional(hotrow, hotcol, c);
+		hotrow = hotcol = NADA;
+		c = my("coord");
+		
+		if(	'point_2 >= c_2 & 'point_2 <= c_2 + my("height") &
+				'point_1 >= c_1 & 'point_1 <= c_2 + my("width"), // only calculate, if 'point inside grid
+			
+			// Calc index of hot row
+			hotrow = 'point_2 - c_2;
+			forall(1..my("rows"), rowindex,
+				if('point_2 >= my("grid")_rowindex_1:"coord"_2, hotrow = rowindex);
+			);
+
+			// Calc index of hot column
+			hotcol = 'point_1 - c_1;
+			forall(1..my("cols"), colindex,
+				if('point_1 >= my("grid")_1_colindex:"coord"_1, hotcol = colindex);
+			);
+		);
+
+		[hotrow, hotcol]; // Return hot row and column
+	);
+
+	// Inner objects: UI elements
+	// ==========================
+	// === UI: Vertical bar
+	grid:"vbar" = ( 
+		regional(vbar);
+		vbar = new VAMobject("Bar");
+		vbar:"subtype" = "vertical";
+		vbar:"parent" = grid;
+		vbar:"ismoveable" = true;
+		vbar:"width" = .1;
+		vbar:"height" := my("parent"):"height";
+		vbar:"color" = DIVODARKBLUE;
+		vbar:"padleft" := 'atomsize/10 + if(my("parent"):"flags":"cut-col",my("parent"):"cutwidth",0);
+
+		vbar:"coord" := nada; // Gets assigned by my("alignbar")
+		vbar:"alignbar" := ( // (Re-)sets bar position
+			self():"coord" := my("parent"):"coord" + [my("parent"):"width" + my("padleft"), 0];
+		);
+		vbar:"alignbar"; // Initially set coord
+
+		vbar:"shape" := (
+			regional(parts);
+			parts = {};
+
+			// Create vertical bar that is as tall as all strips combined
+			parts:"bar" = rectangle(my("coord"), my("width"), my("height"));
+
+			// Create circle
+			regional(center, radius);
+			radius = .7;
+			center = my("coord") + [my("width"),0] + [radius+.2,my("height")/2];
+			parts:"circle" = {"M": center, "r": radius};
+
+			// Create vertical line through center of the circle
+			parts:"circleline" = {"A": center - [0,1.1*radius], "B": center + [0,1.1*radius]};
+
+			// Create triangles pointing left and right (scaling numbers are chosen by eye)
+			trigoffset = [radius/2.3,0];
+			parts:"lefttrig" = regularpolygon(center-trigoffset, radius/3, 3, PI/6);
+			parts:"righttrig" = regularpolygon(center+1.05*trigoffset, radius/3, 3,-PI/6);
+
+			parts; // Return shape object
+		);
+
+		vbar:"hitbox" := my("shape"):"circle";
+		vbar:"ishot" := if(my("parent"):"tool" == "hand",
+			dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r",
+			false
+		);
+
+		vbar:"draw" := if(my("parent"):"tool" == "hand",
+			// Draw vertical bar
+			fillpoly(my("shape"):"bar", color -> my("color"));
+
+			// Draw base circle (hitbox)
+			fill(circle(my("shape"):"circle":"M", my("shape"):"circle":"r"), color -> my("color"));		
+
+			// Draw line through circle
+			draw(my("shape"):"circleline":"A", my("shape"):"circleline":"B", size -> 3, color -> grey(1)
+			);
+
+			// Draw triangles
+			fillpoly(my("shape"):"lefttrig", color -> grey(1));
+			fillpoly(my("shape"):"righttrig", color -> grey(1));
+		);
+
+		vbar:"move" := if(my("ismoveable"),
+			// Set position based on mouse coords
+			self():"coord" = [
+				max(coord_1,my("parent"):"coord"_1),
+				my("parent"):"coord"_2
+			];
+
+			// Remove column if above 1 AND bar touches column
+			if(my("coord")_1 < my("parent"):"coord"_1 + my("parent"):"width" - my("padleft"),
+				my("parent"):"removecol";
+			);
+
+			// Add column if gap is big enough
+			regional(space);
+			space = 'atomsize + my("parent"):"verticalpadding" + my("padleft");
+			if(my("coord")_1 - (my("parent"):"coord"_1 + my("parent"):"width") > space ,
+				my("parent"):"addcol";
+			);
+		);
+
+		vbar:"moveend" := my("alignbar");
+
+		vbar; // Return bar
+	);
+
+	// === UI: Horizontal bar
+	grid:"hbar" = ( 
+		regional(hbar);
+		hbar = new VAMobject("Bar");
+		hbar:"subtype" = "horizontal";
+		hbar:"parent" = grid;
+		hbar:"ismoveable" = true;
+		hbar:"width" := my("parent"):"width";
+		hbar:"height" = .1;
+		hbar:"color" = DIVODARKBLUE;
+		hbar:"padup" := 2*'atomsize/10 + if(my("parent"):"flags":"cut-row",my("parent"):"cutwidth",0);
+
+		hbar:"coord" := nada; // Gets assigned by my("alignbar")
+		hbar:"alignbar" := ( // (Re-)sets bar position
+			self():"coord" := my("parent"):"coord" - [0, my("padup")];
+		);
+		hbar:"alignbar"; // Initially set coord
+
+		hbar:"shape" := (
+			regional(parts);
+			parts = {};
+
+			// Create vertical bar that is as tall as all strips combined
+			parts:"bar" = rectangle(my("coord"), my("width"), my("height"));
+
+			// Create circle
+			regional(center, radius);
+			radius = .7;
+			center = my("coord") + [my("width")/2,-radius-.2];
+			parts:"circle" = {"M": center, "r": radius};
+
+			// Create vertical line through center of the circle
+			parts:"circleline" = {"A": center - [1.1*radius,0], "B": center + [1.1*radius,0]};
+
+			// Create triangles pointing left and right (scaling numbers are chosen by eye)
+			trigoffset = [0,radius/2.3];
+			parts:"uptrig" = regularpolygon(center+1.05*trigoffset, radius/3, 3, 2*PI/3);
+			parts:"downtrig" = regularpolygon(center-trigoffset, radius/3, 3,-PI/3);
+
+			parts; // Return shape object
+		);
+
+		hbar:"hitbox" := my("shape"):"circle";
+		hbar:"ishot" := if(my("parent"):"tool" == "hand", // Only hottable, when hand tool is selected
+			dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r",
+			false
+		);
+
+		hbar:"draw" := if(my("parent"):"tool" == "hand",
+			// Draw vertical bar
+			fillpoly(my("shape"):"bar", color -> my("color"));
+
+			// Draw base circle (hitbox)
+			fill(circle(my("shape"):"circle":"M", my("shape"):"circle":"r"), color -> my("color"));		
+
+			// Draw line through circle
+			draw(my("shape"):"circleline":"A", my("shape"):"circleline":"B", size -> 3, color -> grey(1)
+			);
+
+			// Draw triangles
+			fillpoly(my("shape"):"uptrig", color -> grey(1));
+			fillpoly(my("shape"):"downtrig", color -> grey(1));
+		);
+
+		hbar:"move" := if(my("ismoveable"),
+			// Set position based on mouse coords
+			self():"coord" = [
+				my("parent"):"coord"_1,
+				min(coord_2,my("parent"):"coord"_2+my("parent"):"height")
+			];
+
+			// Remove row if above 1 AND bar touches row
+			if(my("coord")_2 > my("parent"):"coord"_2 + my("padup"),
+				my("parent"):"removerow";
+			);
+
+			// Add row if gap is big enough
+			regional(space);
+			space = 'atomsize + my("parent"):"horizontalpadding" + my("padup");
+			if(my("parent"):"coord"_2 - my("coord")_2 > space,
+				my("parent"):"addrow";
+			);
+		);
+
+		hbar:"moveend" := my("alignbar");
+
+		hbar; // Return bar
+	);
+
+	// === UI: Tool button
+	grid:"tool" = "hand"; // Initial tools name
+	grid:"toolbutton" := (
+		regional(btn);
+		btn = new Button((screenbounds()_2).xy - ('buttonsize+'buttonpadding) * [1,1], 'buttonsize, 'buttonsize, "", 14);
+		btn:"parent" = self();
+		btn:"center" := my("coord") + .5*[my("width"),my("height")];
+		btn:"imgscale" = .3;
+		btn:"value" = 1;
+		btn:"tool" := ["hand", "bucket", "scissors"]_(my("value"));
+	
+		btn:"drawafter" := (
+			drawimage(my("center"), ICONS:(my("tool")), scale->my("imgscale"));
+		);
+	
+		btn:"script" := (
+			self():"value" = 1 + mod(my("value"),3);
+			self():"parent":"tool" = my("tool");
+		);
+
+		btn; // Return toolbutton
+	);
+
+	// === UI: Expression handler
+	grid:"expression" = (
+		regional(expr); expr = {};
+		expr:"type" = "Expression";
+		expr:"parent" = self();
+		expr:"coord" := (screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"width" := (
+			regional(box);
+			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
+			box_2_1 - box_1_1;
+		);
+		expr:"height" := (
+			regional(box);
+			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
+			box_4_2 - box_1_2;
+		);
+		expr:"value" = nada; //self():"rows" * self():"cols";
+		expr:"verbalvalue" = nada; //"Ich sehe was, was du nicht siehst."; 
+		expr:"fontsize" = 20;
+		expr:"font" = nada;
+	
+		expr:"hitbox" := getboundingbox(my("value"), my("coord"), my("fontsize"), my("font"));
+		expr:"shape" := my("hitbox");
+		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+	
+		expr:"draw" := (
+			// Draw expression
+			drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
+
+			// Draw verbal description
+			drawtext(my("coord") - [0, my("height")], my("verbalvalue"), font->my("font"), size->my("fontsize"));
+
+			// Debug draw
+			if('debuglevel > 0,
+				drawpoly(my("shape"), color->[1,0,0]);
+				draw(my("coord"), color->[1,0,0]);
+			);
+		);
+
+		expr; // Return expression
+	);
+	grid:"updateexpression"; // Update value and verbalvalue for init
+
+	grid; // Return Grid
+);
+
+// D | Initialization
+// D.0 | SL Config
+// ===============
+if(!usedivomath,
+	// @TODO
+);
+
+obj = obj :> new Grid([11,6],5,7);
+obj = obj :> obj_1:"vbar";
+obj = obj :> obj_1:"hbar";
+obj = obj :> obj_1:"toolbutton";
+obj = obj :> obj_1:"expression";
+
+); // End VAM if

@@ -1,6 +1,7 @@
-// v9
+// v10
 // last changes:
-// - added DIVOYELLOW
+// - added icons for hand, scissors and paint bucket
+// - Changed CDOT to include SPACE before and after
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -109,7 +110,7 @@ monofont=MONOFONT ="Courier";//"Arial"; //Courier, Monaco
 // C.2 | Unicode characters
 checkbox0=CB0 = unicode("2610");
 checkbox1=CB1 = unicode("2612");
-cdot=CDOT = unicode("00B7");
+cdot=CDOT = " " + unicode("00B7") + " ";
 QUOTE = unicode("0022");
 LEFTARROW = unicode("2190");
 RIGHTARROW = unicode("2192");
@@ -123,7 +124,14 @@ CLOCKWISEARROW = unicode("21BB");
 ARROWS = [LEFTARROW, RIGHTARROW, UPARROW, DOWNARROW,
 DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
 
-// D | Other
+// D | Images
+ICONS = {
+	"hand": "icon-hand.png",
+	"bucket": "icon-bucket.png",
+	"scissors": "icon-scissors.png"
+};
+
+// E | Other
 E  = exp(1);
 PI = 3.141592653589793238462643383279;
 PHI = (1 + sqrt(5)) / 2;

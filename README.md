@@ -263,10 +263,46 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
 ## Changelog
 ### v4.0.0
 - VAM:
-  - neues VAM: percentagebar
+  - neues VAM: (percentagebar, ) distributive
   - divisors:
     - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
-    - 
+  - strapwork:
+    - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
+    - Fix: Separator wird in Ergebnis für ganze Zeile nicht mit reportet.
+    - Fix: Polygone wurden falsch umgeordnet, wenn mit Mustercontainer eingefügt
+    - divomathUpdateResults() wird auch bei Update eines Separators ausgeführt
+    - Hintergrund der Basispolygone von Gold zu einem dunkelgrauen Rand geändert
+- CLASS:
+  - Button:
+    - Fix: Falsche Farbdarstellung
+    - Feature: isfloating flag, um Verschiebbarkeit des Buttons zu togglen
+- FW:
+  - draw:
+    - Debug Infos angepasst
+    - 'firstdraw flag zum tracken, ob erster Aufruf der draw Funktion stattfindet
+  - constants:
+    - Bilder hinzugefügt und entsprechende Konstante für Bildreferenzen (ICONS)
+    - CDOT geändert, enthält jetzt Leerzeichen davor und danach
+  - divomathconfig:
+    - usedivomath als flag für Wechsel zu storyline/web-config hinzugefügt
+  - helper functions:
+    - inpoly(): Check hinzugefügt, ob Lösung von linearsolve() definiert ist
+    - +postValue(): postet eine Nachricht zur KOmmunikation mit dem Browser (oder dem SL-Player)
+    - +incircle(): Checkt, ob ein Punkt in einem Kreis liegt
+    - +getURLparam() und getURLparams(): Holt URL Suchparameter aus URL und übergibt gibt sie zurück
+  - configuration:
+    - +'urlparams: Speichert alle URL Suchparameter als Dict.
+    - vam switch für auszuspielendes VAM über 'urlparams konfigurierbar
+    - 'debuglevel ebenfalls
+    - debugging output hinzugefügt
+  - mousedown:
+    - variable mousedown auf true setzen
+  - mouseup:
+    - variable mousedown auf false setzen
+  - keydown:
+    - "k/K": manueller Aufruf von divomathUpdateResults()
+    - "+/-": Inkrementieren und Dekrementieren von 'debuglevel (nur Numblock?)
+
 - build Prozess des divomath codes in separates Skript ausgelagert
 ### v3.1.0
 - VAM:
@@ -315,7 +351,7 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
     - Attribute labelpadding und fontfamily hinzugefügt
 
 ### v3.0.0
-- neues VAM: "percentagebar", noch ohne Validierung, Persistenz des Zustandes beim Wechseln der Folie in divomath oder Referenzierung für divomath
+- neues VAM: percentagebar als preview
 - VAM:
   - divisors:
     - Konfiguration für Darstellung der UI Buttons hinzugefügt (**drawbuttons**)
