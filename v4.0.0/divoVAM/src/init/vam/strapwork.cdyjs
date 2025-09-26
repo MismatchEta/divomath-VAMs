@@ -1,10 +1,12 @@
-// v18
+// v19
 // Recent changes:
 // - added divomath workaround for receiving config info
 // - fixed Separators not reported properly inside rowstring
 // - fixed wrong ordering of polys, when patterncontainer was dropped
 // - added call to divomathUpdateResults() on moveend of Separator
 // - changed poly background from DZLMCOLORGOLD to grey border
+// - fixed ReferenceError in ResetButtons script
+
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -52,6 +54,7 @@ state = defaultstateto("state", apply(1..rows, "")); // Configure predefined Reg
 limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPolys per row/strip (-1 => no limit)
 
 // Configure look and feel
+drawpolys = defaultstateto("drawpolys", true);// - Draw base RegPolys
 drawpatterncontainer = defaultstateto("drawpatterncontainer", true); // - Pattern Container
 drawseparator = defaultstateto("drawseparator", true); // - Separator
 drawborders = defaultstateto("drawborders", true);// - Borders of RegPolys
@@ -589,18 +592,19 @@ new Container(coord, numofstrips, limits) := (
 	);
 
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
-		regional(polys);
-		polys = [];
+		regional(polygons);
+		polygons = [];
+
 		forall(my("strips"), strip, // iterate over strips
 			forall(strip, // inside strips iterate over RegPolys
-				polys = polys :> #; // add Poly to list
+				polygons = polygons :> #; // add Poly to list
 				eval(my("remove"), poly->#); // Remove Poly from strip
 			);
 		);
 
-		obj = obj -- polys; // Remove all Polys from obj
+		obj = obj -- polygons; // Remove all Polys from obj
 
-		polys; // Return
+		polygons; // Return
 	);
 
 	cont:"displaysubset" := ( // Displays only a subset of RegPolys (and Separators) (for scrolling)
@@ -608,6 +612,8 @@ new Container(coord, numofstrips, limits) := (
 
 		offset = my("scrollbar"):"adjustedvalue"; // offset by which to select Polys by
 		if(isundefined(offset), offset = 0); // if there is no scrollbar consider it to be 0
+
+
 
 		// Handle displaying
 		forall(my("strips"), polys, // loop over every strip
@@ -801,16 +807,17 @@ containercoord = if(drawpatterncontainer,
 	// Align with pattern container
 	patterncontainer:"coord" + coordoffset + [0,patterncontainer:"height"]
 , if(drawpolys,
-println("hi");
-	(bg:"shape"_4).xy + coordoffset
-,
-	(screenbounds()_4).xy + coordoffset
-));
-println(containercoord);
+		(bg:"shape"_4).xy + coordoffset
+	,
+		(screenbounds()_4).xy + coordoffset
+	)
+);
+
 container = new Container(containercoord,	rows,	limit); 
 
 // Fill Container with predefined RegPolys
 counter = 1; // start at first strip
+
 state = apply(state, tokenize(#,",")); // Create config from supplied strings from divomath
 
 forall(state, row, // iterate over config for every row
@@ -846,30 +853,34 @@ btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
 btn:"script" := (
+	regional(polycopy);
+println("v13, state: " + apply(polys,#:"id"));
+
 	// Remove all RegPolys
-	forall(select(obj, #:"type" == "Container"), #:"popall");
-	'polyid = 0;
+	forall(select(obj, #:"type" == "Container" & isundefined(#:"subtype")), #:"popall");
+	'polyid = polys_(-1):"id" + 1; // Reset global polyid
 	
 	// Remove all Separators
 	forall(select(obj, #:"type" == "Separator" & isundefined(#:"original")), #:"popall");
 
 	// Reset original state, @TODO: Same as in container init. Refactor
 	counter = 1; // start at first strip
-	
+
 	forall(state, row, // iterate over config for every row
 		forall(select(row, isinteger(#)), polyid, // iterate over every polyid per row that is an integer
+
 			polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
-			eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip
-	
+
+			eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip	
 		);
 		counter = counter + 1; // next cycle --> next strip
-);
-container:"movepolysintoplace"; // align polys
+	);
+	container:"movepolysintoplace"; // align polys
 
 );
 
 // E | Build obj
-// =============Mustercont
+// =============
 obj = obj :> bg;
 obj = obj :> btn; // Reset button
 obj = obj :> container;
@@ -880,4 +891,5 @@ obj = obj :> separator;
 
 // Order to draw (Separator last, so it is on top)
 typeorder = ["bg", "Container", "RegPoly", "Separator"];
+println(apply(polys,#:"id"));
 );

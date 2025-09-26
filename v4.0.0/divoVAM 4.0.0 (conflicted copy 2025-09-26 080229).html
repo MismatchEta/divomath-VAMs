@@ -4304,19 +4304,19 @@ new Container(coord, numofstrips, limits) := (
 	);
 
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
-		regional(polygons);
-		polygons = [];
+		regional(polys);
+		polys = [];
 
 		forall(my("strips"), strip, // iterate over strips
 			forall(strip, // inside strips iterate over RegPolys
-				polygons = polygons :> #; // add Poly to list
+				polys = polys :> #; // add Poly to list
 				eval(my("remove"), poly->#); // Remove Poly from strip
 			);
 		);
 
-		obj = obj -- polygons; // Remove all Polys from obj
+		obj = obj -- polys; // Remove all Polys from obj
 
-		polygons; // Return
+		polys; // Return
 	);
 
 	cont:"displaysubset" := ( // Displays only a subset of RegPolys (and Separators) (for scrolling)
@@ -4519,11 +4519,11 @@ containercoord = if(drawpatterncontainer,
 	// Align with pattern container
 	patterncontainer:"coord" + coordoffset + [0,patterncontainer:"height"]
 , if(drawpolys,
-		(bg:"shape"_4).xy + coordoffset
-	,
-		(screenbounds()_4).xy + coordoffset
-	)
-);
+println("hi");
+	(bg:"shape"_4).xy + coordoffset
+,
+	(screenbounds()_4).xy + coordoffset
+));
 
 container = new Container(containercoord,	rows,	limit); 
 
@@ -4531,7 +4531,7 @@ container = new Container(containercoord,	rows,	limit);
 counter = 1; // start at first strip
 
 state = apply(state, tokenize(#,",")); // Create config from supplied strings from divomath
-
+println ("> " + state_1_1+1);
 forall(state, row, // iterate over config for every row
 	forall(select(row, isinteger(#)), polyid, // iterate over every polyid per row that is an integer
 		
@@ -4565,12 +4565,12 @@ btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
 btn:"script" := (
-	regional(polycopy);
-println("v13, state: " + apply(polys,#:"id"));
+
+println("v11");
 
 	// Remove all RegPolys
 	forall(select(obj, #:"type" == "Container" & isundefined(#:"subtype")), #:"popall");
-	'polyid = polys_(-1):"id" + 1; // Reset global polyid
+	'polyid = 0;
 	
 	// Remove all Separators
 	forall(select(obj, #:"type" == "Separator" & isundefined(#:"original")), #:"popall");
@@ -4578,19 +4578,21 @@ println("v13, state: " + apply(polys,#:"id"));
 	// Reset original state, @TODO: Same as in container init. Refactor
 	counter = 1; // start at first strip
 
+println("===================================================");
+println(state);	
 	forall(state, row, // iterate over config for every row
+println("ROW: " + row);
 		forall(select(row, isinteger(#)), polyid, // iterate over every polyid per row that is an integer
-			
-polycopy = polys_6; // choose original
-			while(!isundefined(polycopy:"original"), println("Current ID: " + polycopy:"id" + " > GET: " + polycopy:"original":"id"); polycopy = polycopy:"original");
-println(polycopy:"id");
+println("Next id to check: " + polyid);
+println("next polys id: " + polys_polyid:"id");
 			polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
-
-			eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip	
+println("original: " + polycopy:"original":"id");
+			eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip
+	
 		);
 		counter = counter + 1; // next cycle --> next strip
-	);
-	container:"movepolysintoplace"; // align polys
+);
+container:"movepolysintoplace"; // align polys
 
 );
 
@@ -4606,7 +4608,7 @@ obj = obj :> separator;
 
 // Order to draw (Separator last, so it is on top)
 typeorder = ["bg", "Container", "RegPoly", "Separator"];
-println(apply(polys,#:"id"));
+println(apply(polys,#:"vertices"));
 );
 
 ;
@@ -6775,7 +6777,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.04664723032069971, 0.1649971567399341], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, 0.41520467836257313, 0.16547960456665906], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -6787,10 +6789,10 @@ var cdy = CindyJS({
   autoplay: false,
   animcontrols: false,
   ports: [{
-    width: 922,
-    height: 484,
+    width: 920,
+    height: 421,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.4064033278567187, 17.05127006007537, 32.17654174030803, -0.05300912972044156]}],
+    transform: [{visibleRect: [-0.4064033278567187, 17.05127006007537, 32.105862900680776, 2.1733743185381043]}],
     axes: true,
     grid: 1.0,
     background: "rgb(255,255,255)"
