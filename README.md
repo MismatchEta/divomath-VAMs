@@ -1,4 +1,4 @@
-> v3.1.12
+> v4.0.0
 
 # divomath VAM Dokumentation
 JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das [Komponentenverhalten](#komponentenverhalten) und den [Zustand](#konfiguration-des-zustands-eines-vams) konfiguriert.
@@ -19,7 +19,7 @@ JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Wi
 
 ### Strings für *vam* Schlüssel
 Folgende Strings sind für *vam* Schlüssel zulässig:
-- divisors (seit: 2.0.0, letzte Änderung: 3.1.0)
+- divisors (seit: 2.0.0, letzte Änderung: 3.1.0)"Separator"
 - numbercards (seit: 1.0.0, letzte Änderung: 3.1.0)
 - percentagebar (seit 3.0.0, letzte Änderung: 3.1.0)
 - strapwork (seit: 1.0.0, letzte Änderung: 3.1.0)
@@ -183,6 +183,12 @@ cindyjs:
 - limit: *\<list>*
   - Definiert, wie viele Polygone pro Band erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
   - default [10,10,...] (potenziell 100 Bänder)
+- sepstate: *\<string>*
+  - Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae**"1,3,5"** erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.
+  - default **""** (leer)
+- patternlimit: *\<int>
+  - Limitiert, mit wie vielen Polygone der Mustercontainer gefüllt werden kann. **-1** erzeugt einen beliebig verlängerbaren Container. Das Limit bezieht sich (im Gegensatz zu **limi**) auf jede Zeile des Mustercontainers.
+  - default: 5
 - drawpatterncontainer: *\<bool>*
   - true, wenn Mustercontainer gezeichnet werden soll.
   - default true
@@ -195,6 +201,7 @@ cindyjs:
 - polypadding: *\<float>
   - Abstand zwischen den Polygonen in einem Band
   - default .5
+
 
 ## Validierung
 Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Mindestens liefert eine Komponente ihre Zustandsparameter wieder als Ergebnis zurück. Der Zugriff erfolgt grundsätzlich über \<komponentenname>\\{RESULT_\<bezeichner>}, e.g. "**meinvam**\\{RESULT_**x**}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
@@ -272,6 +279,11 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
     - Fix: Polygone wurden falsch umgeordnet, wenn mit Mustercontainer eingefügt
     - divomathUpdateResults() wird auch bei Update eines Separators ausgeführt
     - Hintergrund der Basispolygone von Gold zu einem dunkelgrauen Rand geändert
+    - Kopien des Separators in hellerem Grau als Ur-Separator
+    - Reset Button resettet jetzt auch Separators
+    - Reset Button setzt in divomath auf den über den Editor konfigurierten Zustand zurück, nicht den letzten Zustand beim Folienaufruf
+    - PatternContainer ist jetzt Multiline
+    - PatternContainer kann jetzt ein Limit bekommen, Zustandvariable **patternlimit** hinzugefügt.
 - CLASS:
   - Button:
     - Fix: Falsche Farbdarstellung
@@ -285,6 +297,7 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
     - CDOT geändert, enthält jetzt Leerzeichen davor und danach
   - divomathconfig:
     - usedivomath als flag für Wechsel zu storyline/web-config hinzugefügt
+    - 'dmdefaultstate hinzugefügt, für direkten Zugriff auf das cindyjs-Objekt aus der divomath Editor Zustandsbeschreibung. Im Gegensatz zu 'dmstate, dem zuletzt gespeicherten Zustand beim Verlassen einer Seite.
   - helper functions:
     - inpoly(): Check hinzugefügt, ob Lösung von linearsolve() definiert ist
     - +postValue(): postet eine Nachricht zur KOmmunikation mit dem Browser (oder dem SL-Player)

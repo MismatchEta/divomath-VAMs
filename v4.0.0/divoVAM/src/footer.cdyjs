@@ -24,4 +24,12 @@ ports: [{
   background: "rgb(255,255,255)"
 }],
 csconsole: false,
+images: {
+    "icon-scissors.png": "https://abako.dzlm.de/cindy/divomath/img/icon-scissors.png",
+    "legs.png": "https://abako.dzlm.de/cindy/divomath/img/legs.png",
+    "icon-bucket.png": "https://abako.dzlm.de/cindy/divomath/img/icon-bucket.png",
+    "icon-hand.png": "https://abako.dzlm.de/cindy/divomath/img/icon-hand.png",
+    "snap.png": "https://abako.dzlm.de/cindy/divomath/img/snap.png",
+    "clap.png": "https://abako.dzlm.de/cindy/divomath/img/clap.png"
+  },
 cinderella: {build: 2075, version: [3, 0, 2075]}

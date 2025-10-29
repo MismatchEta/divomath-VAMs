@@ -42,10 +42,12 @@ if(usedivomath & 'firstdraw, divomathUpdateResults());
 `,
 
     init: 
-`// v10
+`// v12
 // last changes:
 // - added icons for hand, scissors and paint bucket
 // - Changed CDOT to include SPACE before and after
+// - Changed definitions of DIVOBLUE and DIVORED
+// - added icons for CLAPping, finger SNAPping, and clapping on LEGS
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -80,8 +82,8 @@ divogreen=DIVOGREEN = (129,239,104)/255;
 divoviolett=DIVOVIOLET = (150,59,216)/255;
 divograu=DIVOGREY = (130,149,192)/255;
 divoschwarz=DIVOBLACK = grey(0);
-divorot=DIVORED = (235,85,78)/255;
-divoblau=DIVOBLUE = (83,125,156)/255;
+divorot=DIVORED = (246,68,69)/255;
+divoblau=DIVOBLUE = (120,148,194)/255;
 DIVODARKBLUE = (6,67,86)/255;
 DIVOYELLOW = (252,175,81)/255;
 
@@ -172,7 +174,10 @@ DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
 ICONS = {
 	"hand": "icon-hand.png",
 	"bucket": "icon-bucket.png",
-	"scissors": "icon-scissors.png"
+	"scissors": "icon-scissors.png",
+	"clap": "clap.png",
+	"snap": "snap.png",
+	"legs": "legs.png"
 };
 
 // E | Other
@@ -181,7 +186,9 @@ PI = 3.141592653589793238462643383279;
 PHI = (1 + sqrt(5)) / 2;
 
 VALUEMAP = {
-"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", "6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", "11" : "Elfer", "12" : "Zwölfer"
+	"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", 
+	"6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", 
+	"11" : "Elfer", "12" : "Zwölfer"
 };
 
 HEXMAP = {
@@ -5283,7 +5290,7 @@ toggles:"showtf-perc":"script";
 
 ); // end vam-if
 
-// v19
+// v23
 // Recent changes:
 // - added divomath workaround for receiving config info
 // - fixed Separators not reported properly inside rowstring
@@ -5291,8 +5298,9 @@ toggles:"showtf-perc":"script";
 // - added call to divomathUpdateResults() on moveend of Separator
 // - changed poly background from DZLMCOLORGOLD to grey border
 // - fixed ReferenceError in ResetButtons script
-
-
+// - reverted changes to Layout
+// - fixed build process breaking, when state or sepstate provide empty strings
+// - fixed Separators "getstatestring" method to produce correct empty string if neccessary
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
 
@@ -5337,6 +5345,7 @@ colors = defaultstateto("polycolors", 1..100); // Configure colors of the RegPol
 rows = defaultstateto("rows", 1); // Configure number of rows/strips in Container
 state = defaultstateto("state", apply(1..rows, "")); // Configure predefined RegPoly per strip
 limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPolys per row/strip (-1 => no limit)
+sepstate = defaultstateto("sepstate", ""); // Separator positions (i.e. number of polys left of Separator)
 
 // Configure look and feel
 drawpolys = defaultstateto("drawpolys", true);// - Draw base RegPolys
@@ -5413,15 +5422,22 @@ divomathSetState() := (
 	regional(state);
 	state = {
 		"size" : size,
-		"polys" : vertices,
 		"polycolors" : colors,
 		"rows" : rows,
 		"limit" : limit,
+		"sepstate" : if(!isundefined(separator), separator:"getstatestring", QUOTE+sepstate+QUOTE),
+		"drawpolys" : drawpolys,
 		"drawpatterncontainer" : drawpatterncontainer,
 		"drawseparator" : drawseparator,
 		"drawborders" : drawborders,
 		"polypadding" : polypadding
 	};
+
+	// Configure vertices to handle image-strings correctly
+	regional(polys);
+	polys = apply(vertices, # = if(isstring(#), QUOTE + # + QUOTE, #));
+
+	state:"polys" = polys;
 	
 	// Configure "size" state
 	// Get current size and built list compatible with config, i.e. ["3,6", "1,1,1", "1,2,3,1"] for 3 strips
@@ -5444,7 +5460,7 @@ divomathSetState() := (
 	);
 
 	state:"state" = currentsize; // Add size attribute to state
-	
+
 	state; // Return
 );
 
@@ -5456,6 +5472,12 @@ divomathSetState() := (
 new RegPoly(center,radius,vertices,rotation,palettecolor):= ( 
 	regional(regpoly);
 	regpoly = new VAMobject("RegPoly");
+
+	if(isstring(vertices), 
+		regpoly:"image" = vertices;
+		vertices = 0;
+	); // Create circle, if RegPolys draws image
+
 	regpoly:"inputradius"	= radius; // backup only, for copy creation
 	regpoly:"inputrotation"= rotation; // backup only, for copy creation
 	
@@ -5498,7 +5520,7 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 	regpoly:"hitbox" := my("shape");
 
 	regpoly:"draw" := (
-		fillpoly(my("shape"),color->my("color"));
+		fillpoly(my("shape"),color->if(isundefined(my("image")),my("color"),grey(1)));
 		if(drawborders,drawpoly(my("shape"),color->grey(0),size->bordersize));
 
 		// Debug
@@ -5506,6 +5528,11 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 			draw(my("center"));
 			drawtext(my("center")+[.2,0], my("id"),color->grey(1));
 			draw(my("coord"), color->grey(.9));
+		);
+
+		// Draw image
+		if(!isundefined(my("image")),
+			drawimage(my("coord"),ICONS:(my("image")), scale->.28*my("radius"));
 		);
 	);
 
@@ -5516,9 +5543,9 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 		polycopy = new RegPoly(
 			my("coord"),
 			my("inputradius"),
-			my("vertices"),
+			if(isundefined(my("image")),my("vertices"),my("image")),
 			my("inputrotation"),
-			my("colorkey");
+			my("colorkey")
 		);
 
 		// Check if Poly has original itself (so it is a copy in a PatternContainer)
@@ -5605,8 +5632,14 @@ new Separator(coord, height, parent) := (
 			polyX = polyX:"coord"_1; // its x-coord
 		); // polyX nada, if position is 0 (Separator dropped before first Poly or no Poly in Container)
 
+		// Get xcoord where to insert and check if there already is a Separator at that position
+		regional(sepxpos, sepalreadyexists);
+		sepxpos = polyX + size + .5 * my("parent"):"polypadding";
+		sepalreadyexists = contains(apply(my("original"):"copies", #:"coord"_1), sepxpos);
+		if(isundefined(sepalreadyexists), sepalreadyexists = false);
+
 		// Handle storage of dropped Separator
-		if(isundefined(polyX), // if there is no useful place to insert Separator...
+		if(isundefined(polyX) % sepalreadyexists, // if there is no useful place to insert Separator...
 			// ...remove from 'copies' and obj
 			self():"original":"copies" = my("original"):"copies" -- [self()];
 			obj = obj -- [self()];
@@ -5616,7 +5649,7 @@ new Separator(coord, height, parent) := (
 				self(),
 				"coord",
 				my("coord"),
-				[polyX + size + .5 * my("parent"):"polypadding", my("coord")_2],
+				[sepxpos, my("coord")_2],
 				my("timing"),
 				"accel"
 			);
@@ -5642,6 +5675,73 @@ new Separator(coord, height, parent) := (
 	sep:"popall" := (
 		obj = obj -- my("copies");
 		self():"copies" = [];
+	);
+
+	sep:"putchild" := ( // eval with position with the number of Polys left of Separator
+		regional(refpoly, maxlength);
+
+		// Get strip with most polys
+		refpoly = apply(my("parent"):"strips", length(#)); // lengths of all strips of parent Container
+		maxlength = max(refpoly);
+		forall(1..length(refpoly), stripindex, // Get strip with most Polys
+			if(refpoly_stripindex == maxlength, refpoly = my("parent"):"strips"_stripindex);
+		);
+
+		refpoly = refpoly_position; // get RegPoly in correct position
+
+		// Create copy and place correctly
+		regional(sepxpos, sepcopy);
+		sepxpos = my("parent"):"coord"_1;
+		sepxpos = sepxpos + my("parent"):"stripmargin"; // move to left border of first poly
+		sepxpos = sepxpos + position * (2*size + my("parent"):"polypadding"); // move to left border of poly right of correct position
+		sepxpos = sepxpos - .5 * my("parent"):"polypadding"; // move back to center between polys
+
+		sepcopy = my("copy");
+		sepcopy:"coord" = [sepxpos, my("coord")_2];
+
+		obj = obj ++ [sepcopy];
+
+	);
+
+	sep:"getcopypositions" := (
+		regional(refstrip, copies, positions, maxlength);
+		copies = my("copies");
+		positions = apply(1..length(copies), #=0); // [0,...,0]
+
+		// Get strip with most polys
+		refstrip = apply(my("parent"):"strips", length(#));
+		maxlength = max(refstrip);
+		forall(1..length(refstrip), stripindex,
+			if(refstrip_stripindex == maxlength, refstrip = my("parent"):"strips"_stripindex);
+		);
+
+		// Get number of polys left of each Separator
+		forall(refstrip, poly, // loop over every poly in longest strip...
+			repeat(length(copies), sepindex, // ...and compare against every Separator...
+				// ...with regards to their x position to increase respective position counter
+				if(copies_sepindex:"coord"_1 > poly:"coord"_1, positions_sepindex = positions_sepindex + 1);
+			);
+		);
+		
+		positions; // Return (max) number of polys left of Separator
+	);
+
+	sep:"getstatestring" := (
+		regional(statestring);
+		statestring = QUOTE; // add leading quotation mark
+
+		// Add positions separated by comma
+		forall(my("getcopypositions"),
+			statestring = statestring + # + ",";
+		);		
+
+		if(length(statestring)>1,
+			statestring_(-1) = QUOTE; // replace last comma with trailing quotation mark
+		,
+			statestring = statestring + QUOTE;
+		);
+
+		statestring;
 	);
 
 	sep; // Return
@@ -5898,8 +5998,6 @@ new Container(coord, numofstrips, limits) := (
 		offset = my("scrollbar"):"adjustedvalue"; // offset by which to select Polys by
 		if(isundefined(offset), offset = 0); // if there is no scrollbar consider it to be 0
 
-
-
 		// Handle displaying
 		forall(my("strips"), polys, // loop over every strip
 			// remove all polys
@@ -6031,11 +6129,13 @@ new PatternContainer(coord, limit) := (
 // ==================
 // SL Config overwrite
 if(!usedivomath,
+	'debuglevel = 4;
 	rows = 3;
 	size = 1;
 	limit = [2,3,-1];
 	state = ["3,6", "3,1,3", "1,6,9,1,3,5,1,1,1,1,1,1,1"];
-	vertices = [2,3,4,5,6,7,8,9,10,11,12];
+	sepstate = "1,1,2,5,1";
+	vertices = [2,3,"clap",5,6,7,8,9,10,11,12];
 	drawpatterncontainer = true;
 	drawseparator = true;
 	drawpolys = true;
@@ -6106,8 +6206,7 @@ counter = 1; // start at first strip
 state = apply(state, tokenize(#,",")); // Create config from supplied strings from divomath
 
 forall(state, row, // iterate over config for every row
-	forall(select(row, isinteger(#)), polyid, // iterate over every polyid per row that is an integer
-		
+	forall(select(row, #!=""), polyid, // iterate over every polyid per row that is not an empty string
 		polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
 
 		eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip
@@ -6116,15 +6215,18 @@ forall(state, row, // iterate over config for every row
 	);
 	counter = counter + 1; // next cycle --> next strip
 );
+
 container:"movepolysintoplace"; // align polys
 
 // D.4 | Create Separator
 // ======================
-if(drawseparator,
-	regional(separator);
-	separator = new Separator(container:"coord", container:"height", container);
-	container:"rootseparator" = separator;
-);
+regional(separator);
+separator = new Separator(container:"coord", container:"height", container);
+container:"childseparator" = separator;
+
+// Apply sepstate to initialize copies
+sepstate = set(tokenize(sepstate,","));
+forall(select(sepstate,#!=""), pos, eval(separator:"putchild", position->pos));
 
 // D.5 | Reset Button
 // ==================
@@ -6139,7 +6241,6 @@ btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
 btn:"script" := (
 	regional(polycopy);
-println("v13, state: " + apply(polys,#:"id"));
 
 	// Remove all RegPolys
 	forall(select(obj, #:"type" == "Container" & isundefined(#:"subtype")), #:"popall");
@@ -6152,7 +6253,7 @@ println("v13, state: " + apply(polys,#:"id"));
 	counter = 1; // start at first strip
 
 	forall(state, row, // iterate over config for every row
-		forall(select(row, isinteger(#)), polyid, // iterate over every polyid per row that is an integer
+		forall(row, polyid, // iterate over every polyid per row that is an integer
 
 			polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
 
@@ -6172,13 +6273,11 @@ obj = obj :> container;
 obj = obj :> patterncontainer;
 if(drawpolys, obj = obj ++ polys);
 obj = obj ++ flatten(container:"strips"); // Initial Polys of container build at Container init
-obj = obj :> separator;
+if(drawseparator,obj = obj :> separator);
 
 // Order to draw (Separator last, so it is on top)
 typeorder = ["bg", "Container", "RegPoly", "Separator"];
-println(apply(polys,#:"id"));
 );
-
 `,
 
     keydown: 
@@ -6490,5 +6589,13 @@ ports: [{
   background: "rgb(255,255,255)"
 }],
 csconsole: false,
+images: {
+    "icon-scissors.png": "https://abako.dzlm.de/cindy/divomath/img/icon-scissors.png",
+    "legs.png": "https://abako.dzlm.de/cindy/divomath/img/legs.png",
+    "icon-bucket.png": "https://abako.dzlm.de/cindy/divomath/img/icon-bucket.png",
+    "icon-hand.png": "https://abako.dzlm.de/cindy/divomath/img/icon-hand.png",
+    "snap.png": "https://abako.dzlm.de/cindy/divomath/img/snap.png",
+    "clap.png": "https://abako.dzlm.de/cindy/divomath/img/clap.png"
+  },
 cinderella: {build: 2075, version: [3, 0, 2075]}
 });

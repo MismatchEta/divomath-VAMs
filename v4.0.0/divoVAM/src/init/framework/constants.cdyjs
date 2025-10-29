@@ -1,7 +1,9 @@
-// v10
+// v12
 // last changes:
 // - added icons for hand, scissors and paint bucket
 // - Changed CDOT to include SPACE before and after
+// - Changed definitions of DIVOBLUE and DIVORED
+// - added icons for CLAPping, finger SNAPping, and clapping on LEGS
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -36,8 +38,8 @@ divogreen=DIVOGREEN = (129,239,104)/255;
 divoviolett=DIVOVIOLET = (150,59,216)/255;
 divograu=DIVOGREY = (130,149,192)/255;
 divoschwarz=DIVOBLACK = grey(0);
-divorot=DIVORED = (235,85,78)/255;
-divoblau=DIVOBLUE = (83,125,156)/255;
+divorot=DIVORED = (246,68,69)/255;
+divoblau=DIVOBLUE = (120,148,194)/255;
 DIVODARKBLUE = (6,67,86)/255;
 DIVOYELLOW = (252,175,81)/255;
 
@@ -128,7 +130,10 @@ DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
 ICONS = {
 	"hand": "icon-hand.png",
 	"bucket": "icon-bucket.png",
-	"scissors": "icon-scissors.png"
+	"scissors": "icon-scissors.png",
+	"clap": "clap.png",
+	"snap": "snap.png",
+	"legs": "legs.png"
 };
 
 // E | Other
@@ -137,7 +142,9 @@ PI = 3.141592653589793238462643383279;
 PHI = (1 + sqrt(5)) / 2;
 
 VALUEMAP = {
-"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", "6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", "11" : "Elfer", "12" : "Zwölfer"
+	"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", 
+	"6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", 
+	"11" : "Elfer", "12" : "Zwölfer"
 };
 
 HEXMAP = {
