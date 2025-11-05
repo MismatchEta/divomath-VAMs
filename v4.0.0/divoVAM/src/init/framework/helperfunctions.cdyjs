@@ -1,9 +1,7 @@
-// v17
+// v19
 // Recent changes:
-// - inpoly(): added check for solution of linear solve to be undefined
-// - added postValue() for exchanging messages with browser
-// - added incircle() to check if a point is in a circle given by center and radius
-// - added getURLparam() and getURLparams() to get URL search parameters
+// - defaultstateto(): added dm editor state ("cindyjs") as proper option
+// - numeral(): returns numeral to corresponding number up to 12, returns number itself if 13 or greater
 
 // Convenience functions
 // A | VAM object functions
@@ -42,7 +40,6 @@ setProperty(object, key, value) := (
 		object:key = value;
 	);
 );
-
 // Convenience setters for shared attributes of every VAMobject
 setType(object, type) 							:= object:"type" = type;
 setCoords(object, coord) 						:= object:"move"; // Do not access coords directly
@@ -485,7 +482,7 @@ divomathGetVarState(dmcb) := (
 // Checks 'dmstate and 'dmprevans for "key" and returns value,
 // else returns default "value"
 defaultstateto(key, value) := (
-	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue);
+	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue, defaultstateobject, defaultstatevalue);
 
 	// Get config overwrites for forward referencing from RESULT structure (if any)
 	resultkey = "__" + key; // Built key with dunder to separate from other keys of 'dmconf
@@ -496,18 +493,26 @@ defaultstateto(key, value) := (
 
 	// Get value from stateobject, if any (for resetting previous state)
 	stateobject = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
-	if(islist(stateobject), stateobject = {}); // 'dmstate is empty list not nada, if divomath site is revisted
-	statevalue = if(contains(keys(stateobject), key), 'dmstate:key);
+	if(islist(stateobject), stateobject = {}); // ?? 'dmstate is empty list not nada, if divomath site is revisted
+	statevalue = if(contains(keys(stateobject), key), stateobject:key);
 
-	// Set correct value
+	// Get default state from cindyjs entry of editor state settings
+	defaultstateobject = defaultto('dmdefaultstate, {});
+	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
+
+	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
 	if(!isundefined(resultvalue), 
 		value = resultvalue; // try overwrite value if any
-		, 
+	, 
 		if(!isundefined(prevansvalue),
 			value = prevansvalue; // else: try prev ans if any
-			,
+		,
 			if(!isundefined(statevalue), 
 				value = statevalue; // else: try state if any
+			,
+				if(!isundefined(defaultstatevalue), 
+					value = defaultstatevalue; // else: try state if any
+				)
 			)
 		)
 	); // if all fails use value from param
@@ -691,3 +696,6 @@ getURLparams() := (
 	");
 	urlparams; // Return value
 );
+
+// String stuff
+numeral(number) := if(isundefined(NUMERALS:number), number, NUMERALS:number);

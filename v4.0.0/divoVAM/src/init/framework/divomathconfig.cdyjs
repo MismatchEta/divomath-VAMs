@@ -1,11 +1,11 @@
-// v3
+// v4
 // Recent changes:
-// - usedivomath added as flag for storyline config
-// - moved behind helper functions
+// - added 'dmdefaultstate to access state from editor ("cindyjs" object)
 
 // Access divomath editor settings
-'dmconf = divomathConfig.configuration;
-'dmstate = divomathConfig.divomathVarState;
+'dmconf = divomathConfig.configuration; // configuration field from editor
+'dmdefaultstate = divomathConfig.cindyjs; // state field from editor
+'dmstate = divomathConfig.divomathVarState; // state from previous use (set by divomathSetState)
 'dmprevans = divomathPreviousAnswer;
 'dmisviewer = divomathConfig.runtime == "VIEWER"; // otherwise "EDITOR" (or nada)
 

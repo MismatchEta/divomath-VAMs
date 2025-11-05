@@ -1,9 +1,10 @@
-// v12
+// v13
 // last changes:
 // - added icons for hand, scissors and paint bucket
 // - Changed CDOT to include SPACE before and after
 // - Changed definitions of DIVOBLUE and DIVORED
 // - added icons for CLAPping, finger SNAPping, and clapping on LEGS
+// - added NUMERALS
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -141,8 +142,14 @@ E  = exp(1);
 PI = 3.141592653589793238462643383279;
 PHI = (1 + sqrt(5)) / 2;
 
+NUMERALS = {
+	"1" : "eins", "2" : "zwei", "3" : "drei", "4" : "vier", "5" : "fünf",
+	"6" : "sechs", "7" : "sieben", "8" : "acht", "9" : "neun", "10" : "zehn", 
+	"11" : "elf", "12" : "zwölf"
+};
+
 VALUEMAP = {
-	"1" : "Einer", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", 
+	"1" : "Einser", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", 
 	"6" : "Sechser", "7" : "Siebener", "8" : "Achter", "9" : "Neuner", "10" : "Zehner", 
 	"11" : "Elfer", "12" : "Zwölfer"
 };

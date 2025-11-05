@@ -1,4 +1,9 @@
-// v1
+// v5
+// recent changes:
+// - changed how bucket tool marks lines
+// - fixed getactiveindex()
+// - added divomath controls
+// - added text output and proper updating of text output on change
 
 // Distributivfeld
 if(vam == "distributive",
@@ -13,27 +18,33 @@ configuration:
 =======================================================
 ";
 
-// global vars
-'atomsize = 1; // muss vom User konfigurierbar sein
-'atomradius = .5; // muss vom User konfigurierbar sein (via POST von URL)
+// VAM global vars
+regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atomverticalpadding, 'atomhorizontalpadding, 'groupspacing,
+'cutwidth, 'gridmoveable, 'buttonsize, 'buttonpadding, 'lblpadding, 'animationspeed);
+
 'atomcolors = {
 	"blue" : (40,111,255)/255,
 	"green" : (50,202,48)/255,
 	"orange" : (255,129,29)/255,
 	"purple" : (165,57,255)/255
 };
-'atomverticalpadding = .1;
-'atomhorizontalpadding = .1;
-'groupspacing = .2;
-'cutwidth = .3;
-'gridmoveable = true;
-'buttonsize = 2;
-'buttonpadding = .4;
-'lblpadding = .3;
-'animationspeed = .15;
 
 // B.1 | Divomath config
 // States
+'gridposition = defaultstateto("gridposition", [10,7]); // grid position on init
+'rows = defaultstateto("rows", 5); // Starting number of rows in Grid
+'cols = defaultstateto("cols", 7); // Starting number of columns in Grid
+'atomsize = defaultstateto("size", 1); // General size of Atoms
+'atomradius = defaultstateto("cornerradius", .5); // Corner radius of Atoms
+'atomverticalpadding = defaultstateto("verticalpadding", .1); // vertical padding between Atoms
+'atomhorizontalpadding = defaultstateto("horizontalpadding", .1); // horizontal padding between Atoms
+'groupspacing = defaultstateto("groupspacing", .2); // Spacing for grouping on click
+'cutwidth = defaultstateto("cutwidth", .3); // Spacing when cutting
+'gridmoveable = defaultstateto("gridmoveable", true); // Flag, if whole grid is moveable
+'buttonsize = defaultstateto("buttonsize", 2); // Size of Tool button
+'buttonpadding = defaultstateto("buttonpadding", .4); // Size of Tool button;
+'lblpadding = defaultstateto("labelpadding", .3); // Padding between output text and border;
+'animationspeed = defaultstateto("animationspeed", .15); // Speed modifier for animations
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -207,34 +218,27 @@ new Grid(c, rows, cols) := (
 		regional(activeindex, ref);
 		ref = my("linestart"); // Reference point for getting active index
 
-		if(my("linedirection") == "VERTICAL" & ref_1 > my("coord")_1 & ref_1 < my("coord")_1 + my("width"),
-			// Check atomcoords in first row and pick closest index w/o going over
-			forall(1..my("cols"), currentcol,
-				if(ref_1 > my("grid")_1_currentcol:"coord"_1, activeindex = currentcol);
-			);
-		);
-		if(my("linedirection") == "HORIZONTAL" & ref_2 > my("coord")_2 & ref_2 < my("coord")_2 + my("height"),
-			// Check atomcoords in first row and pick closest index w/o going over
-			forall(1..my("rows"), currentrow,
-				if(ref_2 > my("grid")_currentrow_1:"coord"_2, activeindex = currentrow);
-			);
-		);
+		// Get Index of Atoms at linestart and lineend
+		activeindex = [] :> eval(my("getactiveindex"), 'point->ref);
+		activeindex = activeindex :> eval(my("getactiveindex"), 'point->mouse().xy);
 
 		// Bucket logic ((un-)drawing stuff)
-		if(my("tool") == "bucket" & !isundefined(activeindex),
+		if(my("tool") == "bucket" & !isundefined(activeindex_1) & !isundefined(activeindex_2),
 			if(my("linedirection") == "VERTICAL",
-				// Set/Unset flag for painting column, depending on if col is drawn over a second time
-				self():"flags":"color-col" = if(my("flags"):"color-col" == activeindex, NADA, activeindex);
+				// Set/Reset flag for painting column, depending on if col is drawn over a second time
+				self():"flags":"color-row" = if(my("flags"):"color-row" == activeindex_1_1, NADA, activeindex_1_1);
 			);
 			if(my("linedirection") == "HORIZONTAL",
 				// Set/Unset flag for painting row, depending on if row is drawn over a second time
-				self():"flags":"color-row" = if(my("flags"):"color-row" == activeindex, NADA, activeindex);
+				self():"flags":"color-col" = if(my("flags"):"color-col" == activeindex_1_2, NADA, activeindex_1_2);
 			);
 			my("repaint"),
 		);
 
 		// Scissors logic ((un-)cutting stuff)
 		if(my("tool") == "scissors",
+			if(my("linedirection") == "VERTICAL", activeindex = activeindex_1_2);
+			if(my("linedirection") == "HORIZONTAL", activeindex = activeindex_1_1);
 			eval(my("cutgrid"), 'activeindex->activeindex, 'direction->my("linedirection"));
 		);
 
@@ -242,6 +246,9 @@ new Grid(c, rows, cols) := (
 		self():"linestart" = NADA;
 		self():"lineend" = NADA;
 		self():"linedirection" = NADA;
+
+		// Update expression text
+		my("updateexpression");
 	);
 
 	grid:"click" := if(my("tool") == "hand", // handles grouping of rows or cols
@@ -303,7 +310,7 @@ new Grid(c, rows, cols) := (
 		);
 
 		// Update expression text
-			my("updateexpression");
+		my("updateexpression");
 	);
 
 // === Add/remove a column/row
@@ -395,6 +402,10 @@ new Grid(c, rows, cols) := (
 		apply(topright, row, apply(row, atom, atom:"color" = 'atomcolors:"orange"));
 		apply(bottomleft, row, apply(row, atom, atom:"color" = 'atomcolors:"green"));
 		apply(bottomright, row, apply(row, atom, atom:"color" = 'atomcolors:"purple"));
+
+		// Update expression text
+		my("updateexpression");
+
 	);
 	
 	grid:"updateexpression" := (
@@ -419,20 +430,28 @@ new Grid(c, rows, cols) := (
 				if(colcol, // 3 column colored
 					if(rowcut, // 4 row cut
 						if(colcut, // 5 col cut
-							value = (r-rci)*(cci-1) + " + " + (r-rci)*(c-cci+1) + " + " + rci*(cci-1) + " + " + rci*(c-cci+1);
-							verbal = "eine " + (r-rci)*(cci-1) + "er-Gruppe und eine " + (r-rci)*(c-cci+1) + "er-Gruppe und eine " + rci*(cci-1) + "er-Gruppe und eine " + rci*(c-cci+1) + "er-Gruppe.";
+							value = "(" + (r-rci) + CDOT + (cci-1) + ") + " + 
+											"(" + (r-rci) + CDOT + (c-cci+1) + ") + " + 
+											"(" + rci + CDOT + (cci-1) + ") + " + 
+											"(" + rci + CDOT + (c-cci+1) + ")";
+							verbal = numeral(r-rci) + " " + (cci-1) + "er und " + 
+												numeral(r-rci) + " " + (c-cci+1) + "er und " + 
+												numeral(rci) + " " + (cci-1) + "er und " + 
+												numeral(rci) + " " + (c-cci+1) + "er. ";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = (r-rci) + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ") + " + rci + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ")";
+							verbal = numeral(r-rci) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten und 
+" + numeral(rci) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten.";
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + (cci-1) + " + (" + (r-rci) + "+" + rci + ")" + CDOT + (c-cci+1);
+							verbal = numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + (cci-1) + " Punkten/Quadraten und
+" + numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + (c-cci+1) + " Punkten/Quadraten.";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
-						)
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ")";
+							verbal = numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten.";
+						);
 					);
 				, // 3 column not colored
 					if(rowcut, // 4 row cut
@@ -440,16 +459,16 @@ new Grid(c, rows, cols) := (
 							value = "@...";
 							verbal = "@...";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (r-rci) + CDOT + c + ") + (" + (rci) + CDOT + c + ")";
+							verbal = numeral(r-rci) + " " + c + "er und " + numeral(rci) + " " + c + "er.";
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
 							value = "@...";
 							verbal = "@...";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + c;
+							verbal = numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + c + " Punkten/Quadraten.";
 						);
 					);
 				);
@@ -465,11 +484,11 @@ new Grid(c, rows, cols) := (
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + r + CDOT + (cci-1) + ")+(" + r + CDOT + (c-cci+1) + ")";
+							verbal = numeral(r) + " " + (cci-1) + "er und " + numeral(r) + " " + (c-cci+1) + "er.";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = r + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ")";
+							verbal = numeral(r) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten.";
 						);
 					);
 				, // 3 column not colored
@@ -487,7 +506,7 @@ new Grid(c, rows, cols) := (
 							verbal = "@...";
 						, // 5 col not cut
 							value = r * c;
-							verbal = value + " Plättchen.";
+							verbal = value + " Punkte/Quadrate.";
 						);
 					);
 				);
@@ -500,19 +519,27 @@ new Grid(c, rows, cols) := (
 				if(colcol, // 3 column colored
 					if(rowcut, // 4 row cut
 						if(colcut, // 5 col cut
-							value = (r-rci) + CDOT + (cci-1) + " + " + (r-rci) + CDOT + (c-cci+1) + " + " + rci + CDOT + (cci-1) + " + " + rci + CDOT + (c-cci+1);
-							verbal = (r-rci) + " " + (cci-1) + "er und " + (r-rci) + " " + (c-cci+1) + "er und " + rci + " " + (cci-1) + "er und " + rci + " " + (c-cci+1) + "er.";
+							value = "(" + (r-rci) + CDOT + (cci-1) + ") + " + 
+											"(" + (r-rci) + CDOT + (c-cci+1) + ") + " + 
+											"(" + rci + CDOT + (cci-1) + ") + " + 
+											"(" + rci + CDOT + (c-cci+1) + ")";
+							verbal = numeral(r-rci) + " " + (cci-1) + "er und " + 
+												numeral(r-rci) + " " + (c-cci+1) + "er und " + 
+												numeral(rci) + " " + (cci-1) + "er und " + 
+												numeral(rci) + " " + (c-cci+1) + "er. ";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = (r-rci) + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ") + " + rci + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ")";
+							verbal = numeral(r-rci) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten und 
+" + numeral(rci) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten.";
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
-							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + (cci-1) + " + (" + (r-rci) + "+" + rci + ")" + CDOT + (c-cci+1);;
-							verbal = "(" + (r-rci) + "+" + rci + ") " + (cci-1) + "er-Reihen und (" + (r-rci) + "+" + rci + ") " + (c-cci+1) + "er-Reihen.";
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + (cci-1) + " + (" + (r-rci) + "+" + rci + ")" + CDOT + (c-cci+1);
+							verbal = numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + (cci-1) + " Punkten/Quadraten und
+" + numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + (c-cci+1) + " Punkten/Quadraten.";
 						, // 5 col not cut
-							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + "(" + (cci-1) + "+" + cci + ")";
-							verbal = (r-rci) + " und " + rci + " (" + (cci-1) + " + " + cci + ")er-Reihen.";
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ")";
+							verbal = numeral(r-rci) + " und " + numeral(rci) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten.";
 						)
 					);
 				, // 3 column not colored
@@ -521,16 +548,16 @@ new Grid(c, rows, cols) := (
 							value = "@...";
 							verbal = "@...";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (r-rci) + CDOT + c + ") + (" + rci + CDOT + c + ")";
+							verbal = numeral(r-rci) + " " + c + "er und " + numeral(rci) + " " + c + "er.";
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
 							value = "@...";
 							verbal = "@...";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (r-rci) + "+" + rci + ")" + CDOT + c;
+							verbal = (r-rci) + " und " + rci + " Reihen mit je " + c + " Punkten/Quadraten.";
 						);
 					);
 				);
@@ -546,11 +573,11 @@ new Grid(c, rows, cols) := (
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + r + CDOT + (cci-1) + ") + (" + r + CDOT + (c-cci+1) + ")";
+							verbal = numeral(r) + " " + (cci-1) + "er und " + numeral(r) + " " + (c-cci+1) + "er.";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = r + CDOT + "(" + (cci-1) + "+" + (c-cci+1) + ")";
+							verbal = numeral(r) + " Reihen mit je " + (cci-1) + " und " + (c-cci+1) + " Punkten/Quadraten.";
 						);
 					);
 				, // 3 column not colored
@@ -568,7 +595,7 @@ new Grid(c, rows, cols) := (
 							verbal = "@...";
 						, // 5 col not cut
 							value = r  + CDOT + c;
-							verbal = r  + " " + c + "er.";
+							verbal = numeral(r)  + " " + c + "er.";
 						);
 					);
 				);
@@ -581,19 +608,27 @@ new Grid(c, rows, cols) := (
 				if(colcol, // 3 column colored
 					if(rowcut, // 4 row cut
 						if(colcut, // 5 col cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (cci-1) + CDOT + (r-rci) + ") + " + 
+											"(" + (cci-1) + CDOT + rci + ") + " + 
+											"(" + (c-cci+1) + CDOT + (r-rci) + ") + " + 
+											"(" + (c-cci+1) + CDOT + rci + ")";
+							verbal = numeral(cci-1) + " " + (r-rci) + "er und " + 
+												numeral(cci-1) + " " + (rci) + "er und " + 
+												numeral(c-cci+1) + " " + (r-rci) + "er und " + 
+												numeral(c-cci+1) + " " + (rci) + "er. ";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (cci-1) + "+" + (c-cci+1) + ")" + CDOT + (r-rci) + " + (" + (cci-1) + "+" + (c-cci+1) + ")" + CDOT + rci;
+							verbal = numeral(cci-1) + " und " + numeral(c-cci+1) + " Spalten mit je " + (r-rci) + " Punkten/Quadraten und
+" + numeral(cci-1) + " und " + numeral(c-cci+1) + " Spalten mit je " + rci + " Punkten/Quadraten.";
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
-							value = "@...";
-							verbal = "@...";
+							value = (cci-1) + CDOT + "(" + (r-rci) + "+" + rci + ") + " + (c-cci+1) + CDOT + "(" + (r-rci) + "+" + rci + ")";
+							verbal = numeral(cci-1) + " Spalten mit je " + (r-rci) + " und " + rci + " Punkten/Quadraten und 
+" + numeral(c-cci+1) + " Spalten mit je " + (r-rci) + " und " + rci + " Punkten/Quadraten.";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (cci-1) + "+" + (c-cci+1) + ")" + CDOT + "(" + (r-rci) + "+" + (rci) + ")";
+							verbal = numeral(cci-1) + " und " + numeral(c-cci+1) + " Spalten mit je " + (r-rci) + " und " + rci + " Punkten/Quadraten.";
 						)
 					);
 				, // 3 column not colored
@@ -602,16 +637,16 @@ new Grid(c, rows, cols) := (
 							value = "@...";
 							verbal = "@...";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + c + CDOT + (r-rci) + ") + (" + c + CDOT + rci + ")";
+							verbal = numeral(c) + " " + (r-rci) + "er und " + numeral(c) + " " + rci + "er.";
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
 							value = "@...";
 							verbal = "@...";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = c + CDOT + "(" + (r-rci) + "+" + rci + ")";
+							verbal = numeral(c) + " Spalten mit je " + (r-rci) + " und " + rci + " Punkten/Quadraten.";
 						);
 					);
 				);
@@ -627,11 +662,11 @@ new Grid(c, rows, cols) := (
 						);
 					, // 4 row not cut
 						if(colcut, // 5 col cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (cci-1) + CDOT + r + ") + (" + (c-cci+1) + CDOT + r + ")";
+							verbal = numeral(cci-1) + " " + r + "er und " + numeral(c-cci+1) + " " + r + "er.";
 						, // 5 col not cut
-							value = "@...";
-							verbal = "@...";
+							value = "(" + (cci-1) + "+" + (c-cci+1) + ")" + CDOT + r;
+							verbal = numeral(cci-1) + " und " + numeral(c-cci+1) + " Spalten mit je " + r + " Punkten/Quadraten.";
 						);
 					);
 				, // 3 column not colored
@@ -649,7 +684,7 @@ new Grid(c, rows, cols) := (
 							verbal = "@...";
 						, // 5 col not cut
 							value = c + CDOT + r;
-							verbal = c  + " " + r + "er.";
+							verbal = numeral(c) + " " + r + "er.";
 						);
 					);
 				);
@@ -697,10 +732,10 @@ new Grid(c, rows, cols) := (
 		regional(hotrow, hotcol, c);
 		hotrow = hotcol = NADA;
 		c = my("coord");
-		
+
 		if(	'point_2 >= c_2 & 'point_2 <= c_2 + my("height") &
-				'point_1 >= c_1 & 'point_1 <= c_2 + my("width"), // only calculate, if 'point inside grid
-			
+				'point_1 >= c_1 & 'point_1 <= c_1 + my("width"), // only calculate, if 'point inside grid
+
 			// Calc index of hot row
 			hotrow = 'point_2 - c_2;
 			forall(1..my("rows"), rowindex,
@@ -973,7 +1008,7 @@ if(!usedivomath,
 	// @TODO
 );
 
-obj = obj :> new Grid([11,6],5,7);
+obj = obj :> new Grid('gridposition,'rows,'cols);
 obj = obj :> obj_1:"vbar";
 obj = obj :> obj_1:"hbar";
 obj = obj :> obj_1:"toolbutton";

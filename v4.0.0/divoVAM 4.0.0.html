@@ -311,12 +311,9 @@ coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(rand
 
 ;
 //FW: helper functions
-// v17
+// v18
 // Recent changes:
-// - inpoly(): added check for solution of linear solve to be undefined
-// - added postValue() for exchanging messages with browser
-// - added incircle() to check if a point is in a circle given by center and radius
-// - added getURLparam() and getURLparams() to get URL search parameters
+// - defaultstateto(): added dm editor state ("cindyjs") as proper option
 
 // Convenience functions
 // A | VAM object functions
@@ -798,7 +795,7 @@ divomathGetVarState(dmcb) := (
 // Checks 'dmstate and 'dmprevans for "key" and returns value,
 // else returns default "value"
 defaultstateto(key, value) := (
-	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue);
+	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue, defaultstateobject, defaultstatevalue);
 
 	// Get config overwrites for forward referencing from RESULT structure (if any)
 	resultkey = "__" + key; // Built key with dunder to separate from other keys of 'dmconf
@@ -809,18 +806,26 @@ defaultstateto(key, value) := (
 
 	// Get value from stateobject, if any (for resetting previous state)
 	stateobject = defaultto('dmstate, {}); // Set 'dmstate manually to empty object
-	if(islist(stateobject), stateobject = {}); // 'dmstate is empty list not nada, if divomath site is revisted
-	statevalue = if(contains(keys(stateobject), key), 'dmstate:key);
+	if(islist(stateobject), stateobject = {}); // ?? 'dmstate is empty list not nada, if divomath site is revisted
+	statevalue = if(contains(keys(stateobject), key), stateobject:key);
 
-	// Set correct value
+	// Get default state from cindyjs entry of editor state settings
+	defaultstateobject = defaultto('dmdefaultstate, {});
+	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
+
+	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
 	if(!isundefined(resultvalue), 
 		value = resultvalue; // try overwrite value if any
-		, 
+	, 
 		if(!isundefined(prevansvalue),
 			value = prevansvalue; // else: try prev ans if any
-			,
+		,
 			if(!isundefined(statevalue), 
 				value = statevalue; // else: try state if any
+			,
+				if(!isundefined(defaultstatevalue), 
+					value = defaultstatevalue; // else: try state if any
+				)
 			)
 		)
 	); // if all fails use value from param
@@ -1007,14 +1012,14 @@ getURLparams() := (
 
 ;
 //FW: divomath config
-// v3
+// v4
 // Recent changes:
-// - usedivomath added as flag for storyline config
-// - moved behind helper functions
+// - added 'dmdefaultstate to access state from editor ("cindyjs" object)
 
 // Access divomath editor settings
-'dmconf = divomathConfig.configuration;
-'dmstate = divomathConfig.divomathVarState;
+'dmconf = divomathConfig.configuration; // configuration field from editor
+'dmdefaultstate = divomathConfig.cindyjs; // state field from editor
+'dmstate = divomathConfig.divomathVarState; // state from previous use (set by divomathSetState)
 'dmprevans = divomathPreviousAnswer;
 'dmisviewer = divomathConfig.runtime == "VIEWER"; // otherwise "EDITOR" (or nada)
 
@@ -1090,7 +1095,7 @@ if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debugl
 
 
 // C | Overwrite VAM choice locally
-vam = "strapwork"; // comment before production
+vam = "distributive2"; // comment before production
 if(!isundefined('urlparams:"vam"), vam = 'urlparams:"vam");
 
 if('debuglevel > 3,
@@ -3716,7 +3721,7 @@ forall(cards, card,
 
 ;
 //VAM: strapwork
-// v22
+// v25
 // Recent changes:
 // - added divomath workaround for receiving config info
 // - fixed Separators not reported properly inside rowstring
@@ -3726,6 +3731,15 @@ forall(cards, card,
 // - fixed ReferenceError in ResetButtons script
 // - reverted changes to Layout
 // - fixed build process breaking, when state or sepstate provide empty strings
+// - fixed Separators "getstatestring" method to produce correct empty string if neccessary
+// - copies of Separators get different color from original on copy
+// - increased distance of Pattern Container to bottom polys
+// - moved Reset Button to be above Container and to the right
+// - Reset Button resets Separators as well
+// - Reset Button resets to divomaths editor state if any
+// - added multiline PatternContainer
+// - reworked how dropping worked to accomodate multiline Patterncontainer
+// - added custom limit to Pattercontainer param that applies to ALL rows
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -3772,6 +3786,7 @@ rows = defaultstateto("rows", 1); // Configure number of rows/strips in Containe
 state = defaultstateto("state", apply(1..rows, "")); // Configure predefined RegPoly per strip
 limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPolys per row/strip (-1 => no limit)
 sepstate = defaultstateto("sepstate", ""); // Separator positions (i.e. number of polys left of Separator)
+patternlimit = defaultstateto("patternlimit", 5); // Limit for PatternContainer
 
 // Configure look and feel
 drawpolys = defaultstateto("drawpolys", true);// - Draw base RegPolys
@@ -3782,7 +3797,7 @@ polypadding = defaultstateto("polypadding", .5); // padding between RegPolys
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
-divomathUpdateResults() := if(usedivomath % true,
+divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
 	if('debuglevel>2, println("===updateResults()=================================================="));
 	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
@@ -3848,17 +3863,22 @@ divomathSetState() := (
 	regional(state);
 	state = {
 		"size" : size,
-		"polys" : vertices,
 		"polycolors" : colors,
 		"rows" : rows,
 		"limit" : limit,
-		"sepstate" : separator:"getstatestring",
+		"sepstate" : if(!isundefined(separator), separator:"getstatestring", QUOTE+sepstate+QUOTE),
 		"drawpolys" : drawpolys,
 		"drawpatterncontainer" : drawpatterncontainer,
 		"drawseparator" : drawseparator,
 		"drawborders" : drawborders,
 		"polypadding" : polypadding
 	};
+
+	// Configure vertices to handle image-strings correctly
+	regional(polys);
+	polys = apply(vertices, # = if(isstring(#), QUOTE + # + QUOTE, #));
+
+	state:"polys" = polys;
 	
 	// Configure "size" state
 	// Get current size and built list compatible with config, i.e. ["3,6", "1,1,1", "1,2,3,1"] for 3 strips
@@ -4087,6 +4107,7 @@ new Separator(coord, height, parent) := (
 		copy:"ismoveable" = true;
 		copy:"copyonmove" = false;
 		copy:"original" = self(); // thing i am copied from (different from parent => Container)
+		copy:"color" = copy:"color" * 1.5;
 
 		self():"copies" = my("copies") ++ [copy];
 
@@ -4148,7 +4169,7 @@ new Separator(coord, height, parent) := (
 	);
 
 	sep:"getstatestring" := (
-		regional(statetring);
+		regional(statestring);
 		statestring = QUOTE; // add leading quotation mark
 
 		// Add positions separated by comma
@@ -4156,7 +4177,11 @@ new Separator(coord, height, parent) := (
 			statestring = statestring + # + ",";
 		);		
 
-		statestring_(-1) = QUOTE; // replace last comma with trailing quotation mark
+		if(length(statestring)>1,
+			statestring_(-1) = QUOTE; // replace last comma with trailing quotation mark
+		,
+			statestring = statestring + QUOTE;
+		);
 
 		statestring;
 	);
@@ -4295,11 +4320,16 @@ new Container(coord, numofstrips, limits) := (
 		// For safety, should not be needed
 		if(!contains(obj,dropobject), obj = obj :> dropobject);
 
-		// Put poly in makeshift container
+		// Get correct strip index to put poly in
+		regional(stripindex);
+		stripindex = 1+length(select(apply(apply(1..my("#strips"),my("coord")_2 + #*my("height")/my("#strips")),#<mouse().xy_2),#));
+
+		// Put poly in makeshift container to call "cropcontainer" with
 		regional(cont);
 		cont = {};
-		cont:"strips" = [[dropobject]];
-		
+		cont:"strips" = apply(1..my("#strips"), if(#==stripindex, [dropobject], []));
+		cont:"#strips" = length(cont:"strips");
+
 		// Call dropcontainer
 		eval(my("dropcontainer"), dropobject->cont);
 
@@ -4311,43 +4341,40 @@ new Container(coord, numofstrips, limits) := (
 		// can also be evaled with dropcoord to use specific coord (defaults to mouse coords)
 		if(isundefined(dropcoord), dropcoord = mouse().xy);
 
-		regional(polys);
-		polys = dropobject:"strips"_1;
+		regional(polys, hotstrip, position, len, lim, overflowcontent);
 
-		// Find correct strip based on mouse coords
-		regional(stripys, stripindex, hotstrip);
-		stripys = apply(my("refpoints"), #_2 - (size+my("stripmargin")/2)); // y-coord of bottom edge of each strip
-		stripindex = 0; // index of hot strip
-		forall(stripys, if(dropcoord_2 > #, stripindex = stripindex + 1)); // go up strips and count along if mouse is higher
-		stripindex = stripindex;
-		hotstrip = my("strips")_stripindex; // VALUE COPY of strip, reassign later
 
-		// Find position, where to insert dropobject
-		regional(position);
-		position = select(hotstrip, dropcoord_1 > #:"coord"_1); // all Polys left of the mouse
-		position = 1 + length(position); // count them, add one --> next position to insert
 
-		// (Re)Set strip contents
-		hotstrip = hotstrip_(1..position-1) ++ // Assemble Polys BEFORE the dropobject
-			polys ++ // Append list of polys
-			hotstrip_(position..length(hotstrip)); // Append Polys AFTER the dropobject
+		repeat(dropobject:"#strips", stripindex,
 
-		// Set RegPolys parent to Container
-		apply(polys, #:"parent" = self());
+			polys = dropobject:"strips"_stripindex; // Strip to put in Container
+			hotstrip = my("strips")_stripindex; // VALUE COPY of strip, reassign later
 
-		// Reassign hotstrip to corresponding field
-		self():"strips"_stripindex = hotstrip;
+			// Find position, where to insert dropobject
+			position = select(hotstrip, dropcoord_1 > #:"coord"_1); // all Polys left of the mouse
+			position = 1 + length(position); // count them, add one --> next position to insert
 
-		// Remove overflowing elements at size limit of container
-		regional(len, lim, overflowcontent);
-		hotstrip = my("strips")_stripindex;
-		len = length(hotstrip);
-		lim = my("limits")_stripindex;
+			// (Re)Set strip contents
+			hotstrip = hotstrip_(1..position-1) ++ // Assemble Polys BEFORE the dropobject
+				polys ++ // Append list of polys
+				hotstrip_(position..length(hotstrip)); // Append Polys AFTER the dropobject
+
+			// Set RegPolys parent to Container
+			apply(polys, #:"parent" = self());
+
+			// Reassign hotstrip to corresponding field
+			self():"strips"_stripindex = hotstrip;
+
+			// Remove overflowing elements at size limit of container
+			hotstrip = my("strips")_stripindex;
+			len = length(hotstrip);
+			lim = my("limits")_stripindex;
 		
-		if(lim > -1 & length(hotstrip) > my("limits")_stripindex, // Check if overflowing
-			overflowcontent = hotstrip_(1+min(len,lim)..len); // Get overflowing RegPolys
-			obj = obj -- hotstrip_(1+min(len,lim)..len); //// Remove overflowing RegPolys from obj
-			self():"strips"_stripindex = my("strips")_stripindex -- overflowcontent; // Remove overflowing RegPolys from strip
+			if(lim > -1 & length(hotstrip) > my("limits")_stripindex, // Check if overflowing
+				overflowcontent = hotstrip_(1+min(len,lim)..len); // Get overflowing RegPolys
+				obj = obj -- hotstrip_(1+min(len,lim)..len); //// Remove overflowing RegPolys from obj
+				self():"strips"_stripindex = my("strips")_stripindex -- overflowcontent; // Remove overflowing RegPolys from strip
+			);
 		);
 
 		// Animate RegPolys in ALL strips to new position
@@ -4415,8 +4442,6 @@ new Container(coord, numofstrips, limits) := (
 		offset = my("scrollbar"):"adjustedvalue"; // offset by which to select Polys by
 		if(isundefined(offset), offset = 0); // if there is no scrollbar consider it to be 0
 
-
-
 		// Handle displaying
 		forall(my("strips"), polys, // loop over every strip
 			// remove all polys
@@ -4482,10 +4507,9 @@ new Container(coord, numofstrips, limits) := (
 	cont; // Return
 );
 
-new PatternContainer(coord, limit) := (
+new PatternContainer(coord, rows, limit) := (
 	regional(cont);
-	limit = if(limit<1 % isundefined(limit), 3, limit); // force limit?
-	cont = new Container(coord, 1, [limit]);
+	cont = new Container(coord, rows, apply(1..rows, #=limit));
 
 	// Inherited from Container, don't use
 	obj = obj -- [cont:"scrollbar"];
@@ -4498,16 +4522,19 @@ new PatternContainer(coord, limit) := (
 	cont:"copyonmove" = true;
 	cont:"width" := (
 		regional(numofpolys);
-		numofpolys = max(1,length(my("strips")_1));
-		
-		numofpolys * 2*size + (numofpolys) * my("polypadding") + .5*size;
+		numofpolys = max(apply(my("strips"),length(#))); // max number of polys in strip
+		numofpolys = max(1, numofpolys); // min 1
+
+		numofpolys * 2*size + (numofpolys) * my("polypadding") + if(numofpolys<my("limits")_1,.5*size,0);
 	);
 	cont:"move" := if(my("ismoveable"),
 		// Move self
 		self():"coord" = my("coord") + mousedelta;
 
 		// Move contents (RegPolys)
-		apply(my("strips")_1,#:"coord" = #:"coord" + mousedelta); // should only have exactly one strip
+		forall(my("strips"), strip,
+			apply(strip,#:"coord" = #:"coord" + mousedelta); // should only have exactly one strip
+		);
 	);
 
 	cont:"moveend" := if(my("ismoveable"), // Handle dropped PatternContainer
@@ -4529,15 +4556,18 @@ new PatternContainer(coord, limit) := (
 
 	cont:"copy" := (
 		regional(copy, polycopy);
-		copy = new PatternContainer(my("coord"), my("limits")_1);
+		copy = new PatternContainer(my("coord"), my("#strips"), my("limits")_1);
 		copy:"ismoveable" = true;
 		copy:"copyonmove" = false;
 
 		// Copy RegPolys of original and put in only strip
-		copy:"strips" = [apply(1..length(my("strips")_1), my("strips")_1_#:"copy")];
+		repeat(my("#strips"), stripindex,
+			copy:"strips"_stripindex = apply(1..length(my("strips")_stripindex), my("strips")_stripindex_#:"copy");
+		);
 
-		obj = obj ++ copy:"strips"_1; // Add copies to obj
-
+		forall(copy:"strips", strip,
+			obj = obj ++ strip; // Add copies to obj
+		);
 		copy;
 	);
 
@@ -4547,14 +4577,15 @@ new PatternContainer(coord, limit) := (
 // D | Initialization
 // ==================
 // SL Config overwrite
-if(!usedivomath & false,
+if(!usedivomath,
 	'debuglevel = 4;
-	rows = 3;
-	size = 1;
-	limit = [2,3,-1];
-	state = ["3,6", "3,1,3", "1,6,9,1,3,5,1,1,1,1,1,1,1"];
-	sepstate = "1,1,2,5,1";
-	vertices = [2,3,"clap",5,6,7,8,9,10,11,12];
+	rows = 2;
+	size = .9;
+	limit = [2,3];
+	patternlimit = 4;
+	state = ["3,6", "3,1,3"];
+	sepstate = "1,2,1";
+	vertices = [2,3,"snap",5,6,7];
 	drawpatterncontainer = true;
 	drawseparator = true;
 	drawpolys = true;
@@ -4598,9 +4629,9 @@ if(drawpolys,	bg:"draw" := drawpoly(my("shape"),	color-> grey(.1)));
 // Align left above bar of RegPolys
 if(drawpatterncontainer,
 	regional(patterncontainer);
-	patterncontainer = new PatternContainer([0,0], 100);
+	patterncontainer = new PatternContainer([0,0], rows, patternlimit);
 );
-patterncontainer:"coord" = (bg:"shape"_4).xy + [0,'marginbottom];
+patterncontainer:"coord" = (bg:"shape"_4).xy + 2*[0,'marginbottom];
 
 // D.3 | Create and config Container
 // =================================
@@ -4653,13 +4684,21 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new Button((bg:"shape"_3).xy - [2*size,-'marginbottom], 2*size, size, ANTICLOCKWISEARROW, 26);
+btn = new Button((container:"shape"_3).xy - [2*size,-'marginbottom], 2*size, size, ANTICLOCKWISEARROW, 26);
+// btn = new Button((bg:"shape"_3).xy - [2*size,-'marginbottom], 2*size, size, ANTICLOCKWISEARROW, 26); // position at right screen edge above polys (OLD POSITION)
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
-btn:"script" := (
-	regional(polycopy);
+btn:"script" := ( // Resets state to editor default setting if used in divomath
+	// Reassign relevant vars with divomath default state, if applicable
+	if(usedivomath,
+		state = defaultto('dmdefaultstate:"state", apply(1..rows, ""));
+		sepstate = defaultto('dmdefaultstate:"sepstate", "");
+	,
+		sepstate = separator:"getstatestring";
+		sepstate = replace(sepstate,QUOTE,""); // Remove QUOTEs for normal use of string
+	);
 
 	// Remove all RegPolys
 	forall(select(obj, #:"type" == "Container" & isundefined(#:"subtype")), #:"popall");
@@ -4669,19 +4708,26 @@ btn:"script" := (
 	forall(select(obj, #:"type" == "Separator" & isundefined(#:"original")), #:"popall");
 
 	// Reset original state, @TODO: Same as in container init. Refactor
+	regional(polycopy, counter);				
 	counter = 1; // start at first strip
-
+	
 	forall(state, row, // iterate over config for every row
 		forall(row, polyid, // iterate over every polyid per row that is an integer
-
+	
+			// Create new Polys
 			polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
-
 			eval(container:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip	
 		);
 		counter = counter + 1; // next cycle --> next strip
 	);
+
+
 	container:"movepolysintoplace"; // align polys
 
+
+	// Apply sepstate to initialize copies
+	sepstate = set(tokenize(sepstate,","));
+	forall(select(sepstate,#!=""), pos, eval(separator:"putchild", position->pos));
 );
 
 // E | Build obj
@@ -4691,13 +4737,12 @@ obj = obj :> btn; // Reset button
 obj = obj :> container;
 obj = obj :> patterncontainer;
 if(drawpolys, obj = obj ++ polys);
-obj = obj ++ flatten(container:"strips"); // Initial Polys of container build at Container init
+obj = obj ++ flatten(container:"strips"); // Initial Polys of Container build at Container init
 if(drawseparator,obj = obj :> separator);
 
 // Order to draw (Separator last, so it is on top)
 typeorder = ["bg", "Container", "RegPoly", "Separator"];
 );
-
 ;
 //VAM: percentagebar
 // v1
@@ -5310,6 +5355,8 @@ toggles:"showtf-perc":"script";
 ;
 //VAM: distributive
 // v1
+// recent changes:
+// - 
 
 // Distributivfeld
 if(vam == "distributive",
@@ -5327,6 +5374,345 @@ configuration:
 // global vars
 'atomsize = 1; // muss vom User konfigurierbar sein
 'atomradius = .5; // muss vom User konfigurierbar sein (via POST von URL)
+'atomcolors = {
+	"blue" : (40,111,255)/255,
+	"green" : (50,202,48)/255,
+	"orange" : (255,129,29)/255,
+	"purple" : (165,57,255)/255
+};
+'atomverticalpadding = .1;
+'atomhorizontalpadding = .1;
+'groupspacing = .2;
+'cutwidth = .3;
+'gridmoveable = true;
+'buttonsize = 2;
+'buttonpadding = .4;
+'lblpadding = .3;
+'animationspeed = .15;
+
+// B.1 | Divomath config
+// States
+
+// Configure result handling and setState.
+// Overwrite divomath result updating function.
+divomathUpdateResults() := if(usedivomath,);
+
+// Overwrite divomath setState()
+divomathSetState() := ();
+
+// C | Classes
+// C.1 | Grid: ...of Atoms
+new Grid(c, rows, cols) := (
+	regional(grid);
+	grid = new VAMobject("Grid");
+	grid:"coord" = c;
+	grid:"rows" = max(1,rows);
+	grid:"cols" = max(1,cols);
+	grid:"verticalpadding" = 'atomverticalpadding;
+	grid:"horizontalpadding" = 'atomhorizontalpadding;
+	grid:"width" := my("cols") * 'atomsize + (my("cols")-1) * my("horizontalpadding");
+	grid:"height" := my("rows") * 'atomsize + (my("rows")-1) * my("verticalpadding");
+	grid:"ismoveable" := true;
+	grid:"atomcolor" = 'atomcolors:"blue";
+
+	grid:"hitbox" := roundedrectangle(my("coord"), my("width"), my("height"), 'atomradius); // Rounded rectangle just fitting around all Atoms
+	grid:"shape" := my("hitbox");
+	
+	grid:"ishot" := inroundedrectangle(my("coord"), my("width"), my("height"), 'atomradius, mouse().xy);
+
+	grid:"draw" := (
+		regional(c);
+		c = my("coord");
+
+		// Draw grid
+		repeat(my("rows"), row,
+			repeat(my("cols"), col,
+				fillpoly(rectangle(c, 'atomsize, 'atomsize), color->my("atomcolor"), alpha->'atomalpha);
+				c_1 = c_1 + 'atomsize + my("horizontalpadding");
+			);
+			c_1 = my("coord")_1;
+			c_2 = c_2 + 'atomsize + my("verticalpadding");
+		);
+
+		// Debug Draw
+		if('debuglevel > 0,
+			draw(my("shape"), size->3, dashtype->1, color->[0,1,0]);
+			draw(my("coord"), size->4, color->[0,1,0]);
+		);
+	);
+
+	grid; // Return Grid
+);
+
+// D | Initialization
+// D.0 | SL Config
+// ===============
+if(!usedivomath,
+	// @TODO
+);
+
+regional(grid);
+grid = new Grid([11,6],10,30);
+
+obj = obj :> grid;
+
+); // End VAM if
+
+;
+//ulli: distributive
+//Distributive Field
+if(vam == "distributivetest",
+vd(x,val,vd):=x+if(x<val,-vd,vd);
+
+new distributivefield(c,width,height,val) := (
+	 regional(o); 
+	 o = {"type":"distributivefield",
+			  "coord":c,
+				"width":width,
+				"height":height,
+				"color":grey(1),
+				"fillcolor1":dzlmchipblue,
+				"fillcolor2":dzlmchipred,
+				"horizdiv":0.5,
+				"vertdiv":0.5,
+				"valdiv":0,
+				"val": val,
+				"commute" : true 
+				};
+   namedef(o);
+	 o:"box" := rectangle((vd(0,my("val"),my("valdiv")),0),vd(my("width"),my("val"),2*my("valdiv")),my("height")); 
+   o:"draw" := (
+				gsave();
+				regional(w);w= my("width");
+				regional(h);h= my("height");		
+				regional(val);val= my("val");		
+				regional(vd);vd= my("valdiv");
+				translate(self():"coord");
+				fillpoly(rectangle((vd(0,val,vd),0),val,h),color->my("fillcolor1"));
+				fillpoly(rectangle((vd(val,val,vd),0),w-val,h),color->my("fillcolor2"));
+				repeat(w+1,x,start->0,draw((vd(x,val,vd),0),(vd(x,val,vd),h),color->my("color"),size->my("vertdiv")));
+				repeat(h+1,y,start->0,draw((vd(0,val,vd),y),(vd(w,val,vd),y),color->my("color"),size->my("horizdiv")));
+				//drawpoly(my("box"));
+				grestore();
+
+				);
+	 o:"ishot" := inrectangle(my("box"),mouse().xy-my("coord"));
+
+	 o:"moveable"=true;	
+   o:"move" := if(self():"moveable"==true,self():"coord" = round(coord)); 
+
+   o:"click" := (if(debugging,err(o:"info")));
+
+	 o:"resizable"=false;
+   o:"resizeright" := if(self():"resizable",self():"width" =  max(1,mouse.x - startcoord.x));
+   o:"resizeleft" := if(self():"resizable",( newwidth = max(1,startcoord.x+my("storewidth")-mouse.x);
+											 self():"coord" = startcoord+(my("storewidth")-newwidth,0);
+											 self():"width" = newwidth));
+
+	 o:"changemaxx" := (
+			self():"width"=max(my("val"),round(mouse.x-my("coord").x));						
+	 );
+	 o:"changeminx" := (
+			self():"coord"=(min(my("storecoord").x+my("storeval"),round(mouse.x)),my("coord").y);
+			self():"val" = my("storeval")+my("storecoord").x-my("coord").x;		
+			self():"width"= my("storewidth")+my("storecoord").x-my("coord").x;					
+	 );
+
+	 o:"changemaxy" := (
+			self():"height"=max(1,round(mouse.y-my("coord").y));						
+	 );
+	 o:"changeminy" := (
+			self():"coord"=(my("coord").x,min(my("storecoord").y+my("storeheight")-1,round(mouse.y)));
+			self():"height"= my("storeheight")+my("storecoord").y-my("coord").y;					
+	 );
+
+	o:"changevalx" := (
+			self():"val"=max(0,min(my("width"),round(mouse.x-my("coord").x)));						
+	 );
+
+	o:"changeminxmaxy" := (
+			self():"changeminx"; self():"changemaxy";
+	);
+
+	o:"changeminxminy" := (
+			self():"changeminx"; self():"changeminy";
+	);
+
+	o:"changemaxxmaxy" := (
+			self():"changemaxx"; self():"changemaxy";
+	);
+
+	o:"changemaxxminy" := (
+			self():"changemaxx"; self():"changeminy";
+	);
+
+	o:"dterm" := if(my("commute"),
+										"("+my("val")+"+"+(my("width")-my("val"))+")·"+my("height"),
+										my("height")+"·("+my("val")+"+"+(my("width")-my("val"))+")"
+								);
+	o:"summe" := my("val")+" und "+(my("width")-my("val"));
+	o:"aterm" := if(my("commute"), 
+										my("val")+"·"+my("height")+"+"+ (my("width")-my("val")+"·"+my("height")),
+										my("height")+"·"+my("val")+"+"+ my("height")+"·"+(my("width")-my("val"))+""
+								);
+	o:"term" := if(my("commute"), 
+								my("width")+"·"+my("height"),
+								my("height")+"·"+my("width")
+							);
+   o:"getaction" := (
+			regional(action);
+			regional(change);
+			action="move";
+			change="";
+			self():"storewidth" = my("width");
+			self():"storeheight" = my("height");
+			self():"storecoord" = my("coord");
+			self():"storeval" = my("val");
+			if(|delta.x - vd(my("width"),my("val"),my("valdiv"))|<pinchsensitivity,change="maxx");
+			if(|delta.x - vd(0,my("val"),my("valdiv"))|<pinchsensitivity, change="minx");
+			if(|delta.x - self():"val"|<pinchsensitivity, action="changevalx");
+
+			if(|delta.y - self():"height"|<pinchsensitivity,change=change+"maxy");
+			if(|delta.y - 0|<pinchsensitivity, change=change+"miny");
+		//	if(|delta.y - self():"valy"|<pinchsensitivity, action="changevaly");
+			if(change!="" & action == "move", action="change"+change);
+		//	err(action+"-"+change);
+			action;
+			);
+  o
+);
+
+new distributiveterm(c,width,height,field,which) := (
+	 regional(o); 
+	 o = {"type":"distributiveterm",
+			  "coord":c,
+				"field":field,
+				"width":width,
+				"height":height,
+				"which":which
+				};
+
+   namedef(o);
+	 o:"box" := rectangle((0,0),self():"width",self():"height");
+   o:"draw" := ( if(mod(distview,2) == 1,
+				gsave();
+				regional(w);w= my("width");
+				regional(h);h= my("height");		
+				translate(self():"coord");
+				term=my("field"):(my("which"));
+				fillpoly(my("box"),color->dzlmcolorlight);
+				drawtext((my("width")/2,.5),term,align->"mid",family->schulfont,size->my("height")/2*screenresolution());
+				grestore();
+				));
+	 o:"ishot" := inrectangle(my("box"),mouse().xy-my("coord"));
+
+	 o:"moveable"=true;	
+   o:"move" := if(self():"moveable"==true,self():"coord" = round(coord)); 
+
+   o:"click" := (regional(divider);regional(start);regional(end);
+				divider = (if(my("which")=="dterm",["vertdiv"],if(my("which")=="term",["horizdiv","vertdiv"],["valdiv"])));
+				start = (if(my("which")=="dterm" % my("which")=="term",0.5,0));
+				end = (if(my("which")=="dterm" % my("which")=="term",4,0.25));
+				forall(divider,div,
+			  	new animationobject(my("field"),div,my("field"):div,if(my("field"):div==end,start,end),0.5,"linear");
+				)
+		);
+
+   o:"getaction" := "move";
+	o
+);
+
+new distributivetext(c, width, height, dfield, type) := (
+		regional(o);
+		o = new textarea(c,width,height,1,text);
+		o:"fontfamily" = "Carlito";
+		o:"field" =dfield;
+		o:"type" = "distributivetext";
+		o:"which" = type;
+		o:"short" = true;
+		o:"text" :=  
+			if(distview > 1, // 0 display text
+				if(my("short"), // 1 display short text
+					if(my("which")=="term", // 2 type of short text is "term"
+						if(my("field"):"vertdiv" < my("field"):"horizdiv", // 3 field is horizontally spaced
+							"Ich sehe "+ zgw(my("field"):"height",my("field"):"width") + "."
+						, // 3-elseifa field is vertically spaced
+							if(my("field"):"vertdiv" > my("field"):"horizdiv",
+								"Ich sehe "+ zgw(my("field"):"width",my("field"):"height")+ "."
+							, // 3-elseifb field is equally spaced
+								"Ich sehe "+ zgw(my("field"):"width",my("field"):"height") + "" + 
+								//**" oder " + zgw(my("field"):"width",my("field"):"height") + 
+								"."
+							) // end if3
+						), // 2-elseif1 type of short text is "dterm"
+						if(my("which") =="dterm",  
+							"Ich sehe "+ zgw(my("field"):"summe",my("field"):"height") +"."//+ ", also "+
+						//	zgw(my("field"):"width",my("field"):"height")+ "."
+						, // 2-elseif2 type of short text NOT "term" OR "dterm" (should be "sterm")
+							"Ich sehe "+ zgw(my("field"):"val",my("field"):"height")+ " und " + 
+							zgw(my("field"):"width"-my("field"):"val",my("field"):"height")+ "."
+						)
+					) // end if2
+				,  // 1-else display long text
+					if(my("which")=="term", // 2 type of short text is "term"
+						if(my("field"):"vertdiv" < my("field"):"horizdiv", // 3 field is horizontally spaced
+							"Ich sehe "+ ztext(my("field"):"height",2, "Reihe", "Reihen") + " mit je " +
+							ztext(my("field"):"width", 3, "Quadrat", "Quadraten")+ "."
+						, // 3-elseifa field is vertically spaced
+							if(my("field"):"vertdiv" > my("field"):"horizdiv",
+								"Ich sehe "+ ztext(my("field"):"width",2, "Reihe", "Reihen") + " mit je " + 
+								ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
+							, // 3-elseifb field is equally spaced
+								"Ich sehe "+ ztext(my("field"):"height",2, "Reihe", "Reihen") + " mit je " +
+								ztext(my("field"):"width", 3, "Quadrat", "Quadraten")+ "." 
+								//" oder " +
+								//ztext(my("field"):"width",2, "Reihe", "Reihen") + " mit je " +
+								//ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
+							) // end if3
+						)
+					, // 2-elseif1 type of short text is "dterm"
+						if(my("which") =="dterm",
+							"Ich sehe "+ ztext(my("field"):"summe",2, "Reihe", "Reihen") + " mit je " +
+							ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
+						, // 2-elseif2 type of short text NOT "term" OR "dterm" (should be "sterm")
+							"Ich sehe "+ ztext(my("field"):"val",2, "Reihe", "Reihen") + " mit je " +
+							ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ " und " +
+							ztext(my("field"):"width"-my("field"):"val",2, "Reihe", "Reihen") + " mit je " +
+							ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
+						)
+					) // end if2
+				) // end if1
+			, // 0-else display no text
+				""
+			);  // end if0
+		o:"editable" = false;
+		o:"cursor" = false;
+		o:"click" := (self():"short" = !my("short"));
+		o
+); 
+);
+;
+//backup: distributive
+// v1
+// recent changes:
+// - 
+
+// Distributivfeld
+if(vam == "distributive2",
+
+// A | Documentation
+//'doctextpos = [9,15.5];
+'doc = "
+	...
+=======================================================
+configuration:
+  ...
+=======================================================
+";
+
+// global vars
+'atomsize = 1; // muss vom User konfigurierbar sein
+'atomradius = .0; // muss vom User konfigurierbar sein (via POST von URL)
 'atomcolors = {
 	"blue" : (40,111,255)/255,
 	"green" : (50,202,48)/255,
@@ -5435,7 +5821,7 @@ new Grid(c, rows, cols) := (
 		atoms; // Assign array of Atoms
 	);
 
-	grid:"hitbox" := rectangle(my("coord"), my("width"), my("height")); // Rounded rectangle just fitting around all Atoms
+	grid:"hitbox" := rectangle(my("coord"), my("width"), my("height"));
 	grid:"shape" := roundedrectangle(my("coord"), my("width"), my("height"), 'atomradius); // Rounded rectangle just fitting around all Atoms
 	
 	grid:"ishot" := if(my("tool") == "hand",
@@ -6293,239 +6679,6 @@ obj = obj :> obj_1:"expression";
 ); // End VAM if
 
 ;
-//distributive
-//Distributive Field
-if(vam == "distributivetest",
-vd(x,val,vd):=x+if(x<val,-vd,vd);
-
-new distributivefield(c,width,height,val) := (
-	 regional(o); 
-	 o = {"type":"distributivefield",
-			  "coord":c,
-				"width":width,
-				"height":height,
-				"color":grey(1),
-				"fillcolor1":dzlmchipblue,
-				"fillcolor2":dzlmchipred,
-				"horizdiv":0.5,
-				"vertdiv":0.5,
-				"valdiv":0,
-				"val": val,
-				"commute" : true 
-				};
-   namedef(o);
-	 o:"box" := rectangle((vd(0,my("val"),my("valdiv")),0),vd(my("width"),my("val"),2*my("valdiv")),my("height")); 
-   o:"draw" := (
-				gsave();
-				regional(w);w= my("width");
-				regional(h);h= my("height");		
-				regional(val);val= my("val");		
-				regional(vd);vd= my("valdiv");
-				translate(self():"coord");
-				fillpoly(rectangle((vd(0,val,vd),0),val,h),color->my("fillcolor1"));
-				fillpoly(rectangle((vd(val,val,vd),0),w-val,h),color->my("fillcolor2"));
-				repeat(w+1,x,start->0,draw((vd(x,val,vd),0),(vd(x,val,vd),h),color->my("color"),size->my("vertdiv")));
-				repeat(h+1,y,start->0,draw((vd(0,val,vd),y),(vd(w,val,vd),y),color->my("color"),size->my("horizdiv")));
-				//drawpoly(my("box"));
-				grestore();
-
-				);
-	 o:"ishot" := inrectangle(my("box"),mouse().xy-my("coord"));
-
-	 o:"moveable"=true;	
-   o:"move" := if(self():"moveable"==true,self():"coord" = round(coord)); 
-
-   o:"click" := (if(debugging,err(o:"info")));
-
-	 o:"resizable"=false;
-   o:"resizeright" := if(self():"resizable",self():"width" =  max(1,mouse.x - startcoord.x));
-   o:"resizeleft" := if(self():"resizable",( newwidth = max(1,startcoord.x+my("storewidth")-mouse.x);
-											 self():"coord" = startcoord+(my("storewidth")-newwidth,0);
-											 self():"width" = newwidth));
-
-	 o:"changemaxx" := (
-			self():"width"=max(my("val"),round(mouse.x-my("coord").x));						
-	 );
-	 o:"changeminx" := (
-			self():"coord"=(min(my("storecoord").x+my("storeval"),round(mouse.x)),my("coord").y);
-			self():"val" = my("storeval")+my("storecoord").x-my("coord").x;		
-			self():"width"= my("storewidth")+my("storecoord").x-my("coord").x;					
-	 );
-
-	 o:"changemaxy" := (
-			self():"height"=max(1,round(mouse.y-my("coord").y));						
-	 );
-	 o:"changeminy" := (
-			self():"coord"=(my("coord").x,min(my("storecoord").y+my("storeheight")-1,round(mouse.y)));
-			self():"height"= my("storeheight")+my("storecoord").y-my("coord").y;					
-	 );
-
-	o:"changevalx" := (
-			self():"val"=max(0,min(my("width"),round(mouse.x-my("coord").x)));						
-	 );
-
-	o:"changeminxmaxy" := (
-			self():"changeminx"; self():"changemaxy";
-	);
-
-	o:"changeminxminy" := (
-			self():"changeminx"; self():"changeminy";
-	);
-
-	o:"changemaxxmaxy" := (
-			self():"changemaxx"; self():"changemaxy";
-	);
-
-	o:"changemaxxminy" := (
-			self():"changemaxx"; self():"changeminy";
-	);
-
-	o:"dterm" := if(my("commute"),
-										"("+my("val")+"+"+(my("width")-my("val"))+")·"+my("height"),
-										my("height")+"·("+my("val")+"+"+(my("width")-my("val"))+")"
-								);
-	o:"summe" := my("val")+" und "+(my("width")-my("val"));
-	o:"aterm" := if(my("commute"), 
-										my("val")+"·"+my("height")+"+"+ (my("width")-my("val")+"·"+my("height")),
-										my("height")+"·"+my("val")+"+"+ my("height")+"·"+(my("width")-my("val"))+""
-								);
-	o:"term" := if(my("commute"), 
-								my("width")+"·"+my("height"),
-								my("height")+"·"+my("width")
-							);
-   o:"getaction" := (
-			regional(action);
-			regional(change);
-			action="move";
-			change="";
-			self():"storewidth" = my("width");
-			self():"storeheight" = my("height");
-			self():"storecoord" = my("coord");
-			self():"storeval" = my("val");
-			if(|delta.x - vd(my("width"),my("val"),my("valdiv"))|<pinchsensitivity,change="maxx");
-			if(|delta.x - vd(0,my("val"),my("valdiv"))|<pinchsensitivity, change="minx");
-			if(|delta.x - self():"val"|<pinchsensitivity, action="changevalx");
-
-			if(|delta.y - self():"height"|<pinchsensitivity,change=change+"maxy");
-			if(|delta.y - 0|<pinchsensitivity, change=change+"miny");
-		//	if(|delta.y - self():"valy"|<pinchsensitivity, action="changevaly");
-			if(change!="" & action == "move", action="change"+change);
-		//	err(action+"-"+change);
-			action;
-			);
-  o
-);
-
-new distributiveterm(c,width,height,field,which) := (
-	 regional(o); 
-	 o = {"type":"distributiveterm",
-			  "coord":c,
-				"field":field,
-				"width":width,
-				"height":height,
-				"which":which
-				};
-
-   namedef(o);
-	 o:"box" := rectangle((0,0),self():"width",self():"height");
-   o:"draw" := ( if(mod(distview,2) == 1,
-				gsave();
-				regional(w);w= my("width");
-				regional(h);h= my("height");		
-				translate(self():"coord");
-				term=my("field"):(my("which"));
-				fillpoly(my("box"),color->dzlmcolorlight);
-				drawtext((my("width")/2,.5),term,align->"mid",family->schulfont,size->my("height")/2*screenresolution());
-				grestore();
-				));
-	 o:"ishot" := inrectangle(my("box"),mouse().xy-my("coord"));
-
-	 o:"moveable"=true;	
-   o:"move" := if(self():"moveable"==true,self():"coord" = round(coord)); 
-
-   o:"click" := (regional(divider);regional(start);regional(end);
-				divider = (if(my("which")=="dterm",["vertdiv"],if(my("which")=="term",["horizdiv","vertdiv"],["valdiv"])));
-				start = (if(my("which")=="dterm" % my("which")=="term",0.5,0));
-				end = (if(my("which")=="dterm" % my("which")=="term",4,0.25));
-				forall(divider,div,
-			  	new animationobject(my("field"),div,my("field"):div,if(my("field"):div==end,start,end),0.5,"linear");
-				)
-		);
-
-   o:"getaction" := "move";
-	o
-);
-
-new distributivetext(c, width, height, dfield, type) := (
-		regional(o);
-		o = new textarea(c,width,height,1,text);
-		o:"fontfamily" = "Carlito";
-		o:"field" =dfield;
-		o:"type" = "distributivetext";
-		o:"which" = type;
-		o:"short" = true;
-		o:"text" :=  
-			if(distview > 1, // 0 display text
-				if(my("short"), // 1 display short text
-					if(my("which")=="term", // 2 type of short text is "term"
-						if(my("field"):"vertdiv" < my("field"):"horizdiv", // 3 field is horizontally spaced
-							"Ich sehe "+ zgw(my("field"):"height",my("field"):"width") + "."
-						, // 3-elseifa field is vertically spaced
-							if(my("field"):"vertdiv" > my("field"):"horizdiv",
-								"Ich sehe "+ zgw(my("field"):"width",my("field"):"height")+ "."
-							, // 3-elseifb field is equally spaced
-								"Ich sehe "+ zgw(my("field"):"width",my("field"):"height") + "" + 
-								//**" oder " + zgw(my("field"):"width",my("field"):"height") + 
-								"."
-							) // end if3
-						), // 2-elseif1 type of short text is "dterm"
-						if(my("which") =="dterm",  
-							"Ich sehe "+ zgw(my("field"):"summe",my("field"):"height") +"."//+ ", also "+
-						//	zgw(my("field"):"width",my("field"):"height")+ "."
-						, // 2-elseif2 type of short text NOT "term" OR "dterm" (should be "sterm")
-							"Ich sehe "+ zgw(my("field"):"val",my("field"):"height")+ " und " + 
-							zgw(my("field"):"width"-my("field"):"val",my("field"):"height")+ "."
-						)
-					) // end if2
-				,  // 1-else display long text
-					if(my("which")=="term", // 2 type of short text is "term"
-						if(my("field"):"vertdiv" < my("field"):"horizdiv", // 3 field is horizontally spaced
-							"Ich sehe "+ ztext(my("field"):"height",2, "Reihe", "Reihen") + " mit je " +
-							ztext(my("field"):"width", 3, "Quadrat", "Quadraten")+ "."
-						, // 3-elseifa field is vertically spaced
-							if(my("field"):"vertdiv" > my("field"):"horizdiv",
-								"Ich sehe "+ ztext(my("field"):"width",2, "Reihe", "Reihen") + " mit je " + 
-								ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
-							, // 3-elseifb field is equally spaced
-								"Ich sehe "+ ztext(my("field"):"height",2, "Reihe", "Reihen") + " mit je " +
-								ztext(my("field"):"width", 3, "Quadrat", "Quadraten")+ "." 
-								//" oder " +
-								//ztext(my("field"):"width",2, "Reihe", "Reihen") + " mit je " +
-								//ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
-							) // end if3
-						)
-					, // 2-elseif1 type of short text is "dterm"
-						if(my("which") =="dterm",
-							"Ich sehe "+ ztext(my("field"):"summe",2, "Reihe", "Reihen") + " mit je " +
-							ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
-						, // 2-elseif2 type of short text NOT "term" OR "dterm" (should be "sterm")
-							"Ich sehe "+ ztext(my("field"):"val",2, "Reihe", "Reihen") + " mit je " +
-							ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ " und " +
-							ztext(my("field"):"width"-my("field"):"val",2, "Reihe", "Reihen") + " mit je " +
-							ztext(my("field"):"height", 3, "Quadrat", "Quadraten")+ "."
-						)
-					) // end if2
-				) // end if1
-			, // 0-else display no text
-				""
-			);  // end if0
-		o:"editable" = false;
-		o:"cursor" = false;
-		o:"click" := (self():"short" = !my("short"));
-		o
-); 
-);
-;
 
 </script>
 <script id="csmousedrag" type="text/x-cindyscript">
@@ -6867,7 +7020,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.03498542274052478, 0.1649971567399341], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, 0.08683068017366137, 0.16380325546106336], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -6879,10 +7032,10 @@ var cdy = CindyJS({
   autoplay: false,
   animcontrols: false,
   ports: [{
-    width: 922,
-    height: 486,
+    width: 927,
+    height: 477,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.4064033278567187, 17.05127006007537, 32.17654174030803, -0.12368796934769699]}],
+    transform: [{visibleRect: [-0.4064033278567187, 17.05127006007537, 32.35323883937617, 0.1943668089749524]}],
     axes: true,
     grid: 1.0,
     background: "rgb(255,255,255)"

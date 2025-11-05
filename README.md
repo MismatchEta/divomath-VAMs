@@ -1,53 +1,109 @@
-> v4.0.0
+> v4.2.0
 
 # divomath VAM Dokumentation
+
 JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das [Komponentenverhalten](#komponentenverhalten) und den [Zustand](#konfiguration-des-zustands-eines-vams) konfiguriert.
 
 ## Komponentenverhalten
+
 ### Generelles Verhalten
+
 Über das Komponentenverhalten der Framework-Komponente wird deren generelles Verhalten gesteuert (insbesondere die Auswahl eines Widgets). Die Konfiguration des gewählten Widgets findet in [Zustand](#zustand) statt. Die folgenden Einstellungen werden im Komponentenverhalten unter dem Schlüssel "configuration" vorgenommen:
-- cindyJsPrefix: divomath
+
+- cindyJsPrefix: divomath 
   - Genau so erforderlich. Wird Präfix der von divomath an CindyJS übergebenen Parameter (Komponentenverhalten und Zustand). Framework erwartet den Präfix "divomath"
 - vam: *\<string>*
-  - Switch für das gewünschte CindyJS Widget. Entsprechenden zulässigen [Namen](#strings-für-vam-schlüssel) verwenden
+  - Switch für das gewünschte CindyJS Widget. Entsprechenden zulässigen [Namen](#strings-f%C3%BCr-vam-schl%C3%BCssel) verwenden
   - default "default": Zeigt Hinweis zum korrekten Komponentenverhalten an.
-- debuglevel: *\<unsigned int>* 
+- debuglevel: *\<unsigned int>*
   - Möglicherweise von einigen Widgets zum debugging verwendet. Normalerweise nicht nötig zu setzen. Sollte im Produktivbetrieb 0 sein.
   - default 0: Kein Debugging.
 - bgcolor: *[\<float>,\<float>,\<float>]*
   - Hintergrundfarbe. Liste von 3 floats aus [0,1]. Repräsentieren ROT, GRÜN, BLAU Anteil des Hintergrunds.
 
 ### Strings für *vam* Schlüssel
+
 Folgende Strings sind für *vam* Schlüssel zulässig:
-- divisors (seit: 2.0.0, letzte Änderung: 3.1.0)"Separator"
+
+- divisors (seit: 2.0.0, letzte Änderung: 3.1.0)
 - numbercards (seit: 1.0.0, letzte Änderung: 3.1.0)
-- percentagebar (seit 3.0.0, letzte Änderung: 3.1.0)
+- percentagebar (seit 3.0.0, letzte Änderung: 4.0.0)
 - strapwork (seit: 1.0.0, letzte Änderung: 3.1.0)
+- distributive (seit 4.0.0, letzte Änderung: 4.1.0)
 
 ### Beispiel
+
 Eine Minimalkonfiguration zur Darstellung der Zahlenkarten-Komponente ("numbercards").
-<pre>
+``` yaml
 configuration:
   cindyJSPrefix: divomath
   vam: numbercards
-</pre>
+```
 
 ## Konfiguration des *Zustands* eines VAMs
+
 Dieser Abschnitt stellt die möglichen Konfigurationen der verschiedenen VAMs dar. Diese werden grundsätzlich im *Zustand* einer Komponente vorgenommen. Die Konfigurationen sind widgetabhängig und finden unter dem Schlüssel "cindyjs" statt. Die Dokumentation hier spiegelt dabei nur den Stand der aktuellen wider. Unter Umständen wird eine Komponente in älteren Versionen anders konfiguriert.
 
 ### Beispiel
+
 Das folgende Beispiel zeigt eine Konfiguration für das VAM *numbercards*. [Siehe unten](#zustand-numbercards) für Details.
-<pre>
+``` yaml
 cindyjs:
   color: true
   colortoggle: false
   alpha: 0.2
   cards: 1
-</pre>
+```
+
+### Zustand: distributive
+
+- gridposition: *\[\<float>, \<float>]>*
+  - Startposition des Rechteckfelds (referenziert linke untere Ecke.)
+  - default [10,7]
+- rows: *\<int>*
+  - Anzahl der Zeilen des Rechteckfelds
+  - default 5
+- cols: *\<int>*
+  - Anzahl der Spalten des Rechteckfelds
+  - default 7
+- size: *\<float>*
+  - Die Größe der Blobs.
+  - default 1
+- cornerradius: *\<float>*
+  - Der Eckradius der Blobs. 0 zeichnet Quadrate (beste Performance), sonst abgerundete Rechtecke. Sollte höchstens die Hälfte von *size* sein.
+  - default .5 (mit size=1 ein Kreis)
+- verticalpadding: *\<float>*
+  - Der vertikale Abstand zwischen Blobs.
+  - default .1
+- horizontalpadding: *\<float>*
+  - Der horizontale Abstand zwischen Blobs.
+  - default .1
+- groupspacing: *\<float>*
+  - Der Abstand zwischen Gruppen, wenn nach Zeilen oder Spalten gruppiert wird (zusätzlich zum padding).
+  - default .2
+- cutwidth: *\<float>*
+  - Der Abstand zwischen Teilen nach einem Schnitt (zusätzlich zum padding).
+  - default .2
+- gridmoveable: *\<bool>*
+  - Schalter, ob das gesamte Rechteckfeld verschoben werden kann.
+  - default *true*
+- buttonsize: *\<float>*
+  - Die Größe der Werkzeug-Buttons.
+  - default 2
+- buttonpadding: *\<float>*
+  - Abstand des Buttons zum oberen und rechten Rand.
+  - default .4
+- labelpadding: *\<float>*
+  - Abstand des Output-Texts zum oberen und linken Rand.
+  - default .3
+- animationspeed: *\<float>*
+  - Modifier für alle Animationen. Je größer, desto schneller laufen Animationen ab.
+  - default .15
 
 ### Zustand: divisors
+
 - color: *[\<string>,\<string>]*
-  - Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Folgende Farbstrings sind u.a. möglich:
+  - Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Folgende Farbstrings sind u.a. möglich: 
     - DARKRED=(228,26,28)/255;
     - DARKGREEN=(77,175,74)/255;
     - DARKBLUE=(55,126,184)/255;
@@ -93,13 +149,13 @@ cindyjs:
 - sequentialorder: *\<bool>*
   - Steuert Umordnungsverhalten der Blobs in den Bändern
   - default false
-- drawblobbuttons: *\<bool>
+- drawblobbuttons: *\<bool> 
   - Zeichne Buttons zur Änderung der Anzahl der Blobs (true) oder auch nicht
   - default: true
-- drawdivbuttons: *\<bool>
+- drawdivbuttons: *\<bool> 
   - Zeichne Buttons zur Änderung des Divisors (true) oder auch nicht
   - default: true
-- drawbar: *\<bool>
+- drawbar: *\<bool> 
   - Zeichne vertikale Linie zur Änderung des Divisors (true) oder auch nicht
   - default: true
 - displaycalc: *\<bool>*
@@ -119,6 +175,7 @@ cindyjs:
   - default true
 
 ### Zustand: numbercards
+
 - cards: *\<int>*
   - Anzahl der Zahlenkarten, Standardwerte entsprechen denen der folgenden Parameter.
   - Werden mehrere Karten verwendet, müssen die folgenden Parameter als entsprechend lange Listen angelegt werden.
@@ -136,7 +193,7 @@ cindyjs:
   - String(s) aus chars "t" (true) oder "f" (false), welcher zum einen die Länge der Karte repräsentiert und zum anderen, welche Stellen (links nach rechts von groß nach klein) geändert werden können (t) und welche nicht (f).
   - Bsp: "tft" = Eine 3-stellige Karte bei der die Zehnerstelle nicht geändert werden kann, die Hunderter- und Einerstelle dagegen schon.
   - default ["t..t", ..] (Alles editierbar, Länge bestimmt sich durch *cards*, Anzahl der Stellen durch *values*)
-- unfold: *</list of bools>* oder *\<bool>*
+- unfold: *\<list of bools>* oder *\<bool>*
   - Gibt an, ob die Zahlenkarte(n) zu Beginn ausgeklappt sein sollen (true) oder nicht (false).
   - default [true] (Länge bestimmt sich durch *cards*)
 - color: *\<bool>*
@@ -153,9 +210,11 @@ cindyjs:
   - default " " (Leerzeichen)
 
 ### Zustand: percentagbar
+
 > @ToDo
 
 ### Zustand: strapwork
+
 - size: *\<float>*
   - stellt generelle Größe der Objekte ein
   - default 1
@@ -164,7 +223,7 @@ cindyjs:
   - default [0,3,6]: Kreis, Dreieck, Viereck
 - polycolors: *\<list>*
   - genaue Konfiguration der Farbe jedes Basis-Polygons. Muss mindestens so viele Einträge enthalten, *\<polys>* gibt.
-  - Farben:
+  - Farben: 
     1. blau
     2. dunkelblau
     3. rot
@@ -184,9 +243,9 @@ cindyjs:
   - Definiert, wie viele Polygone pro Band erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
   - default [10,10,...] (potenziell 100 Bänder)
 - sepstate: *\<string>*
-  - Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae**"1,3,5"** erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.
+  - Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae\*\*"1,3,5"\*\* erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.
   - default **""** (leer)
-- patternlimit: *\<int>
+- patternlimit: *\<int> 
   - Limitiert, mit wie vielen Polygone der Mustercontainer gefüllt werden kann. **-1** erzeugt einen beliebig verlängerbaren Container. Das Limit bezieht sich (im Gegensatz zu **limi**) auf jede Zeile des Mustercontainers.
   - default: 5
 - drawpatterncontainer: *\<bool>*
@@ -198,34 +257,43 @@ cindyjs:
 - drawborders: *\<bool>*
   - Rahmen um Polygone zeichnen (true) oder nicht (false)
   - default false
-- polypadding: *\<float>
+- polypadding: *\<float> 
   - Abstand zwischen den Polygonen in einem Band
   - default .5
 
-
 ## Validierung
-Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Mindestens liefert eine Komponente ihre Zustandsparameter wieder als Ergebnis zurück. Der Zugriff erfolgt grundsätzlich über \<komponentenname>\\{RESULT_\<bezeichner>}, e.g. "**meinvam**\\{RESULT_**x**}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
+
+Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Mindestens liefert eine Komponente ihre Zustandsparameter wieder als Ergebnis zurück. Der Zugriff erfolgt grundsätzlich über \<komponentenname>\\{RESULT\_\<bezeichner>}, e.g. "**meinvam**\\{RESULT\_**x**}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
 Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zustandsbeschreibung, dazu siehe [Referenzierung](#referenzierung-divomath)):
 
+### Validierung: distributive
+
+> BISHER KEINE
+
 ### Validierung: divisors
+
 > BISHER KEINE
 
 ### Validierung: numbercards
-(seit 1.0.0) Die Bezeichner beginnen stets mit "nc" (numbercard) gefolgt von einer Zahl (1,2,...), welche die Zahlenkarte identifiziert. Die Bezeichnungen beginnen entsprechend mit nc1, nc2, ... in Abhängigkeit davon, auf welchen Wert der Parameter cards im [Zustand](#1-numbercards) gesetzt wurde. Diesem Prefix folgt ein Unterstrich (_), wiederum gefolgt von einem Bezeichner. 
-- nc1 \<int>:
+
+(seit 1.0.0) Die Bezeichner beginnen stets mit "nc" (numbercard) gefolgt von einer Zahl (1,2,...), welche die Zahlenkarte identifiziert. Die Bezeichnungen beginnen entsprechend mit nc1, nc2, ... in Abhängigkeit davon, auf welchen Wert der Parameter cards im [Zustand](#1-numbercards) gesetzt wurde. Diesem Prefix folgt ein Unterstrich (\_), wiederum gefolgt von einem Bezeichner.
+
+- nc1 \<int>: 
   - Wert der Zahlenkarte
-- nc1_E \<int>:
+- nc1_E \<int>: 
   - Wert der Einerstelle der Karte
-- nc1_Z, nc1_H, nc1_T, nc1_ZT, nc1_HT, nc1_M, nc1_ZM, nc1_HM \<int>:
+- nc1_Z, nc1_H, nc1_T, nc1_ZT, nc1_HT, nc1_M, nc1_ZM, nc1_HM \<int>: 
   - Analog für Zehner, ..., Hundermillion(er)
   - Ab Milliardenstelle bezeichnung numerisch (10, 11, 12...)
-- nc1_unfolded \<bool>:
+- nc1_unfolded \<bool>: 
   - Karte aufklappt (true) oder zusammengefaltet (false)
 
 ### Validierung: percentagebar
+
 > BISHER KEINE
 
 ### Validierung: strapwork
+
 (seit 1.0.0, letzte 3.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der abzufragende Schlüssel einer Position enthält die Bandnummer und die Position, genauer ist der Schlüssel "\<bandnummer>.\<position>".
 
 Ist das **fünfte** Polygon im **ersten** Band gesucht ist der Schlüssel entsprechend "**1.5**". Der zugehörige Wert ist die ID des "Basis-Polygons", sprich desjenigen Polygons aus der unteren Zeile, das an dieser Stelle steht. diese werden von links nach rechts von 1 an durchnummeriert. Kommt für den Schlüssel **1.5** also der Wert **3** zurück, befindet sich an dieser Stelle das dritte Basis-Polygon (von links). Kommt als Wert eine **0** zurück ist an der Stelle ein Trennstrich.
@@ -233,12 +301,14 @@ Ist das **fünfte** Polygon im **ersten** Band gesucht ist der Schlüssel entspr
 Zusätzlich kann eine ganze Reihe referenziert werden analog zu oben als String. Soll in der 1. Zeile (Schlüssel: **row1**)beispielsweise eine Folge von 5 mal dem *ersten* Polyon stehen dann wäre der zugehörige Wert **11111**. Bei mehrreigen Bändern sind die Schlüssel der Zeilen entsprechend nummeriert als **row1**, **row2** etc.
 
 ## Referenzierung (divomath)
-Jede Komponente kann in ihrem Zustand grundsätzlich Werte andere Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter [Validierung](#validierung) aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM im Top-Level der Zustandsbeschreibung nach Bezeichnern, die denen der unter [Validierung](#validierung) aufgeführten entpsrechen, aber mit zwei Unterstrichen ("__") beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung *"size"*, dann kann dieser (**Top-Level(!)**) durch *"__size"* überschrieben werden. Dieses Verhalten kann dazu genutzt werden, um Zustände anderer Komponenten abzugreifen und zu verwenden. #
+
+Jede Komponente kann in ihrem Zustand grundsätzlich Werte andere Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter [Validierung](#validierung) aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM im Top-Level der Zustandsbeschreibung nach Bezeichnern, die denen der unter [Validierung](#validierung) aufgeführten entpsrechen, aber mit zwei Unterstrichen ("\_\_") beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung *"size"*, dann kann dieser (**Top-Level(!)**) durch *"\__size"* überschrieben werden. Dieses Verhalten kann dazu genutzt werden, um Zustände anderer Komponenten abzugreifen und zu verwenden. #
 
 ### Beispiel
+
 Am Bsp. der numbercards: Es seien zwei Folien gegegeben mit den Namen *"ZAHLENKARTEN"* und *"ZAHLENKARTEN-2"* auf denen jeweils die VAM-Komponenten *"vam-karten"* bzw. *"vam-karten2"* angelegt sind. Nachfolgend ein möglicher Zustand von *"vam-karten2"*, um auf das vorige VAM zuzugreifen.
 
-```yaml
+``` yaml
 # --- Im Zustand von "vam-karten2"
 # Hier werden die Zustände unten überschrieben
 __value: ZAHLENKARTEN/vam-karten/{RESULT_value}
@@ -262,18 +332,32 @@ cindyjs:
   alpha: 0.5
   separator: .
 ```
+
 Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird der *"value"* der Zahlenkarte, sowie der Zustand übernommen, ob die Karte eingeklappt ist oder nicht. Dies überschreibt auch die Zustandsdefinition weiter unten, in der *"value"* auf `12123` gesetzt wird und *"unfold"* auf `true`.
 
 ### Sonstiges
+
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+
+### v4.1.0
+- VAM:
+  - distributive:
+    - neue Logik für das Färben. Jetzt färbt das Zeichnen einer Zeile die zugehörigen Spalten und umgekehrt.
+    - divomath Zustandskontrollelemente hinzugefügt.
+- FW:
+  - constants:
+    - VALUEMAP hinzugefügt, welche die Zahlwörter den Zahlen von 1 bis 12 zuordnet
+  - helper functions:
+    - numerals(\<int>) hinzugefügt: Gibt von einer Ganzzahl das zugehörige Zahlwort zurück, wenn die übergebene Ganzzahl kleiner als 13 ist. Gibt ansonsten die Zahl selbst (als Zahl) zurück.
+
 ### v4.0.0
 - VAM:
   - neues VAM: (percentagebar, ) distributive
-  - divisors:
+  - divisors: 
     - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
-  - strapwork:
+  - strapwork: 
     - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
     - Fix: Separator wird in Ergebnis für ganze Zeile nicht mit reportet.
     - Fix: Polygone wurden falsch umgeordnet, wenn mit Mustercontainer eingefügt
@@ -285,69 +369,70 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
     - PatternContainer ist jetzt Multiline
     - PatternContainer kann jetzt ein Limit bekommen, Zustandvariable **patternlimit** hinzugefügt.
 - CLASS:
-  - Button:
+  - Button: 
     - Fix: Falsche Farbdarstellung
     - Feature: isfloating flag, um Verschiebbarkeit des Buttons zu togglen
 - FW:
-  - draw:
+  - draw: 
     - Debug Infos angepasst
     - 'firstdraw flag zum tracken, ob erster Aufruf der draw Funktion stattfindet
-  - constants:
+  - constants: 
     - Bilder hinzugefügt und entsprechende Konstante für Bildreferenzen (ICONS)
     - CDOT geändert, enthält jetzt Leerzeichen davor und danach
-  - divomathconfig:
+  - divomathconfig: 
     - usedivomath als flag für Wechsel zu storyline/web-config hinzugefügt
     - 'dmdefaultstate hinzugefügt, für direkten Zugriff auf das cindyjs-Objekt aus der divomath Editor Zustandsbeschreibung. Im Gegensatz zu 'dmstate, dem zuletzt gespeicherten Zustand beim Verlassen einer Seite.
-  - helper functions:
+  - helper functions: 
     - inpoly(): Check hinzugefügt, ob Lösung von linearsolve() definiert ist
     - +postValue(): postet eine Nachricht zur KOmmunikation mit dem Browser (oder dem SL-Player)
     - +incircle(): Checkt, ob ein Punkt in einem Kreis liegt
     - +getURLparam() und getURLparams(): Holt URL Suchparameter aus URL und übergibt gibt sie zurück
-  - configuration:
+  - configuration: 
     - +'urlparams: Speichert alle URL Suchparameter als Dict.
     - vam switch für auszuspielendes VAM über 'urlparams konfigurierbar
     - 'debuglevel ebenfalls
     - debugging output hinzugefügt
-  - mousedown:
+  - mousedown: 
     - variable mousedown auf true setzen
-  - mouseup:
+  - mouseup: 
     - variable mousedown auf false setzen
-  - keydown:
+  - keydown: 
     - "k/K": manueller Aufruf von divomathUpdateResults()
     - "+/-": Inkrementieren und Dekrementieren von 'debuglevel (nur Numblock?)
-
 - build Prozess des divomath codes in separates Skript ausgelagert
+
 ### v3.1.0
-- VAM:
-  - divisors:
+
+- VAM: 
+  - divisors: 
     - Fix: UI unten wird durch eine waagerechte Gerade optisch vom oberen Teil getrennt, nicht durch ein Rechteck
     - Fix: Blobs werden beim Erzeugen zufällig im Viewport der Welt angelegt, nicht irgendwo auf dem Bildschirm
     - Buttons sind jetzt einzeln ausblendbar (~~drawbuttons~~ --> drawblobbuttons & drawdivbuttons)
     - Vertikaler Balken zur Einstellung des Divisors ein-/ausblendbar (drawbar)
     - default timing von 1 auf .5 geändert
     - fix: Balken verschwindet, wenn die Seite neu geladen wird
-  - numbercards:
+  - numbercards: 
     - Fix: Alpha Wert wird auf 1 gesetzt, wenn Seite neu aufgerufen wird
     - Fix: Zeige immer Placecards, auch beim Start oberhalb der Numbercard
     - Fix: Falsche Farben und Farbwechsel, wenn zusammengeklappt wird (war falsch in constants definiert)
     - Aufruf von divomathUpdateResults() an Knopfdrücke gebunden
     - Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert
-  - strapwork:
+  - strapwork: 
     - Musterfolgencontainer nicht mehr fix in seiner Größe. Größe passt sich an den Inhalt an.
     - Aussehen des Separators angepasst (Ellipse statt Kreis)
     - Aufruf von divomathUpdateResults() an movepolysintoplace() Methode gebunden
     - divoYellow farbenen Hintergrund für Grundpolygone eingefügt
     - Layout angepasst (Container unten, Patterncontainer oben)
     - Submission reporting für ganze Zeile (als row1, row2, ...) hinzugefügt
-- FW:
-  - global drawing:
+- FW: 
+  - global drawing: 
     - Aufruf von divomathUpdateResults() wenn 'fristdraw==true
-  - configuration;
+  - configuration; 
     - 'firstdraw flag hinzugefügt, die am Ende des drawscripts false gesetzt wird.
-  - constants:
+  - constants: 
     - DIVOYELLOW als Farbe hinzugefügt
     - Fix: Farbdefinition von DIVORED und DIVOBLUE getauscht (waren falschherum)
-  - helper functions:
+  - helper functions: 
     - values() hinzugefügt: Gibt Werte aller Keys eines Objekts als Liste zurück
     - ellipse() hinzugefügt: Zeichnet Ellipsen basierend auf Achsen und Drehwinkel
     - defaultto() hinzugefügt: Weist einer Variablen einen Standardwert zu
@@ -357,46 +442,50 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
     - tobool() und isbool() Funktionen hinzugefügt um in bool zu konvertieren und Typ einfach zu prüfen
   - **new** *keypressed*
     - hauptsächlich für debugging, zeigt momentan auf Druck von "k" einige hauptsächlich divomath-spezifische Infos an.
-- CLASS:
-  - Button:
+- CLASS: 
+  - Button: 
     - Attribute labelheight und fontfamily hinzugefügt
-  - TextInput:
+  - TextInput: 
     - Attribute labelpadding und fontfamily hinzugefügt
 
 ### v3.0.0
+
 - neues VAM: percentagebar als preview
-- VAM:
-  - divisors:
+- VAM: 
+  - divisors: 
     - Konfiguration für Darstellung der UI Buttons hinzugefügt (**drawbuttons**)
     - Fix: **color** Konfiguration
-  - numbercards:
+  - numbercards: 
     - Farbbutton geändert. Ist jetzt grau, wenn auch die Karten grau sind und farbig, wenn die Karten farbig sind.
-    - Klickverhalten der Numbercards geändert:
+    - Klickverhalten der Numbercards geändert: 
       - Kinder Placecards werden nicht mehr nach der Animation gelöscht um eine Gesamtkarte zu bilden. Stattdessen bleiben die Placecards erhalten werden nur in der Position animiert. (~ Zeile 503, setpropertylater() auskommentiert)
       - Farben werden auch nicht mehr gefadet beim aus- und einklappen. Placecards (und Farben) sind auch im zusammengeklappten Zustand sichtbar. (~ Zeilen 523 & 562 auskommentiert, Animationskonstrukt aber erhalten)
-  - strapwork:
+  - strapwork: 
     - RegPolys sind "gleichgroß". Bei Polygonen mit gerader Eckenzahl sind gegenüberliegende Kanten 2*RADIUS weit entfernt, bei ungerader Eckenzahl, ist jede Ecke von ihrer gegenüberliegenden Kante 2*RADIUS weit entfernt. Vorher hatten alle den gleichen Umkreis mit RADIUS.
     - RegPolys werden mit der unteren Kante parallel zur x-Achse ausgerichtet, es sei denn, "rotation" wird spezifiziert (nicht dm-konfigurierbar)
     - Ist das RegPoly ein Kreis, wird es nicht mehr als Kreis verwaltet, sondern ein 100-Eck. Der Einheitlichkeit wegen. "shape" und "draw" entsprechend angepasst
-    - dm-config:
+    - dm-config: 
       - **vertices**: Polygone können nur noch als Liste an Ecken angegeben werden, nicht mehr Alternativ als Anzahl. Es geht also nur noch e.g. [3,6,9] Für ein Drei-, Sechs- und Neuneck. Nicht mehr e.g. "4", um vier Polygone mit steigender Anzahl Ecken zu bauen (Kreis, Dreieck, Viereck, Fünfeck)
       - **colors**: Analoges gilt für Farben. Es *MUSS* eine Liste angegeben werden, die die gleiche Länge hat wie **vertices** oder GAR NICHTS. Dann wird die Liste [1,2,3,...] verwendet (Standardreihenfolge der DIVOMATH Farbpalette).
       - NEU **state** ([ ] \<string>): Definiert, welche der über **vertices** und **colors** definierten Polygone im Container beim Start enthalten sein sollen. Für **vertices**=[0,3,4] sowie **rows**=3 stellt ["1,2,2", "3,3,3", ""] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.
       - NEU **drawpatterncontainer** (\<bool>): true, wenn PatternContainer gezeichnet werden soll.
       - **borders** in **drawborders** umbenannt. Funktion gleich.
-  - FW:
+  - FW: 
     - mousedown Handler: 
       - Zeile 41 entfernt, die dafür sorgt, das hottes Element nach vorne geholt wird. Holt sonst bei **strapwork** im Zweifel Container vor Polygone. 
+
         > **@Todo**: Durch Layer-System und "movetofront" Attribut austauschen (mit Ulli abstimmen, geht das rückwärtskompatibel?!).
-  - CLASS:
-    - Scrollbar:
+  - CLASS: 
+    - Scrollbar: 
       - "script" wird nicht mehr auf "moveend" getriggered (zusätzlich zu "move"), sondern bei "click" (zusätzlich zu "move"), da sonst immer der "value" VOR der Änderung verwendet wird.
+
 ### v2.1.1
-- VAM:
-  - numbercards:
+
+- VAM: 
+  - numbercards: 
     - Fix: Anordnung der Montessorifarben korrigiert
     - Fix: divomath Einstellung, ob eine Karte eingeklappt dargestellt wird oder nicht ("unfold" Attribut)
-  - divisors:
+  - divisors: 
     - neue divomath Konfiguration: "stripmargin"
     - divomath Konfig. "padding" umbenannt in "blobmargin"
     - Ausrichtung der Polygone angepasst (ungerade #Ecken => Spitze oben, gerade => Kante oben)
@@ -404,72 +493,76 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
     - Verhalten des verschiebbaren Balkens angepasst
     - fix: verschiebbarer Balken ordnet sich beim loslassen an den Bändern an
     - Attribute "width" und "height" für Strips hinzugefügt
-  - CLASS:
-    - *new* Key:
+  - CLASS: 
+    - *new* Key: 
       - Eine Taste für eine Tastatur (erbt von Button)
-    - *new* Keyboard:
+    - *new* Keyboard: 
       - eine (momentan nur numerische) Tastatur, die eingeblendet werden kann, wenn ein Textfeld angeklickt wird o.ä.
-    - *new* TextInput:
+    - *new* TextInput: 
       - eine Quasi-Textbox, die beim Auswählen ein "Keyboard" zur Eingabe steuern kann.
-    - *new* Toggle:
+    - *new* Toggle: 
       - Toggle-Button, dessen "state" als bool verwendet werden kann. Ruft bei "click" sein "script" auf.
-    - *new* Scrollbar:
+    - *new* Scrollbar: 
       - Scrollbalken, dessen "value" zur Konfiguration anderer Komponenten genutzt werden kann.
-- FW:
-  - constants:
+- FW: 
+  - constants: 
     - unicode für verschiedene Pfeile hinzugefügt (LEFTARROW, RIGHTARROW, ...)
-  - helper functions:
+  - helper functions: 
     - incircle(): Prüft, ob ein Punkt innerhalb eines Kreises liegt
 
 ### v2.1.0
-- VAM:
-  - strapwork:
+
+- VAM: 
+  - strapwork: 
     - Animationsverhalten angepasst
     - Scrollbar hinzugefügt
     - Resetbutton hinzugefügt
-- CLASS:
-  - Button:
+- CLASS: 
+  - Button: 
     - "hasborder" (bool) als Attribut hinzugefügt
-  - *new* Scrollbar:
+  - *new* Scrollbar: 
     - Eine Scrollleiste um Content zu bewegen. Beim Bewegen der Scrollbar wird deren Wert aktualisiert. Was damit getan werden soll (am Ende eines move-Events) muss über das "script"-Attribut konfiguriert werden. "max" und "min" Attribute können einzeln gesetzt werden (default: 100 bzw. 0). Zugriff auf den aktuellen Wert über das Attribut "value". "value" ändert sich linear mit der Position der Scrollbar.
+
 ### v2.0.0
+
 - neues VAM: "divisors"
-- VAM:
-  - numbercards:
+- VAM: 
+  - numbercards: 
     - Fix: Als Liste übergebene Listen (z.B. für x und y) werden jetzt korrekt verarbeitet.
     - Styling angepasst: schmalerer Rand, Aus-/Einklappbutton abgerundetes Rechteck, Farbbutton pro Karte und neues Styling, neues Layout für +/- Buttons, Farben an Montessorifarben angepasst
     - Trennzeichen zwischen 3er-Gruppen von Ziffern hinzugefügt, einstellbar über Editor ("separator")
     - Dokumentation angepasst
-  - strapwork:
+  - strapwork: 
     - divomath Zustandsdefinition angepasst
     - Eistellbarkeit zwischen fixer und flexibler Containerlänge hinzugefügt
     - löschen der letzten Komponente bei vollem Container hinzugefügt
-- FW
-  - draw:
+- FW 
+  - draw: 
     - Fix: debug Funktion entfernt, die überall nadas beim debuggen gezeichnet hat
     - objpreview entfernt, wird nicht benötigt
-  - constants:
-    - colors:
+  - constants: 
+    - colors: 
       - geändert: DIVOBLUE von (120,147,194) zu (83,125,156)
       - geändert: DIVORED von (255,84,84) zu (235,85,78)
       - geändert: DIVOGREY von (165,165,165) zu (130,149,192) --> eher blau
       - hinzugefügt: MONTERED, MONTEGREEN, MONTEBLUE, MONTEGREY für Montessorifarben. Zusätzliche MONTEPALETTE als Liste aller Montessorifarben
     - VALUEMAP: weist Zahlen von 1-12 die Wörter "Einer", "Zweier" ... "Zwölfer" zu
     - HEXMAP: weist den Strings "0" bis "9" sowie "A" bis "F" bzw. "a" bis "f" die Zahlen 1 bis 15 zu
-    - COLORMAP: enthält die meisten vordefinierten Farben
+    - COLORMAP: enthält die meisten vordefinierten Farben 
       - Farben: "DARKRED", "DARKBLUE", "DARKGREEN",	"DZLMCOLORGOLD", "DZLMCOLORDARK", "PLACECOLORGREEN", "PLACECOLORBLUE","PLACECOLORRED", "DIVOGREEN", "DIVOVIOLET", "DIVOGREY", "DIVOBLACK", "DIVORED", "DIVOBLUE"
-  - helper functions:
+  - helper functions: 
     - list(\<any>): Erzwingt eine Liste für irgendeine Übergabe (Zahl, Objekt). nada bleibt nada, list bleibt list, String wird char array.
-    - centroid:
+    - centroid: 
       - centroid(list): Berechnet den Schwerpunkt einer Liste von Punkten (geometrisches Mittel)
-    - centerofmass:
+    - centerofmass: 
       - centerofmass(list): Berechnet das arithmetische Mittel einer Liste von Punkten
-- CLASS
-  - Button:
+- CLASS 
+  - Button: 
     - Schatten des Buttons von generischem Rechteck zur tatsächlichen Button Form (shape Attribut) geändert
     - Attribut "show", zum Ein- und Ausblenden des Buttons hinzugefügt
     - Flag "hasshadow" hinzugefügt, um das Zeichnen des Schattens steuern zu können
     - Handles für "color", "bordercolor" und "fontcolor" eingefügt
 
 ### v1.0.0
+
 - neue VAMs: "numbercards", "strapwork"

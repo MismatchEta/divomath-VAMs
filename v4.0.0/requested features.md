@@ -38,8 +38,17 @@
 
 
 # distributive
+## 05.11.2025
+- alte Version divomath ready machen:
+    - divomath config bauen für Zeilen und Spalten, ob Term angezeigt wird, oder Sprache oder beides, Radius der Blobs
+    - Texte einpflegen 
+    - neue Färbelogik von neuem distributive Tool implementieren
+- wird noch diskutiert:
+    - kann ich mehr als 2mal schneiden:
+    - kann ich unabhängig der Farben schneiden:
+
 ## früher
-- Färben anders: Zeilenweises Markieren färbt markierte Spalten (nach RICHTUNG auffüllen, wenn in Mitte), und umgekehrt
+- **erledigt** Färben anders: Zeilenweises Markieren färbt markierte Spalten (nach RICHTUNG auffüllen, wenn in Mitte), und umgekehrt
 - Einzeln geschnittene Teile mehr oder weniger beweglich (vollkommen frei)
 - Zerschneiden an beliebiger Stelle und ohne Färben, beliebig oft
 - --> Neues Tool zum Vereinfachen
