@@ -1,12 +1,6 @@
-// v13
+// v14
 // last changes:
-// - draw line instead of rectangle to separate UI Elements at the bottom
-// - Generate random position of Blobs properly inside of worlds viewport
-// - removed "drawbuttons" and replaced it with "drawblobbuttons" and "drawdivbuttons" to control those separately
-// - added "drawbar" to control access to the bar
-// - changed default timing from 1 to .5
-// - fixed bar reappearing when reloading a page --> added "drawbar" to state reporting
-// - added divomath workaround for receiving config info
+// - added web/SL controls
 
 if(vam == "divisors", // change accordingly
 
@@ -890,14 +884,24 @@ new Blob() := (
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	size = .7;
-	timing = .5;
-	blobs = 30;
-	divisor = 5;
-	drawblobbuttons = false;
-	drawdivbuttons = true;
-	drawbar = true;
-	color = [DIVOBLUE, DIVOYELLOW];
+	size = if(!isundefined('urlparams:"size"), parse('urlparams:"size"), .7);
+	padding = if(!isundefined('urlparams:"blobmargin"), parse('urlparams:"blobmargin"), .2);
+	stripmargin = if(!isundefined('urlparams:"stripmargin"), parse('urlparams:"stripmargin"), .5);
+	timing = if(!isundefined('urlparams:"timing"), parse('urlparams:"timing"), .5);
+	blobs = if(!isundefined('urlparams:"blobs"), parse('urlparams:"blobs"), 0);
+	maxblobs = if(!isundefined('urlparams:"maxblobs"), parse('urlparams:"maxblobs"), 100);
+	divisor = if(!isundefined('urlparams:"divisor"), parse('urlparams:"divisor"), 1);
+	maxcols = if(!isundefined('urlparams:"maxcols"), parse('urlparams:"maxcols"), 10);
+	sequentialorder = if(!isundefined('urlparams:"sequentialorder"), parse('urlparams:"sequentialorder"), true);
+	drawblobbuttons = if(!isundefined('urlparams:"drawblobbuttons"), parse('urlparams:"drawblobbuttons"), true);
+	drawdivbuttons = if(!isundefined('urlparams:"drawdivbuttons"), parse('urlparams:"drawdivbuttons"), true);
+	drawbar = if(!isundefined('urlparams:"drawbar"), parse('urlparams:"drawbar"), true);
+	displaycalc = if(!isundefined('urlparams:"displaycalc"), parse('urlparams:"displaycalc"), true);
+	displayresult = if(!isundefined('urlparams:"displayresult"), parse('urlparams:"displayresult"), true);
+	displaydescription = if(!isundefined('urlparams:"displaydescription"), parse('urlparams:"displaydescription"), true);
+	displayblobcount = if(!isundefined('urlparams:"displayblobcount"), parse('urlparams:"displayblobcount"), true);
+	displaydivisorcount = if(!isundefined('urlparams:"displaydivisorcount"), parse('urlparams:"displaydivisorcount"), true);
+	color = if(!isundefined('urlparams:"color"), parse('urlparams:"color"), [DIVORED, DIVOGREY]);
 );
 
 // Create World

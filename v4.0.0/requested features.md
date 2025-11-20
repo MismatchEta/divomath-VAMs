@@ -1,6 +1,15 @@
 # strapwork
+## 17.11.2025
+- Reset Button wird von Scrollbar überlagert -> Hochrücken, wenn Scrollbar angezeigt.
+- Reset Button löscht Musterfolge, soll aber aus Ausgangszustand (aus editor) zurücksetzen
+- Reset Button Darstellung des Pfeils uneinheitlich auf verschiedenen Geräten/Browsern --> Lösung: Bild eines Pfeils?
+- Mustercontainer wird nicht persistiert, wenn Folie vor und zurück gegangen wird.
+- Scrollbar wird am Anfang nicht angezeigt, auch wenn es schon zu voll ist --> am anfang prüfen
+- Separator verschiebt sich seltsam, wenn man scrollt und Folien wechselt
+- Dreieck zu breit, sieht doof aus mit Marker --> Lösung: ?!
+
 ## 09.10.2025
-- [...] Mehrere Container pro Folie (eigentlich aber nur ein zusätzlicher statischer Container mit Referenz aus voriger Folie)
+- **erledigt** Mehrere Container pro Folie (eigentlich aber nur ein zusätzlicher statischer Container mit Referenz aus voriger Folie)
 - **erledigt** Resetknopf knapp oberhalb des Containers
 - **erledigt** Abstand Container und Hauptpolys vergrößeren
 - **TESTEN** Reset Knopf setzt zurück auf Ausgangswert aus "cindyjs" nicht RESULT Zustand
@@ -38,15 +47,6 @@
 
 
 # distributive
-## 05.11.2025
-- alte Version divomath ready machen:
-    - divomath config bauen für Zeilen und Spalten, ob Term angezeigt wird, oder Sprache oder beides, Radius der Blobs
-    - Texte einpflegen 
-    - neue Färbelogik von neuem distributive Tool implementieren
-- wird noch diskutiert:
-    - kann ich mehr als 2mal schneiden:
-    - kann ich unabhängig der Farben schneiden:
-
 ## früher
 - **erledigt** Färben anders: Zeilenweises Markieren färbt markierte Spalten (nach RICHTUNG auffüllen, wenn in Mitte), und umgekehrt
 - Einzeln geschnittene Teile mehr oder weniger beweglich (vollkommen frei)

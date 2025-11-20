@@ -1,4 +1,4 @@
-// v25
+// v27
 // Recent changes:
 // - added divomath workaround for receiving config info
 // - fixed Separators not reported properly inside rowstring
@@ -17,6 +17,8 @@
 // - added multiline PatternContainer
 // - reworked how dropping worked to accomodate multiline Patterncontainer
 // - added custom limit to Pattercontainer param that applies to ALL rows
+// - added functionality for a second container (reference container (RC))
+// - call divomathUpdateResults() after init start
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -66,11 +68,20 @@ sepstate = defaultstateto("sepstate", ""); // Separator positions (i.e. number o
 patternlimit = defaultstateto("patternlimit", 5); // Limit for PatternContainer
 
 // Configure look and feel
-drawpolys = defaultstateto("drawpolys", true);// - Draw base RegPolys
-drawpatterncontainer = defaultstateto("drawpatterncontainer", true); // - Pattern Container
-drawseparator = defaultstateto("drawseparator", true); // - Separator
-drawborders = defaultstateto("drawborders", true);// - Borders of RegPolys
-polypadding = defaultstateto("polypadding", .5); // padding between RegPolys
+drawpolys = defaultstateto("drawpolys", true);// Draw base RegPolys
+drawpatterncontainer = defaultstateto("drawpatterncontainer", true); // draw Pattern Container
+drawseparator = defaultstateto("drawseparator", true); // Draw Separator
+drawborders = defaultstateto("drawborders", true);// Draw borders of RegPolys
+polypadding = defaultstateto("polypadding", .5); // Draw padding between RegPolys
+
+// Configure reference container (rc)
+rcrows = defaultstateto("rcrows", 1); // Configure number of rows/strips in reference ontainer
+rcstate = defaultstateto("rcstate", apply(1..rows, "")); // Configure predefined RegPoly per strip
+rclimit = defaultstateto("rclimit", apply(1..100, 10));// Configure limit of RegPolys per row/strip (-1 => no limit)
+rcsepstate = defaultstateto("rcsepstate", ""); // Separator positions (i.e. number of polys left of Separator)
+drawrccontainer = defaultstateto("drawrccontainer", false); // Draw reference container
+drawrcseparator = defaultstateto("drawrcseparator", false); // Draw reference containers Separator
+rcinteractable = defaultstateto("rcinteractable", false); // reference containers can be used like a normal Container
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -148,7 +159,13 @@ divomathSetState() := (
 		"drawpatterncontainer" : drawpatterncontainer,
 		"drawseparator" : drawseparator,
 		"drawborders" : drawborders,
-		"polypadding" : polypadding
+		"polypadding" : polypadding,
+		"rcrows" : rcrows,
+		"rclimit" : rclimit,
+		"rcsepstate" : if(!isundefined(rcseparator), rcseparator:"getstatestring", QUOTE+rcsepstate+QUOTE),
+		"drawrccontainer" : drawrccontainer,
+		"drawrcseparator" : drawrcseparator,
+		"rcinteractable" : rcinteractable
 	};
 
 	// Configure vertices to handle image-strings correctly
@@ -157,27 +174,46 @@ divomathSetState() := (
 
 	state:"polys" = polys;
 	
-	// Configure "size" state
-	// Get current size and built list compatible with config, i.e. ["3,6", "1,1,1", "1,2,3,1"] for 3 strips
-	regional(currentsize);
-	currentsize = []; 
+	// Configure "state" attribute
+	// Get current state and built list compatible with config, i.e. ["3,6", "1,1,1", "1,2,3,1"] for 3 strips
+	regional(currentstate);
+	currentstate = []; 
 		
 	forall(container:"strips", stripspolys, // loop over every strip
-		currentsize = currentsize :> QUOTE; // Set blank new state config string for a strip with a QUOTE (")
+		currentstate = currentstate :> QUOTE; // Set blank new state config string for a strip with a QUOTE (")
 		
 		forall(stripspolys, // loop over every poly
-			currentsize_(-1) = currentsize_(-1) + (#:"original":"id" + 1); // append corresponding originals ID (+1) to state string
-			currentsize_(-1) = currentsize_(-1) + ","; // separate by comma
+			currentstate_(-1) = currentstate_(-1) + (#:"original":"id" + 1); // append corresponding originals ID (+1) to state string
+			currentstate_(-1) = currentstate_(-1) + ","; // separate by comma
 		);
 
-		if(length(currentsize_(-1)) > 1, 
-			currentsize_(-1)_(-1) = QUOTE; // Replace last comma with closing quotation mark
+		if(length(currentstate_(-1)) > 1, 
+			currentstate_(-1)_(-1) = QUOTE; // Replace last comma with closing quotation mark
 		,
-			currentsize_(-1) = QUOTE + QUOTE; // Add a quotation mark at the end
+			currentstate_(-1) = QUOTE + QUOTE; // Add a quotation mark at the end
 		);
 	);
+	state:"state" = currentstate; // Add state attribute to state
 
-	state:"state" = currentsize; // Add size attribute to state
+	// Configure current "rcstate"
+	regional(currentrcstate);
+	currentrcstate = [];
+
+	forall(rccontainer:"strips", stripspolys, // loop over every strip
+		currentrcstate = currentrcstate :> QUOTE; // Set blank new state config string for a strip with a QUOTE (")
+		
+		forall(stripspolys, // loop over every poly
+			currentrcstate_(-1) = currentrcstate_(-1) + (#:"original":"id" + 1); // append corresponding originals ID (+1) to state string
+			currentrcstate_(-1) = currentrcstate_(-1) + ","; // separate by comma
+		);
+
+		if(length(currentrcstate_(-1)) > 1, 
+			currentrcstate_(-1)_(-1) = QUOTE; // Replace last comma with closing quotation mark
+		,
+			currentrcstate_(-1) = QUOTE + QUOTE; // Add a quotation mark at the end
+		);
+	);
+	state:"rcstate" = currentrcstate; // Add rcstate attribute to state
 
 	state; // Return
 );
@@ -857,7 +893,7 @@ new PatternContainer(coord, rows, limit) := (
 if(!usedivomath,
 	'debuglevel = 4;
 	rows = 2;
-	size = .9;
+	size = 1;
 	limit = [2,3];
 	patternlimit = 4;
 	state = ["3,6", "3,1,3"];
@@ -867,6 +903,13 @@ if(!usedivomath,
 	drawseparator = true;
 	drawpolys = true;
 	polypadding = 1;
+	rcrows = 2;
+	rcstate = ["1,1,2", "2,1,3"];
+	rclimit = [3,5];
+	rcsepstate = "1";
+	drawrccontainer = true;
+	drawrcseparator = true;
+	rcinteractable = true;
 );
 
 // Local vars
@@ -967,6 +1010,7 @@ btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
+btn:"fontsize" = btn:"fontsize" * size;
 btn:"script" := ( // Resets state to editor default setting if used in divomath
 	// Reassign relevant vars with divomath default state, if applicable
 	if(usedivomath,
@@ -1007,6 +1051,45 @@ btn:"script" := ( // Resets state to editor default setting if used in divomath
 	forall(select(sepstate,#!=""), pos, eval(separator:"putchild", position->pos));
 );
 
+// D.6 | Reference Container
+// =========================
+regional(rccontainer);
+
+rccontainer = new Container([container:"coord"_1, btn:"coord"_2+btn:"height"+'marginbottom],	rcrows,	rclimit); 
+
+// Fill Container with predefined RegPolys
+counter = 1; // start at first strip
+rcstate = apply(rcstate, tokenize(#,",")); // Create config from supplied strings from divomath
+
+forall(rcstate, row, // iterate over config for every row
+	forall(select(row, #!=""), polyid, // iterate over every polyid per row that is not an empty string
+		polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
+
+		eval(rccontainer:"appendtostrip", poly->polycopy, index->counter);// Put copy in approriate strip
+
+		// (!) Put copy in obj on obj build, so they get drawn on top (see below)
+	);
+	counter = counter + 1; // next cycle --> next strip
+);
+
+rccontainer:"movepolysintoplace"; // align polys
+
+// Make Container and Polys non-interactable if required
+if(!rcinteractable,
+	rccontainer:"ishot" = false;
+	apply(rccontainer:"strips",strip,apply(strip,poly, poly:"ishot"=false));
+);
+
+// D.6 | Reference Containers Separator
+// ====================================
+regional(rcseparator);
+rcseparator = new Separator(rccontainer:"coord", rccontainer:"height", rccontainer);
+rccontainer:"childseparator" = rcseparator;
+
+// Apply sepstate to initialize copies
+rcsepstate = set(tokenize(rcsepstate,","));
+forall(select(rcsepstate,#!=""), pos, eval(rcseparator:"putchild", position->pos));
+
 // E | Build obj
 // =============
 obj = obj :> bg;
@@ -1016,7 +1099,11 @@ obj = obj :> patterncontainer;
 if(drawpolys, obj = obj ++ polys);
 obj = obj ++ flatten(container:"strips"); // Initial Polys of Container build at Container init
 if(drawseparator,obj = obj :> separator);
+if(drawrccontainer,obj = obj :> rccontainer);
+if(drawrcseparator,obj = obj :> rcseparator);
 
 // Order to draw (Separator last, so it is on top)
 typeorder = ["bg", "Container", "RegPoly", "Separator"];
+
+divomathUpdateResults();
 );

@@ -1,4 +1,4 @@
-> v4.2.0
+> v4.3.0
 
 # divomath VAM Dokumentation
 
@@ -246,7 +246,7 @@ cindyjs:
   - Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae\*\*"1,3,5"\*\* erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.
   - default **""** (leer)
 - patternlimit: *\<int> 
-  - Limitiert, mit wie vielen Polygone der Mustercontainer gefüllt werden kann. **-1** erzeugt einen beliebig verlängerbaren Container. Das Limit bezieht sich (im Gegensatz zu **limi**) auf jede Zeile des Mustercontainers.
+  - Limitiert, mit wie vielen Polygone der Mustercontainer gefüllt werden kann. **-1** erzeugt einen beliebig verlängerbaren Container. Das Limit bezieht sich (im Gegensatz zu **limit**) auf jede Zeile des Mustercontainers.
   - default: 5
 - drawpatterncontainer: *\<bool>*
   - true, wenn Mustercontainer gezeichnet werden soll.
@@ -260,6 +260,27 @@ cindyjs:
 - polypadding: *\<float> 
   - Abstand zwischen den Polygonen in einem Band
   - default .5
+- rcrows: *\<int>*
+  - analog rows
+  - default 1
+- rcstate: *\<list of strings>*
+  - analog state
+  - default ["", "", ...]
+- rclimit: *\<list>*
+  - analog limit
+  - default [10, 10, ...]
+- rcsepstate: *\<string>*
+  - analog sepstate
+  - default **""** (leer)
+- drawrccontainer: *\<bool>*
+  - analog drawpatterncontainer
+  - default false
+- drawrcseparator: *\<bool>*
+  - analog drawseparator
+  - default false
+- rcinteractable: *\<bool>*
+  - Konfiguriert, ob mit dem Referenz-Container interagiert werden kann, i.e. ob dort Polygone verschoben, hinzugefügt oder entfernt werden können.
+  - default false
 
 ## Validierung
 
@@ -340,6 +361,11 @@ Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird d
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+
+### v4.3.0
+- VAM:
+  - strapwork:
+    - Referenzcontainer hinzugefügt
 
 ### v4.1.0
 - VAM:

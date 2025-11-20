@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>CindyVAM for Web</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Virtuelle Arbeitsmittel</h1>
+  <p>Wähle ein Arbeitsmittel, konfiguriere weitere Parameter im Popup.</p>
+
+  <div class="button-grid">
+    <button class="image-button btn-vam-distributive"
+            data-first-key="vam"
+            data-first-value="distributive"
+            data-config-template="tmpl-distributive">
+      <span>Distributivfeld</span>
+    </button>
+
+    <button class="image-button btn-vam-divisors"
+            data-first-key="vam"
+            data-first-value="divisors"
+            data-config-template="tmpl-divisors">
+      <span>Teilbarkeit</span>
+    </button>
+
+    <button class="image-button btn-vam-numbercards"
+            data-first-key="vam"
+            data-first-value="numbercards"
+            data-config-template="tmpl-numbercards">
+      <span>Zahlenkarten</span>
+    </button>
+
+    <button class="image-button btn-vam-percentagebar"
+            data-first-key="vam"
+            data-first-value="percentagebar"
+            data-config-template="tmpl-percentagebar">
+      <span>Prozentstreifen</span>
+    </button>
+  </div>
+
+  <p style="display:none;"><!-- DO NOT DISPLAY, REQUIRED FOR SCRIPT THOUGH -->
+    Erzeugter Link:
+    <a id="resultLink" href="#" target="_blank"></a>
+  </p>
+
+  <!-- Modal / Popup -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal" id="modal">
+      <button class="close-btn" type="button" id="closeModal">&times;</button>
+      <h2 id="modalTitle">Konfiguration</h2>
+      <form id="configForm">
+        <!-- Dynamischer Inhalt per Template -->
+      </form>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <template id="tmpl-distributive">
+    <div class="field">
+      <label for="distributive-gridposition">Position: </label>
+      <input type="text" id="distributive-gridposition" name="gridposition" placeholder="[10,7]">
+    </div>
+    <div class="field">
+      <label for="distributive-rows">Zeilen: </label>
+      <input type="number" min="0" id="distributive-rows" name="rows" placeholder="5">
+    </div>
+    <div class="field">
+      <label for="distributive-cols">Spalten: </label>
+      <input type="number" min="0" id="distributive-cols" name="cols" placeholder="7">
+    </div>
+    <div class="field">
+      <label for="distributive-atomsize">Größe: </label>
+      <input type="text" id="distributive-atomsize" name="size" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="distributive-atomradius">Eckenradius: </label>
+      <input type="text" id="distributive-atomradius" name="cornerradius" placeholder=".5">
+    </div>
+    <div class="field">
+      <label for="distributive-atomverticalpadding">Vertikaler Abstand: </label>
+      <input type="text" id="distributive-atomverticalpadding" name="verticalpadding" placeholder=".1">
+    </div>
+    <div class="field">
+      <label for="distributive-atomhorizontalpadding">Horizontaler Abstand: </label>
+      <input type="text" id="distributive-atomhorizontalpadding" name="horizontalpadding" placeholder=".1">
+    </div>
+    <div class="field">
+      <label for="distributive-groupspacing">Abstand bei Gruppierung: </label>
+      <input type="text" id="distributive-groupspacing" name="groupspacing" placeholder=".2">
+    </div>
+    <div class="field">
+      <label for="distributive-cutwidth">Abstand nach Schneiden: </label>
+      <input type="text" id="distributive-cutwidth" name="cutwidth" placeholder=".3">
+    </div>
+    <div class="field">
+      <label for="distributive-gridmoveable">Bewegliches Gitter: </label>
+      <select id="distributive-gridmoveable" name="gridmoveable">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-buttonsize">Buttongröße: </label>
+      <input type="text" id="distributive-buttonsize" name="buttonsize" placeholder=".2">
+    </div>
+    <div class="field">
+      <label for="distributive-buttonpadding">Abstand Button-Rand: </label>
+      <input type="text" id="distributive-buttonpadding" name="buttonpadding" placeholder=".4">
+    </div>
+    <div class="field">
+      <label for="distributive-lblpadding">Abstand Text-Rand: </label>
+      <input type="text" id="distributive-lblpadding" name="lblpadding" placeholder=".3">
+    </div>
+    <div class="field">
+      <label for="distributive-animationspeed">Timing (Animation): </label>
+      <input type="text" id="distributive-animationspeed" name="animationspeed" placeholder=".15">
+    </div>
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-divisors">
+    <div class="field">
+      <label for="divisors-size">Größe: </label>
+      <input type="text" id="divisors-size" name="size" placeholder=".7">
+    </div>
+    <div class="field">
+      <label for="divisors-padding">Abstand (Blobs): </label>
+      <input type="text" id="divisors-padding" name="padding" placeholder=".2">
+    </div>
+    <div class="field">
+      <label for="divisors-stripmargin">Abstand (Bänder): </label>
+      <input type="text" id="divisors-stripmargin" name="stripmargin" placeholder=".5">
+    </div>
+    <div class="field">
+      <label for="divisors-timing">Timing (Animation):: </label>
+      <input type="text" id="divisors-timing" name="timing" placeholder=".5">
+    </div>
+    <div class="field">
+      <label for="divisors-blobs">Anzahl Blobs: </label>
+      <input type="number" min="0" id="divisors-blobs" name="blobs" placeholder="0">
+    </div>
+    <div class="field">
+      <label for="divisors-maxblobs">Max. Anzahl Blobs: </label>
+      <input type="number" min="0" id="divisors-maxblobs" name="maxblobs" placeholder="100">
+    </div>
+    <div class="field">
+      <label for="divisors-divisor">Divisor: </label>
+      <input type="number" min="1" id="divisors-divisor" name="divisor" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="divisors-maxcols">Max. Anzahl Spalten: </label>
+      <input type="number" min="1" id="divisors-maxcols" name="maxcols" placeholder="10">
+    </div>
+    <div class="field">
+      <label for="distributive-sequentialorder">Sequenziell umsortieren: </label>
+      <select id="distributive-sequentialorder" name="sequentialorder">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-drawblobbuttons">Blob Buttons anzeigen: </label>
+      <select id="distributive-drawblobbuttons" name="drawblobbuttons">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-drawdivbuttons">Divisor Buttons anzeigen: </label>
+      <select id="distributive-drawdivbuttons" name="drawdivbuttons">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-drawbar">Balken anzeigen: </label>
+      <select id="distributive-drawbar" name="drawbar">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-displaycalc">Berechnung anzeigen: </label>
+      <select id="distributive-displaycalc" name="displaycalc">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-displaydescription">Beschreibung anzeigen: </label>
+      <select id="distributive-displaydescription" name="displaydescription">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-displayblobcount">Anzahl Blobs anzeigen: </label>
+      <select id="distributive-displayblobcount" name="displayblobcount">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-displaydivisorcount">Divisor anzeigen: </label>
+      <select id="distributive-displaydivisorcount" name="displaydivisorcount">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-color">Farbe: </label>
+      <input type="text" id="distributive-color" name="color" placeholder="[DIVORED,DIVOGREY]">
+    </div>
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-numbercards">
+    <div class="field">
+      <label for="numbercards-blobs">Anzahl der Karten: </label>
+      <input type="number" min="1" id="numbercards-blobs" name="cards" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="numbercards-xcoords">x-Koordinaten der Karten: </label>
+      <input type="text" id="numbercards-xcoords" name="x" placeholder="[3,10,17,..]">
+    </div>
+    <div class="field">
+      <label for="numbercards-ycoords">y-Koordinaten Karten: </label>
+      <input type="text" id="numbercards-ycoords" name="y" placeholder="[16,16,16,..]">
+    </div>
+    <div class="field">
+      <label for="numbercards-values">Werte der Karten: </label>
+      <input type="number" min="0" id="numbercards-values" name="value" placeholder="[1234,1234,1234,..]">
+    </div>
+    <div class="field">
+      <label for="numbercards-edit">Editierbarkeit der Karten: </label>
+      <input type="text" id="numbercards-edit" name="edit" placeholder="[[true,..,true], [true,..,true], ..]">
+    </div>
+    <div class="field">
+      <label for="numbercards-monte">Farbige Karten: </label>
+      <select id="numbercards-monte" name="color">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="numbercards-showmontetoggle">Zeige Farbwechsel-Button: </label>
+      <select id="numbercards-showmontetoggle" name="colortoggle">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="numbercards-alpha">Transparenz: </label>
+      <input type="text" id="numbercards-alpha" name="alpha" placeholder=".2">
+    </div>
+    <div class="field">
+      <label for="numbercards-separator">Trennzeichen: </label>
+      <input type="text" id="numbercards-separator" name="x" placeholder="">
+    </div>
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-percentagebar">
+    <div class="field">
+      <label for="percentagebar-barprecision">Präzision: </label>
+      <input type="text" id="percentagebar-barprecision" name="barprecision" placeholder=".05">
+    </div>
+    <div class="field">
+      <label for="percentagebar-barwidth">Breite des Streifens: </label>
+      <input type="text" id="percentagebar-barwidth" name="barwidth" placeholder="16">
+    </div>
+    <div class="field">
+      <label for="percentagebar-barheight">Höhe des Streifens: </label>
+      <input type="text" id="percentagebar-barheight" name="barheight" placeholder=".05">
+    </div>
+    <div class="field">
+      <label for="percentagebar-barvalue">Prozentsatz bei Init: </label>
+      <input type="text" id="percentagebar-barvalue" name="barvalue" placeholder="0">
+    </div>
+    <div class="field">
+      <label for="percentagebar-basevalue">Grundwert bei Init: </label>
+      <input type="text" id="percentagebar-basevalue" name="basevalue" placeholder="1000">
+    </div>
+    <div class="field">
+      <label for="percentagebar-subdivisions">Einteilungen des Streifens: </label>
+      <input type="number" min="0" id="percentagebar-subdivisions" name="subdivisions" placeholder="3">
+    </div>
+    <div class="field">
+      <label for="percentagebar-unit">Einheit: </label>
+      <input type="text" id="percentagebar-unit" name="unit" placeholder="">
+    </div>
+    <div class="field">
+      <label for="percentagebar-barcolor">Farbe des Streifens: </label>
+      <input type="text" id="percentagebar-barcolor" name="barcolor" placeholder="DZLMCOLORGOLD">
+    </div>
+    <div class="field">
+      <label for="percentagebar-archcolor">Farbe der Bögen: </label>
+      <input type="text" id="percentagebar-archcolor" name="archcolor" placeholder="DZLMCOLORGOLD">
+    </div>
+    <div class="field">
+      <label for="percentagebar-leftoutpercentages">Liste nicht zu zeichnender Prozentsätze: </label>
+      <input type="text" id="percentagebar-leftoutpercentages" name="leftoutpercentages" placeholder="[]">
+    </div>
+    <div class="field">
+      <label for="percentagebar-leftoutvalues">Liste nicht zu zeichnender Prozentwerte: </label>
+      <input type="text" id="percentagebar-leftoutvalues" name="leftoutvalues" placeholder="[]">
+    </div>
+    <div class="field">
+      <label for="percentagebar-custompercenteges">Liste immer zu zeichnender Prozentsätze: </label>
+      <input type="text" id="percentagebar-custompercenteges" name="custompercenteges" placeholder="[]">
+    </div>
+    <div class="field">
+      <label for="percentagebar-customvalues">Liste immer zu zeichnender Prozentwerte: </label>
+      <input type="text" id="percentagebar-customvalues" name="customvalues" placeholder="[]">
+    </div>
+    <div class="field">
+      <label for="percentagebar-scaffoldbasevalue">Grundwert verdecken: </label>
+      <select id="percentagebar-scaffoldbasevalue" name="scaffoldbasevalue">
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-scaffoldvalue">Prozentwert verdecken: </label>
+      <select id="percentagebar-scaffoldvalue" name="scaffoldvalue">
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-scaffoldpercentage">Prozentsatz verdecken: </label>
+      <select id="percentagebar-scaffoldpercentage" name="scaffoldpercentage">
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-isbardraggable">Prozentstreifen interaktiv: </label>
+      <select id="percentagebar-isbardraggable" name="isbardraggable">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-alwaysdrawarches">Bögen immer zeichnen: </label>
+      <select id="percentagebar-alwaysdrawarches" name="alwaysdrawarches">
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-snapbar">Wert des Streifens an Markern ausrichten: </label>
+      <select id="percentagebar-snapbar" name="snapbar">
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-decimalspercentage">Nachkommastellen Prozentsatz: </label>
+      <input type="number" min="0" id="percentagebar-decimalspercentage" name="decimalspercentage" placeholder="2">
+    </div>
+    <div class="field">
+      <label for="percentagebar-decimalsvalue">nachkommastellen Prozentwert: </label>
+      <input type="number" min="0" id="percentagebar-decimalsvalue" name="decimalsvalue" placeholder="0">
+    </div>
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+
+  <script>
+    const baseUrl = 'https://abako.dzlm.de/cindy/vam/divoVAM.html';
+
+    const backdrop = document.getElementById('modalBackdrop');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const configForm = document.getElementById('configForm');
+    const resultLink = document.getElementById('resultLink');
+    const closeModalBtn = document.getElementById('closeModal');
+
+    let firstKey = null;
+    let firstValue = null;
+
+    // Bild-Buttons aktivieren
+    document.querySelectorAll('.image-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        firstKey = btn.dataset.firstKey;
+        firstValue = btn.dataset.firstValue;
+
+        modalTitle.textContent = 'Konfiguration für ' + firstValue;
+
+        const tmpl = document.getElementById(btn.dataset.configTemplate);
+        configForm.innerHTML = '';
+        configForm.appendChild(tmpl.content.cloneNode(true));
+
+        backdrop.classList.add('active');
+      });
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      backdrop.classList.remove('active');
+    });
+
+    backdrop.addEventListener('click', e => {
+      if (e.target === backdrop) backdrop.classList.remove('active');
+    });
+
+    backdrop.addEventListener('submit', e => {
+      if (e.target.id !== 'configForm') return;
+      e.preventDefault();
+
+      const form = e.target;
+      const params = [];
+
+      // erster Parameter
+      if (firstKey && firstValue)
+        params.push(encodeURIComponent(firstKey) + '=' + encodeURIComponent(firstValue));
+
+      // weitere Parameter einsammeln
+      Array.from(form.elements).forEach(el => {
+        if (!el.name || el.disabled) return;
+        if (el.type === 'button' || el.type === 'submit') return;
+
+        if (el.type === 'checkbox') {
+          if (el.checked)
+            params.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value || 'on'));
+          return;
+        }
+
+        if (el.tagName === 'SELECT') {
+          if (el.value !== '')
+            params.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
+          return;
+        }
+
+        if (el.type === 'text' || el.type === 'number') {
+          if (el.value.trim() !== '')
+            params.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
+        }
+      });
+
+      const url = params.length ? baseUrl + '?' + params.join('&') : baseUrl;
+
+      resultLink.textContent = url;
+      resultLink.href = url;
+
+      backdrop.classList.remove('active');
+
+      window.location.href = url;
+    });
+  </script>
+</body>
+</html>

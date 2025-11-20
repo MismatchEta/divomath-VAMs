@@ -1,9 +1,6 @@
 // v5
 // recent changes:
-// - changed how bucket tool marks lines
-// - fixed getactiveindex()
-// - added divomath controls
-// - added text output and proper updating of text output on change
+// - added web/SL controls
 
 // Distributivfeld
 if(vam == "distributive",
@@ -1005,7 +1002,20 @@ new Grid(c, rows, cols) := (
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	// @TODO
+	'gridposition = if(!isundefined('urlparams:"gridposition"), parse('urlparams:"gridposition"), [10,7]);
+	'rows = if(!isundefined('urlparams:"rows"), parse('urlparams:"rows"), 5);
+	'cols = if(!isundefined('urlparams:"cols"), parse('urlparams:"cols"), 7);
+	'atomsize = if(!isundefined('urlparams:"size"), parse('urlparams:"size"), 1);
+	'atomradius = if(!isundefined('urlparams:"cornerradius"), parse('urlparams:"cornerradius"), .5);
+	'atomverticalpadding = if(!isundefined('urlparams:"verticalpadding"), parse('urlparams:"verticalpadding"), .1);
+	'atomhorizontalpadding = if(!isundefined('urlparams:"horizontalpadding"), parse('urlparams:"horizontalpadding"), .1);
+	'groupspacing = if(!isundefined('urlparams:"groupspacing"), parse('urlparams:"groupspacing"), .2);
+	'cutwidth = if(!isundefined('urlparams:"cutwidth"), parse('urlparams:"cutwidth"), .3);
+	'gridmoveable = if(!isundefined('urlparams:"gridmoveable"), parse('urlparams:"gridmoveable"), true);
+	'buttonsize = if(!isundefined('urlparams:"buttonsize"), parse('urlparams:"buttonsize"), 2);
+	'buttonpadding = if(!isundefined('urlparams:"buttonpadding"), parse('urlparams:"buttonpadding"), .4);
+	'lblpadding = if(!isundefined('urlparams:"lblpadding"), parse('urlparams:"lblpadding"), .3);
+	'animationspeed = if(!isundefined('urlparams:"animationspeed"), parse('urlparams:"animationspeed"), .15);
 );
 
 obj = obj :> new Grid('gridposition,'rows,'cols);

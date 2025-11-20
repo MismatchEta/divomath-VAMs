@@ -1,10 +1,6 @@
-// v20
+// v21
 // last changes:
-// - Fix: Alpha set to 1, when revisiting a page in divomath
-// - Fix: Always show Placecards, even on startup overlaying the numbercard
-// - Fix: Color changes when folding/unfolding (this time for real, maybe)
-// - add call to divomathUpdateResults() when buttons are pressed
-// - added workaround for divomath not reporting back values correctly (i.e. false becomes an empty string)
+// - added web/SL controls
 
 if(vam == "numbercards",
 
@@ -607,17 +603,19 @@ new Numbercard (c,initialvalue, maxplaces, editable) := (
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	xcoords = [3];
-	ycoords = [14];
-	values = [987654];
-	edit = [[true, true, true, true, true, true]];
-	max = length(edit_1);
-	unfold = true;
-	monte = true;
-	showmontetoggle = true;
-	alpha = 0.4;
-	separator = "";
+	numofcards = if(!isundefined('urlparams:"cards"), parse('urlparams:"cards"), 1);
+	xcoords = if(!isundefined('urlparams:"x"), parse('urlparams:"x"), apply(1..numofcards, 10*#-7));
+	ycoords = if(!isundefined('urlparams:"y"), parse('urlparams:"y"), apply(1..numofcards, 16));
+	values = if(!isundefined('urlparams:"value"), parse('urlparams:"value"), apply(1..numofcards, 1234));
+	edit = if(!isundefined('urlparams:"edit"), parse('urlparams:"edit"), apply(1..numofcards,apply(1..length(text(values_#)),true)););
+	unfold = if(!isundefined('urlparams:"unfold"), parse('urlparams:"unfold"), true);
+	monte = if(!isundefined('urlparams:"color"), parse('urlparams:"color"), true);
+	showmontetoggle = if(!isundefined('urlparams:"colortoggle"), parse('urlparams:"colortoggle"), true);
+	alpha = if(!isundefined('urlparams:"alpha"), parse('urlparams:"alpha"), .2);
+	separator = if(!isundefined('urlparams:"separator"), parse('urlparams:"separator"), "");
 );
+
+max = max(apply(edit,length(#))); // Get max length of digits for cards
 
 // D.1 | Build card templates based on config
 // ==========================================
