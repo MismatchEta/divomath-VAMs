@@ -230,7 +230,7 @@
     </div>
     <div class="field">
       <label for="numbercards-values">Werte der Karten: </label>
-      <input type="number" min="0" id="numbercards-values" name="value" placeholder="[1234,1234,1234,..]">
+      <input type="text" id="numbercards-values" name="value" placeholder="[1234,1234,1234,..]">
     </div>
     <div class="field">
       <label for="numbercards-edit">Editierbarkeit der Karten: </label>
@@ -256,7 +256,7 @@
     </div>
     <div class="field">
       <label for="numbercards-separator">Trennzeichen: </label>
-      <input type="text" id="numbercards-separator" name="x" placeholder="">
+      <input type="text" id="numbercards-separator" name="separator" placeholder="">
     </div>
     <button type="submit">VAM erzeugen</button>
   </template>
@@ -446,7 +446,8 @@
 
       backdrop.classList.remove('active');
 
-      window.location.href = url;
+      //window.location.href = url;
+      window.open(url,'_blank');
     });
   </script>
 </body>

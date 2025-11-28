@@ -242,12 +242,19 @@ cindyjs:
 - limit: *\<list>*
   - Definiert, wie viele Polygone pro Band erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
   - default [10,10,...] (potenziell 100 Bänder)
+- interactable: *\<bool>*
+  - Konfiguriert, ob mit dem Container interagiert werden kann, i.e. ob dort Polygone verschoben, hinzugefügt oder entfernt werden können.
+  - default true
 - sepstate: *\<string>*
   - Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae\*\*"1,3,5"\*\* erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.
   - default **""** (leer)
 - patternlimit: *\<int> 
   - Limitiert, mit wie vielen Polygone der Mustercontainer gefüllt werden kann. **-1** erzeugt einen beliebig verlängerbaren Container. Das Limit bezieht sich (im Gegensatz zu **limit**) auf jede Zeile des Mustercontainers.
   - default: 5
+- patternstate: *\<list of strings>*
+  - Definiert, welche der über **vertices** und **colors** definierten Polygone im Mustercontainer beim Start enthalten sein sollen.
+  - analog zu **state** (s.o.)
+  - default ["", "", ...]
 - drawpatterncontainer: *\<bool>*
   - true, wenn Mustercontainer gezeichnet werden soll.
   - default true
@@ -255,6 +262,9 @@ cindyjs:
   - Trennsymbol an der linken Seite eines Containers anzeigen (true) oder nicht (false)
   - default true
 - drawborders: *\<bool>*
+  - Reset Button anzeigen (true) oder nicht (false)
+  - default true
+- drawresetbutton: *\<bool>*
   - Rahmen um Polygone zeichnen (true) oder nicht (false)
   - default false
 - polypadding: *\<float> 
@@ -361,6 +371,22 @@ Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird d
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+
+### v5.0.0
+- FW:
+  - constants:
+    - Bild von kreisförmigen Button zu ICONS hinzugefügt
+- CLASS:
+  - Button:
+    - Subklasse ImageButton() hinzugefügt
+- VAM:
+  - strapwork:
+    - Fix: Scrollbar überlagert den Reset Button
+    - Fix: Scrollbar wird nicht ordnungsgemäß beim Start angezeigt, wenn Container zu voll
+    - Dreieck-Polygon wurde als zu groß geändert. Skaliert mit .9
+    - Init Zustand **patternstate**: Zustand des Patterncontainers
+    - Init Zustand **drawresetbutton**: Reset Button (nicht) anzeigen
+    - Init Zustand **interactable**: Mit Container kann (nicht) interagiert werden
 
 ### v4.3.0
 - VAM:

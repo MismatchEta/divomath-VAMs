@@ -2,14 +2,17 @@
 - in VAM überführen
 
 # strapwork
+## 27.11.2025
+- **27.11.2025** normaler Container soll auch manchmal nicht interagierbar sein
+
 ## 17.11.2025
-- Reset Button wird von Scrollbar überlagert -> Hochrücken, wenn Scrollbar angezeigt.
-- Reset Button löscht Musterfolge, soll aber aus Ausgangszustand (aus editor) zurücksetzen
-- Reset Button Darstellung des Pfeils uneinheitlich auf verschiedenen Geräten/Browsern --> Lösung: Bild eines Pfeils?
-- Mustercontainer wird nicht persistiert, wenn Folie vor und zurück gegangen wird.
-- Scrollbar wird am Anfang nicht angezeigt, auch wenn es schon zu voll ist --> am anfang prüfen
+- **26.11.25, erledigt** Reset Button wird von Scrollbar überlagert -> Hochrücken, wenn Scrollbar angezeigt.
+- **26.11.25, erledigt** Reset Button löscht Musterfolge, soll aber aus Ausgangszustand (aus editor) zurücksetzen
+- **26.11.25, erledigt** Reset Button Darstellung des Pfeils uneinheitlich auf verschiedenen Geräten/Browsern --> Lösung: Bild eines Pfeils?
+- **26.11.25, erledigt, jetz auch konfigbar** Mustercontainer wird nicht persistiert, wenn Folie vor und zurück gegangen wird.
+- **26.11.25, erledigt** Scrollbar wird am Anfang nicht angezeigt, auch wenn es schon zu voll ist --> am anfang prüfen
 - Separator verschiebt sich seltsam, wenn man scrollt und Folien wechselt
-- Dreieck zu breit, sieht doof aus mit Marker --> Lösung: ?!
+- **26.11.25, erledigt???** Dreieck zu breit, sieht doof aus mit Marker --> Lösung: custom scaling
 
 ## 09.10.2025
 - **erledigt** Mehrere Container pro Folie (eigentlich aber nur ein zusätzlicher statischer Container mit Referenz aus voriger Folie)

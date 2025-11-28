@@ -1,0 +1,19 @@
+// v2
+// Recent changes:
+// - removed call to divomatUpdateResults(). Has to be called in VAM at the right time.
+
+// Falls ein Element bewegt wird (also hot definiert ist), aktualisiere seine Koordinate
+
+if(!isundefined(oldaction),
+ //err(action); // err(startmouse); err(startcoord); err(mouse().xy);
+
+ act(oldaction,action+"sticky",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+ oldmouse = mouse().xy;
+
+ //err(oldaction);
+ clrscr();
+ forall(obj, #:"draw");
+ forall(objpreview, eval(#:"draw",preview->true));
+ repaint();
+
+);

@@ -1,0 +1,38 @@
+// v4
+// Recent changes:
+// - changed drawing order for Debug stuff
+
+// Color background.
+fill(screen(), color->'bgcolor);
+
+// Globale Screenparameter
+getscreenparams();
+copyrighttext.xy = (screenbounds()_3).xy-(225,-10)/screenresolution();
+
+// Zeichne alle Objekte, die in der Liste "obj" sind
+// zuerst alle types entsprechend der Typreihenfolge in typeorder, dann den Rest
+forall(typeorder,to,
+		forall(obj,o, if(o:"type"==to, o:"draw"))
+);
+
+forall(obj,o,
+		if(not(contains(typeorder,o:"type")),o:"draw")
+);
+
+// DEBUGGING
+if('debuglevel > 1,
+	repeat(10,drawcircle([0,0],2^#,color->[0.95,0.95,0.95]));
+	draw(join([0,0],[1,0]),color->[0.8,0.8,0.8]);
+	draw(join([0,0],[0,1]),color->[0.8,0.8,0.8]);
+);
+
+
+if('debuglevel > 9, 
+	drawtextbox('doctextpos, 'doc, nada, nada, grey(.5));
+);
+
+// Send divomath results first time the scene is drawn
+if(usedivomath & 'firstdraw, divomathUpdateResults());
+
+// Set flag to remember first call to draw script is done
+'firstdraw = false;
