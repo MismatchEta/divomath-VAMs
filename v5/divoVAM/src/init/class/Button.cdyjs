@@ -1,6 +1,8 @@
-// v7
+// v8
 // Recent changes:
 // - Added new Button type: ImageButton (inherits from Button)
+// - Fixed click hightling not restoring to normal coloring
+// - changed drawing of label in "draw"
 
 new Button(coord,width,height,label,fontsize) := (
 	regional(obj);
@@ -27,6 +29,8 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"hasshadow" = true;
 	obj:"hasborder" = true;
 	obj:"show" = true;
+	obj:"customlabeloffset" = [0,0];
+	obj:"shadowoffset" = [0.03,-.05];
 	obj:"hitbox" := rectangle(
 		my("coord"),
 		my("width"),
@@ -42,7 +46,7 @@ new Button(coord,width,height,label,fontsize) := (
 		// Draw shadow
 		if(my("hasshadow"),
 			fill(roundedrectangle(
-				my("coord")+[0.03,-0.05],
+				my("coord")+my("shadowoffset"),
 				my("width"),
 				my("height"),
 				my("cornerradius")
@@ -51,27 +55,37 @@ new Button(coord,width,height,label,fontsize) := (
 				alpha->0.2
 			);
 		);
-		// Draw box and border
+
+		// Fill box
 		fill(
 			my("shape"),
-			color->if(my("ishot"),0.95*my("color"),my("color")),
+			color->if(mousedown&my("ishot"),0.95*my("color"),my("color")),
 			alpha->1
 		);
-		if(my("hasborder"), draw(
-			my("shape"),
-			color->my("bordercolor");
-		));
+
+
+		// Draw border
+		if(my("hasborder"), draw(my("shape"), color->my("bordercolor")));
+		
 		// Draw Label
-			drawtext(
-				my("coord")+(my("width"),
-				my("height")/2)/2, 
-				align->"center",
-				color->my("fontcolor"),
-				my("label"),
-				size->my("fontsize")
-			);
+		regional(boxcenter, offset);
+		
+		offset = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1); // Button center
+		boxcenter = getadjustedboundingbox(my("label"), offset, my("fontsize"), my("fontfamily")); // labels bounding box
+		boxcenter = boxcenter_1 + .5 * (boxcenter_3 - boxcenter_1);
+		offset = offset + offset - boxcenter;
+		
+		drawtextbox(offset + my("customlabeloffset"), my("label"), my("fontsize"), my("fontfamily"), NADA, color->my("fontcolor"), bold-> false);
+
 		// Draw something after the button
 		my("drawafter");
+
+		// Debug draw
+		if('debuglevel > 2,
+			connect([my("hitbox")_1,my("hitbox")_3], color->[0,1,0]);
+			connect([my("hitbox")_2,my("hitbox")_4], color->[0,1,0]);
+			drawpoly(getboundingbox(my("label"), offset+my("customlabeloffset"), my("fontsize"), my("fontfamily")));
+		);
 	);
 	obj:"drawafter" := nada;
 	obj:"ishot" := if(my("show"),inrectangle(my("hitbox"),mouse().xy));
@@ -109,7 +123,7 @@ new ImageButton(coord,width,height,imgpath) := (
 		// Draw box and border
 		fill(
 			my("shape"),
-			color->if(my("ishot"),0.95*my("color"),my("color")),
+			color->if(mousedown&my("ishot"),0.95*my("color"),my("color")),
 			alpha->1
 		);
 		if(my("hasborder"), draw(

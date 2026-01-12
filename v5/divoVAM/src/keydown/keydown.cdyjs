@@ -1,4 +1,4 @@
-// v4
+// v5
 // Recent changes:
 // - added call to divomathUpdateResults() on "S"-Key
 // - added function to increment/decrement debuglevel with +/- keys
@@ -22,5 +22,5 @@ if(key() == "s" % key() == "S",
 	divomathUpdateResults();
 );
 
-if(key() == "+", 'debuglevel = 'debuglevel + 1; println("'debuglevel++: " + 'debuglevel));
+if(key() == "+" % key() == "_", 'debuglevel = 'debuglevel + 1; println("'debuglevel++: " + 'debuglevel));
 if(key() == "-", 'debuglevel = 'debuglevel - 1; println("'debuglevel--: " + 'debuglevel));

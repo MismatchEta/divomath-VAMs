@@ -1,6 +1,17 @@
-// v14
+// v23
 // last changes:
 // - added reset icon
+// - added unicode and map for greek letters
+// - added unicode for sideways u-shaped buttons
+// - added unicode for circled plus
+// - added unicode for cross mark
+// - added sub/superscript numbers
+// - added ICON showing a point on an arc (pointoncircle)
+// - added second paintbucket ICON (bucket2)
+// - added the numbers 13 to 19 to NUMERALS
+// - added TENSNUMERALS which contains the numerals of all tens (10,20,...)
+// - added BIGNUMBERNUMERALS with names of big numbers (million, billion, ...)
+// - added icons for reset, undo, stamp and measure angle in DZLMCOLORDARK
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -111,6 +122,8 @@ checkbox0=CB0 = unicode("2610");
 checkbox1=CB1 = unicode("2612");
 cdot=CDOT = " " + unicode("00B7") + " ";
 QUOTE = unicode("0022");
+CIRCLEDPLUS = unicode("2295");
+CROSSMARK = unicode("274C");
 LEFTARROW = unicode("2190");
 RIGHTARROW = unicode("2192");
 UPARROW = unicode("2191");
@@ -119,19 +132,70 @@ DOWNARROWTIPLEFT = unicode("21B2");
 DOWNARROWTIPRIGHT = unicode("21B3");
 ANTICLOCKWISEARROW = unicode("21BA");
 CLOCKWISEARROW = unicode("21BB");
+ANTICLOCKWISEARROWU = unicode("2B8C");
+CLOCKWISEARROWU = unicode("2B8E");
 
 ARROWS = [LEFTARROW, RIGHTARROW, UPARROW, DOWNARROW,
-DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
+DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW,
+ANTICLOCKWISEARROWU, CLOCKWISEARROWU];
+
+SUP=SUPERSCRIPT = {
+	"0" : unicode("2070"), "1" : unicode("00B9"),	"2" : unicode("00B2"),
+	"3" : unicode("00B3"), "4" : unicode("2074"),	"5" : unicode("2075"),
+	"6" : unicode("2076"), "7" : unicode("2077"),	"8" : unicode("2078"),
+	"9" : unicode("2079")
+};
+
+SUB=SUBSCRIPT = {
+	"0" : unicode("2080"), "1" : unicode("2081"),	"2" : unicode("2082"),
+	"3" : unicode("2083"), "4" : unicode("2084"),	"5" : unicode("2085"),
+	"6" : unicode("2086"), "7" : unicode("2087"),	"8" : unicode("2088"),
+	"9" : unicode("2089")
+};
+
+// C.2.1 | Greek letters
+GREEK = {
+  "a" : unicode("03B1"),  "A" : unicode("0391"),  // alpha
+  "b" : unicode("03B2"),  "B" : unicode("0392"),  // beta
+  "g" : unicode("03B3"),  "G" : unicode("0393"),  // gamma
+  "d" : unicode("03B4"),  "D" : unicode("0394"),  // delta
+  "e" : unicode("03B5"),  "E" : unicode("0395"),  // epsilon
+  "z" : unicode("03B6"),  "Z" : unicode("0396"),  // zeta
+  "h" : unicode("03B7"),  "H" : unicode("0397"),  // eta
+  "th": unicode("03B8"),  "TH": unicode("0398"),  // theta
+  "i" : unicode("03B9"),  "I" : unicode("0399"),  // iota
+  "k" : unicode("03BA"),  "K" : unicode("039A"),  // kappa
+  "l" : unicode("03BB"),  "L" : unicode("039B"),  // lambda
+  "m" : unicode("03BC"),  "M" : unicode("039C"),  // mu
+  "n" : unicode("03BD"),  "N" : unicode("039D"),  // nu
+  "x" : unicode("03BE"),  "X" : unicode("039E"),  // xi
+  "o" : unicode("03BF"),  "O" : unicode("039F"),  // omikron
+  "p" : unicode("03C0"),  "P" : unicode("03A0"),  // pi
+  "r" : unicode("03C1"),  "R" : unicode("03A1"),  // rho
+  "s" : unicode("03C3"),  "S" : unicode("03A3"),  // sigma
+  "t" : unicode("03C4"),  "T" : unicode("03A4"),  // tau
+  "y" : unicode("03C5"),  "Y" : unicode("03A5"),  // upsilon
+  "f" : unicode("03C6"),  "F" : unicode("03A6"),  // phi
+  "ch": unicode("03C7"), "CH" : unicode("03A7"),  // chi
+  "y" : unicode("03C8"),  "Y" : unicode("03A8"),  // psi
+  "w" : unicode("03C9"),  "W" : unicode("03A9")   // omega
+};
 
 // D | Images
 ICONS = {
-	"reset": "icon-reset.png",
-	"hand": "icon-hand.png",
-	"bucket": "icon-bucket.png",
-	"scissors": "icon-scissors.png",
-	"clap": "clap.png",
-	"snap": "snap.png",
-	"legs": "legs.png"
+	"reset" : "icon-reset.png",
+	"reset2" : "icon-reset-DZLMDARK.png",
+	"undo" : "icon-undo-DZLMDARK.png",
+	"stamp" : "icon-stamp-DZLMDARK.png",
+	"measure-angle" : "icon-measure-angle-DZLMDARK.png",
+	"hand" : "icon-hand.png",
+	"bucket" : "icon-bucket.png",
+	"scissors" : "icon-scissors.png",
+	"pointoncircle" : "icon-pointoncircle.png",
+	"bucket2" : "icon-paintbucket.png",
+	"clap" : "clap.png",
+	"snap" : "snap.png",
+	"legs" : "legs.png"
 };
 
 // E | Other
@@ -140,10 +204,18 @@ PI = 3.141592653589793238462643383279;
 PHI = (1 + sqrt(5)) / 2;
 
 NUMERALS = {
-	"1" : "eins", "2" : "zwei", "3" : "drei", "4" : "vier", "5" : "fünf",
+	"0" : "null", "1" : "eins", "2" : "zwei", "3" : "drei", "4" : "vier", "5" : "fünf",
 	"6" : "sechs", "7" : "sieben", "8" : "acht", "9" : "neun", "10" : "zehn", 
-	"11" : "elf", "12" : "zwölf"
+	"11" : "elf", "12" : "zwölf", "13" : "dreizehn", "14" : "vierzehn", "15" : "fünfzehn",
+	"16" : "sechzehn", "17" : "siebzehn", "18" : "achtzehn", "19" : "neunzehn"
 };
+
+TENSNUMERALS = {
+	"10" : "zehn", "20" : "zwanzig", "30" : "dreißig", "40" : "vierzig", "50" : "fünfzig",
+	 "60" : "sechzig", "70" : "siebzig", "80" : "achtzig", "90" : "neunzig"
+};
+
+BIGNUMBERNUMERALS = ["", "tausend", "Million", "Milliarde", "Billion", "Billiarde", "Trillion", "Trilliarde", "Quadrillion", "Quadrilliarde"];
 
 VALUEMAP = {
 	"1" : "Einser", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", 

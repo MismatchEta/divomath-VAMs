@@ -1,6 +1,7 @@
-// v21
+// v22
 // last changes:
 // - added web/SL controls
+// - removed parsing for URL param "separator"
 
 if(vam == "numbercards",
 
@@ -612,7 +613,7 @@ if(!usedivomath,
 	monte = if(!isundefined('urlparams:"color"), parse('urlparams:"color"), true);
 	showmontetoggle = if(!isundefined('urlparams:"colortoggle"), parse('urlparams:"colortoggle"), true);
 	alpha = if(!isundefined('urlparams:"alpha"), parse('urlparams:"alpha"), .2);
-	separator = if(!isundefined('urlparams:"separator"), parse('urlparams:"separator"), "");
+	separator = if(!isundefined('urlparams:"separator"), 'urlparams:"separator", "");
 );
 
 max = max(apply(edit,length(#))); // Get max length of digits for cards

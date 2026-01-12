@@ -1,4 +1,4 @@
-// v34
+// v35
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6,6 +6,7 @@
 // - added configurable state for initial state of pattern container (patternstate)
 // - added drawresetbutton as handle
 // - added interactable as handle
+// - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",

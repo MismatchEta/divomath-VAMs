@@ -1,4 +1,4 @@
-> v4.3.0
+> v5.2.3
 
 # divomath VAM Dokumentation
 
@@ -123,6 +123,33 @@ cindyjs:
 - groupingtype: *\<string>*
   - Gibt an, welche Gruppierungen mit Klick auf das Rechteckfeld eingestellt werden können. Keine = **"NONE"** | nur Zeilen = **"ROW"** | nur Spalten = **"COL"** | Beides = **"ROWCOL"**
   - default "ROWCOL"
+- coloredrowindex *\<int>*
+  - Index, derjenigen Zeile, ab der die Zeilen nach unten gefärbt werden sollen
+  - default NADA (keine Färbung)
+- coloredcolindex *\<int>*
+  - Index, derjenigen Spalte, ab der die Spalten nach unten gefärbt werden sollen
+  - default NADA (keine Färbung)
+- cuthorizontally *\<bool>*
+  - Flag, ob das Feld horizontal (__) geschnitten sein soll
+  - default false
+- cutvertically *\<bool>*
+  - Flag, ob das Feld horizontal ( | ) geschnitten sein soll
+  - default false
+- groupby *\<string>*
+  - gibt an, wonach die Elemente des Felds gruppiert sein sollen (eins von **"ROW"**, **"COLUMN"** oder **"NONE"**)
+  - default "NONE"
+- expressionposition *\[\<float>, \<float>]>*
+  - Position des Terms auf der Canvas als Punkt, e.g. **[3,1]**
+  - default NADA (automatische Positionierung)
+- expressionmoveable *\<bool>*
+  - Term-Anzeige beweglich oder nicht
+  - default false
+- verbalposition *\[\<float>, \<float>]>*
+  - Position der verbalen Beschreibung des Terms auf der Canvas als Punkt, e.g. **[3,1]**
+  - default NADA (automatische Positionierung)
+- verbalmoveable *\<bool>*
+  - verbale Termbeschreibung beweglich oder nicht
+  - default false
 
 ### Zustand: divisors
 
@@ -324,7 +351,15 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zusta
 
 ### Validierung: distributive
 
-> BISHER KEINE
+(seit 5.2.3) Folgende Bezeichner können aberufen werden:
+
+- rows            : Anzahl der eingestellten Zeilen
+- cols            : Anzahl der eingestellten Spalten
+- coloredrows     : Anzahl der gefärben Zeilen
+- coloredcols     : Anzahl der gefärben Spalten
+- cuthorizontally : bool, ob das Feld horizontal geschnitten ist
+- cutvertically   : bool, ob das Feld vertikal geschnitten ist
+- groupby         : Grupperinung der Elemente (ist eins von "ROW", "COLUMN", "NONE")
 
 ### Validierung: divisors
 
@@ -398,14 +433,18 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
 
 ## Changelog
 
+### v5.2.3
+- VAM:
+  - distributive:
+    - divomath state und result reporting implementiert (Validierung und Referenzierung)
 ### v5.2.0
 - VAM:
   - distributive:
     - Init Zustand **groupby**: Initialer Gruppierungszustand
-    - Init Zustand **expressionposition**: Initialer Gruppierungszustand
-
-
-
+    - Init Zustand **expressionposition**: Position der Term-Anzeige
+    - Init Zustand **expressionmoveable**: Term beweglich oder nicht
+    - Init Zustand **verbalposition**: Position der verbalen Termbeschreibung
+    - Init Zustand **verbalmoveable**: verbale Termbeschreibung beweglich oder nicht
     - visuelle Linie zeigt Zerschnitten-Zustand zusätzlich zu Abstand an
     - Darstellung der Texte geändert
     - Fix: einige String URL-Parameter nicht mehr parsen (gibt sonst NADA)

@@ -1,9 +1,15 @@
-// v1
+// v2
+// recent changes:
+// - draw border in darker highlightcolor (factor .7)
+
 new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
 	o:"type" = "Toggle";
-	
+
+	o:"circleoffset" = if(state,.5*[o:"width",0], [0,0]);
+	o:"animationtiming" = .05;
+
 	o:"cornerradius" = width;
 	o:"state" = if(!isundefined(state),state,false);
 	o:"highlightcolor" = DARKBLUE;
@@ -17,16 +23,13 @@ new Toggle(coord,width,state,label,fontsize) := (
 		);
 		draw(
 			my("shape"),
-			color->grey(0.5),
+			color->.7*my("highlightcolor"),
 			alpha->1
 		);
 
 		// Draw circle
 		regional(center);
-		center = my("coord")+[my("height"),my("height")] / 2,
-		if(my("state"), // move circle right, if toggled
-			center = center + [my("width")-my("height"),0]
-		);
+		center = my("coord")+[my("height"),my("height")] / 2 + my("circleoffset"),
 
 		fillcircle(
 			center,
@@ -42,16 +45,30 @@ new Toggle(coord,width,state,label,fontsize) := (
 			color->dzlmcolordark,
 			size->my("fontsize")
 		);
+
 		// Draw something after the button
 		my("drawafter");
 	);
 	
 	o:"click"	:= (
+		// Change state
 		set my("state", !my("state"));
+
+		// Animate position to match state
+		new animationobject(
+			self(),
+			"circleoffset",
+			my("circleoffset"),
+			my("circleoffset") + if(my("state"),1,-1)*[my("width")-my("height"),0], 
+			my("animationtiming"),
+			"accel"
+		);
+		
+		// Execute custom script
 		my("script");
 	);
 
-	o:"script" := ();
+	o:"script" := (); // Can have script in the same way as button has
 
 	o; // Return the toggle.
 );

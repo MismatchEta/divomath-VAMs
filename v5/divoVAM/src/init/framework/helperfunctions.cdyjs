@@ -1,7 +1,9 @@
-// v19
+// v21
 // Recent changes:
-// - defaultstateto(): added dm editor state ("cindyjs") as proper option
-// - numeral(): returns numeral to corresponding number up to 12, returns number itself if 13 or greater
+// - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
+// - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
+// - added convencience drawtextbox overwrite
+// - updated numerals function to return the numeral of ANY number in style of the Duden
 
 // Convenience functions
 // A | VAM object functions
@@ -421,9 +423,54 @@ ellipse(center, a, b, angle, t1, t2, steps) := (
 
   points;
 );
-
 ellipse(center, a, b, t1, t2) := ellipse(center, a, b, nada, t1, t2, nada);
 ellipse(center, a, b) := ellipse(center, a, b, nada, nada, nada, nada);
+
+// B.3 | Random geometry
+todeg(angle) := angle/PI*180;
+torad(angle) := angle/180*PI;
+
+directedangle(p1,p2,p3) := (
+	regional(v1,v2);
+	v1 = p1 - p2;
+	v2 = p3 - p2;
+	arctan2(v2_1, v2_2) - arctan2(v1_1, v1_2);
+);
+angle(p1,p2,p3) := (
+	regional(angle);
+	angle = directedangle(p1,p2,p3);
+	if(angle < 0, angle = angle + 2* PI, angle);
+);
+
+arc(p1,p2,p3,r) := ( // p1..p3 points, r distance from p2
+	regional(v1,v2,startangle,stopangle);
+	
+	// Corresponding vectors
+	v1 = p1 - p2;
+	v2 = p3 - p2;
+
+	// Calc start and stop angle of vectors
+	startangle = arctan2(v1_1, v1_2);
+	stopangle = arctan2(v2_1, v2_2);
+	if(stopangle < startangle, stopangle = stopangle + 2*PI); // Adjust stopangle to always be bigger than startangle
+
+	// Return
+	ellipse(p2,r,r,startangle, stopangle);
+);
+
+drawarc(p1,p2,p3,r) := connect(arc(p1,p2,p3,r), color->color);
+drawclosedarc(p1,p2,p3,r) := connect([p2] ++ arc(p1,p2,p3,r) ++ [p2], color->color);
+drawclosedarc(p1,p2,p3,r1,r2) := draw(polygon([p2] ++ arc(p1,p2,p3,r1) ++ [p2]) -- polygon([p2] ++ arc(p1,p2,p3,r2) ++ [p2]), color->color);
+fillclosedarc(p1,p2,p3,r) := fillpoly([p2] ++ arc(p1,p2,p3,r) ++ [p2], color->color, alpha->alpha);
+fillclosedarc(p1,p2,p3,r1,r2) := fill(polygon([p2] ++ arc(p1,p2,p3,r1) ++ [p2]) -- polygon([p2] ++ arc(p1,p2,p3,r2) ++ [p2]), color->color, alpha->alpha);
+drawangle(p1,p2,p3,r) := drawclosedarc(p1,p2,p3,r);
+drawangle(p1,p2,p3,r1,r2) := drawclosedarc(p1,p2,p3,r1,r2);
+fillangle(p1,p2,p3,r) := fillclosedarc(p1,p2,p3,r);
+fillangle(p1,p2,p3,r1,r2) := fillclosedarc(p1,p2,p3,r1,r2);
+
+vectorlength(vector) := sqrt(sum(apply(vector,#^2)));
+
+normalize(vector) := vector/vectorlength(vector);
 
 // C | Textboxes
 // (Overloaded) Gets the bounding rectangle for a text with given size and font
@@ -432,8 +479,17 @@ getboundingbox(text, coord, size, font) := (
 	bold = defaultto(bold, false);
 
 	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
-	pxsize = pxsize / screenresolution(); // divide by resolution to geht values in coords
-	rectangle(coord,pxsize_1,pxsize_2); // return rectangle
+	pxsize = pxsize / screenresolution(); // convert to world units
+	rectangle(coord,pxsize_1,pxsize_2); // return rectangle moved down by half the baseline to center box around text
+);
+// Get box, wherein text is actually horizontally centered
+getadjustedboundingbox(text, coord, size, font) := (
+	regional(pxsize);
+	bold = defaultto(bold, false);
+
+	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
+	pxsize = pxsize / screenresolution(); // convert to world units
+	rectangle(coord-[0,.5*pxsize_3],pxsize_1,pxsize_2); // return rectangle moved down by half the baseline to center box around text
 );
 
 // Draws a textbox with optional backgroundcolor
@@ -443,8 +499,9 @@ drawtextbox(coord, text, size, font, bgcolor) := (
 	alpha = defaultto(alpha, 1);
 
 	// fillpoly(getboundingbox(text, coord, size, font), color->bgcolor, alpha->alpha);
-	drawtext(coord, text, size->size, font->font, bold->bold);
+	drawtext(coord, text, size->size, font->font, bold->bold, color->color);
 );
+drawtextbox(coord, text) := drawtextbox(coord,text,NADA,NADA,NADA);
 
 // D | Commands
 or(list)  := (regional(x);x=false;forall(list,x=x%#));
@@ -697,5 +754,68 @@ getURLparams() := (
 	urlparams; // Return value
 );
 
+// Return type of input (as string)
+type(data) := (
+	regional(type);
+	if(isundefined(type) & islist(data), type = "list");
+	if(isundefined(type) & !isundefined(keys(data)), type = "object"); // undefined if not object or list (list returns next)
+	if(isundefined(type) & isstring(data), type = "string");
+	if(isundefined(type) & isinteger(data), type = "integer");
+	if(isundefined(type) & isreal(data), type = "float");
+	if(isundefined(type) & iscomplex(data), type = "complex");
+	if(isundefined(type) & isbool(data), type = "boolean");
+
+	type;
+);
+
 // String stuff
-numeral(number) := if(isundefined(NUMERALS:number), number, NUMERALS:number);
+//** Returns the numeral for a given number **//
+numeral(number) := (
+	regional(nameindex, value, numeral, subnumeral);
+	numeral = "";
+	number = abs(number); // get absolute value of number
+	nameindex = 1;
+	while(number>0, 
+		value = mod(number,1000); // get last 3 digits of number
+		number = floor(number/1000); // get remaining digits of number
+		subnumeral = "";
+
+		// handle triples from right to left
+		if(value != 0, // only crunch, if value needs to be written as numeral
+			// handle hundreds
+			if(value >= 100,
+				subnumeral = NUMERALS:((value+"")_1); // get hundreds
+				if(subnumeral == "eins", subnumeral = "ein"); // fix grammar inconsistency 
+				subnumeral = subnumeral + "hundert";
+			);
+			// handle tens
+			value = mod(value,100);
+			if(value > 0, // only crunch, if value has tens or units
+				if(value < 20,
+					subnumeral = subnumeral + NUMERALS:value;
+					if(subnumeral == "eins" & nameindex > 2, subnumeral = "eine"); // fix grammar inconsistency 
+					if(subnumeral == "eins" & nameindex == 2, subnumeral = "ein"); // fix grammar inconsistency 
+				, // else: value >= 20
+					subnumeral = subnumeral + if(mod(value,10)==1, "ein", if(mod(value,10) != 0, NUMERALS:(mod(value,10)), "")); // ones digit
+					subnumeral = subnumeral + if(mod(value,10)!=0, "und", "");
+					subnumeral = subnumeral + TENSNUMERALS:(10*floor(value/10)); // tens digit
+				);
+			);
+		);
+
+		// add big number numeral
+		if(subnumeral != "",
+			if(nameindex == 2, subnumeral = subnumeral + BIGNUMBERNUMERALS_nameindex); 
+			if(nameindex > 2, 
+				subnumeral = subnumeral + " " + BIGNUMBERNUMERALS_nameindex;
+				subnumeral = subnumeral + if(subnumeral_(-1) == "e", "n ", "en ");
+			);
+		);
+
+		// piece together
+		numeral = subnumeral + numeral;
+		nameindex = nameindex + 1; // next big number (million, billion, ...)
+	);
+	
+	numeral; // return
+);

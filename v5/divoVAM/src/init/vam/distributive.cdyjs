@@ -1,7 +1,11 @@
-// v6
+// v7
 // recent changes:
 // - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
-// - @TODO: implement new handles as web controls
+// - fixed grid not properly displaying cutting when first cut and then regrouped
+// - added line visualizing cut
+// - added handles for configuring initial grid state (coloring, cutting, grouping)
+// - made position of verbal description and expression properly configurable
+// - implemented divomath state and result reporting functions
 
 // Distributivfeld
 if(vam == "distributive",
@@ -15,12 +19,6 @@ configuration:
   ...
 =======================================================
 ";
-
-//@Overwrite
-NUMERALS:"13" = "dreizehn";NUMERALS:"14" = "vierzehn";NUMERALS:"15" = "fünfzehn";NUMERALS:"16" = "sechszehn";NUMERALS:"17" = "siebzehn";
-NUMERALS:"18" = "achtzehn";NUMERALS:"19" = "neunzehn";NUMERALS:"20" = "zwanzig";NUMERALS:"21" = "einundzwanzig";NUMERALS:"22" = "zweiundzwanzig";
-NUMERALS:"23" = "dreiundzwanzig";NUMERALS:"24" = "vierundzwanzig";NUMERALS:"25" = "fünfundzwanzig";NUMERALS:"26" = "sechsundzwanzig";
-NUMERALS:"27" = "siebenundzwanzig";NUMERALS:"28" = "achtundzwanzig";NUMERALS:"29" = "neunundzwanzig";NUMERALS:"30" = "dreißig";
 
 // VAM global vars
 regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atomverticalpadding, 'atomhorizontalpadding, 'groupspacing,
@@ -57,13 +55,74 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'toolbuttonx = defaultstateto("toolbuttonx", NADA); // Custom x coord for toolbutton (right edge if NADA)
 'toolbuttony = defaultstateto("toolbuttony", NADA); // Custom y coord for toolbutton (top edge if NADA)
 'groupingtype = defaultstateto("groupingtype", "ROWCOL"); // One of "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
+'coloredrowindex = defaultstateto("coloredrowindex", NADA);
+'coloredcolindex = defaultstateto("coloredcolindex", NADA);
+'cuthorizontally = defaultstateto("cuthorizontally", false);
+'cutvertically = defaultstateto("cutvertically", false);
+'groupby = defaultstateto("groupby", "NONE");
+'expressionposition = defaultstateto("expressionposition", NADA);
+'expressionmoveable = defaultstateto("expressionmoveable", false);
+'verbalposition = defaultstateto("verbalposition", NADA);
+'verbalmoveable = defaultstateto("verbalmoveable", false);
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
-divomathUpdateResults() := if(usedivomath,);
+divomathUpdateResults() := if(usedivomath,
+	divomathClearResult();
+	if('debuglevel>2, println("===updateResults()=================================================="));
+
+	divomathAddResult("rows", grid:"rows"); // Report number of rows
+	divomathAddResult("columns", grid:"rows"); // Report number of cols
+	divomathAddResult("coloredrows", grid:"flags":"color-row"); // Report number of colored rows
+	divomathAddResult("coloredcolumns", grid:"cols" - grid:"flags":"color-col" + 1); // Report number of colored cols
+	divomathAddResult("cuthorizontally", grid:"flags":"cut-row"); // Report wether grid is horiontally cut
+	divomathAddResult("cutvertically", grid:"flags":"cut-col"); // Report wether grid is vertically cut
+	divomathAddResult("groupby", grid:"flags":"group-by"); // Report grouping state
+
+	divomathSendResult();
+);
 
 // Overwrite divomath setState()
-divomathSetState() := ();
+divomathSetState() := (
+	regional(state);
+
+	// Build state object with current values
+	state = {
+		"gridposition" : grid:"coord",
+		"rows" : grid:"rows",
+		"cols" : grid:"cols",
+		"atomsize" : 'atomsize,
+		"atomradius" : 'atomradius,
+		"atomverticalpadding" : 'atomverticalpadding,
+		"atomhorizontalpadding" : 'atomhorizontalpadding,
+		"groupspacing" : 'groupspacing,
+		"cutwidth" : 'cutwidth,
+		"gridmoveable" : 'gridmoveable,
+		"buttonsize" : 'buttonsize,
+		"buttonpadding" : 'buttonpadding,
+		"animationspeed" : 'animationspeed,
+		"lblpadding" : 'lblpadding,
+		"fontsize" : 'fontsize,
+		"drawexpression" : 'drawexpression,
+		"drawverbal" : 'drawverbal,
+		"drawtoolbutton" : 'drawtoolbutton,
+		"tool" : grid:"tool",
+		"toolbuttonx" : grid:"toolbutton":"coord"_1,
+		"toolbuttony" : grid:"toolbutton":"coord"_2,
+		"groupingtype" : 'groupingtype,
+		"coloredrowindex" : grid:"flags":"color-row",
+		"coloredcolindex" : grid:"flags":"color-col",
+		"cuthorizontally" : grid:"flags":"cut-row",
+		"cutvertically" : grid:"flags":"cut-col",
+		"groupby" : grid:"flags":"group-by",
+		"expressionposition" : grid:"expression":"coord",
+		"expressionmoveable" : grid:"expression":"ismoveable",
+		"verbalposition" :  grid:"verbal":"coord",
+		"verbalmoveable" : grid:"verbal":"ismoveable"
+	};
+
+	state; // Return
+);
 
 // C | Classes
 // C.1 | Atom: Thing that gets arranged into a rectangle
@@ -112,7 +171,9 @@ new Grid(c, rows, cols) := (
 	grid:"cols" = max(1,cols);
 	grid:"verticalpadding" = 'atomverticalpadding;
 	grid:"horizontalpadding" = 'atomhorizontalpadding;
-	grid:"width" := my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
+	grid:"width" := (
+		my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
+	);
 	grid:"height" := my("grid")_(-1)_1:"coord"_2 + 'atomsize - my("coord")_2;
 	grid:"ismoveable" := 'gridmoveable % my("tool") != "hand";
 
@@ -128,9 +189,9 @@ new Grid(c, rows, cols) := (
 
 	// Scissors controls
 	grid:"linetreshold" = 'atomsize; // treshold, at which line is either VERTICAL or HORIZONTAL
-	grid:"linedirection" = nada; // "VERTICAL" or "HORIZONTAL" depending on linetreshold
-	grid:"linestart" = nada; // point
-	grid:"lineend" = nada; // point
+	grid:"linedirection" = NADA; // "VERTICAL" or "HORIZONTAL" depending on linetreshold
+	grid:"linestart" = NADA; // point
+	grid:"lineend" = NADA; // point
 
 	grid:"grid" = (
 		regional(atoms, newatom);
@@ -171,6 +232,24 @@ new Grid(c, rows, cols) := (
 				size->if(my("tool") == "bucket", 20, 4),
 				dashtype->if(my("tool") == "bucket", 0, 2);
 			);
+		);
+
+		// Draw persistent cutting line (HORIZONTAL)
+		if(my("flags"):"cut-row",
+			regional(refrow, point1, point2);
+			refrow = my("flags"):"color-row" + 1; // line above the cut
+			point1 = centroid([my("grid")_refrow_1:"coord",my("grid")_(refrow-1)_1:"coord"+[0,'atomsize]]);
+			point2 = centroid([my("grid")_refrow_(-1):"coord" + ['atomsize,0], my("grid")_(refrow-1)_(-1):"coord" + ['atomsize,'atomsize]]);
+			connect([point1, point2], color->grey(.5), size->1);
+		);
+
+		// Draw persistent cutting line (VERTICAL)
+		if(my("flags"):"cut-col",
+			regional(refcol, point1, point2);
+			refcol = my("flags"):"color-col"; // line to the right of cut
+			point1 = centroid([my("grid")_1_refcol:"coord",my("grid")_1_(refcol-1):"coord"+['atomsize,0]]);
+			point2 = centroid([my("grid")_(-1)_refcol:"coord"+[0,'atomsize],my("grid")_(-1)_(refcol-1):"coord"+['atomsize,'atomsize]]);
+			connect([point1, point2], color->grey(.5), size->1);
 		);
 
 		// Debug Draw
@@ -283,51 +362,9 @@ new Grid(c, rows, cols) := (
 		if(state == "COLUMN", state = "NONE";
 		)));
 		
-		// Update global state var
+		// Update global state var and move atoms into place
 		self():"flags":"group-by" = state;
-
-		// 1. Animate Atoms accordingly
-		regional(refatom, atom); 
-		refatom = my("grid")_1_1;
-		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
-			atom = my("grid")_rowindex_colindex;
-			if(state == "NONE" & 'groupingtype != "NONE",	  // second part for efficiency only
-				new animationobject(
-					atom,
-					"coord",
-					atom:"coord",
-					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding)],
-					'animationspeed,
-					"accel"
-				);
-			); // END IF NONE
-
-			if(state == "ROW",	 
-				new animationobject(
-					atom,
-					"coord",
-					atom:"coord",
-					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding+'groupspacing)],
-					'animationspeed,
-					"accel"
-				);
-			); // END IF ROW
-
-			if(state == "COLUMN",	 
-				new animationobject(
-					atom,
-					"coord",
-					atom:"coord",
-					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding+'groupspacing),(rowindex-1)*('atomsize+'atomverticalpadding)],
-					'animationspeed,
-					"accel"
-				);
-			); // END IF COLUMN
-
-		)); // END applys
-
-
-
+		my("groupatoms");
 
 		// Update expression text
 		my("updateexpression");
@@ -398,6 +435,31 @@ new Grid(c, rows, cols) := (
 	);
 
 // === Convenience and Eval Methods
+	grid:"groupatoms" := (
+		regional(state);
+		state = my("flags"):"group-by";
+
+		// 1. Animate Atoms accordingly
+		regional(refatom, atom, newcoord); 
+		refatom = my("grid")_1_1;
+		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
+			atom = my("grid")_rowindex_colindex;
+
+			// Calculate basis for new coordinate without groupspacing (ROW or COLUMN)
+			newcoord = refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),0]; // x-offset normally;
+			newcoord = newcoord + [0,(rowindex-1)*('atomsize+'atomhorizontalpadding)]; // x-offset with groupspacing;
+			if(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex, newcoord = newcoord + [0,'cutwidth]); // add row cutting offset
+			if(my("flags"):"cut-col" & my("flags"):"color-col" < colindex+1, newcoord = newcoord + ['cutwidth,0]); // add row cutting offset
+
+			// Adjust for row and column grouping
+			if(state == "ROW", newcoord = newcoord + [0,(rowindex-1)*'groupspacing]);
+			if(state == "COLUMN",newcoord = newcoord + [(colindex-1)*'groupspacing,0]);
+			
+			// Animate Atom
+			new animationobject(atom, "coord", atom:"coord", newcoord, 'animationspeed, "accel");
+		)); // END applys
+	);
+
 	grid:"repaint" := ( // Repaints all atoms in a grid based on color-flags
 		regional(rowthresh, colthresh, topleft, topright, bottomleft, bottomright);
 		
@@ -713,7 +775,7 @@ new Grid(c, rows, cols) := (
 
 		// Set expression handlers value and verbalvalue to built expressions
 		self():"expression":"value" = value + ""; // force string for value, might be int
-		self():"expression":"verbalvalue" = "Ich sehe " + verbal;
+		self():"verbal":"value" = "Ich sehe " + verbal;
 	);
 	
 	grid:"cutgrid" := ( //de-/increases atom distance at coloring edges... eval with 'activeindex for cut position and 'direction of cut from linedirection
@@ -789,6 +851,7 @@ new Grid(c, rows, cols) := (
 		vbar:"coord" := nada; // Gets assigned by my("alignbar")
 		vbar:"alignbar" := ( // (Re-)sets bar position
 			self():"coord" := my("parent"):"coord" + [my("parent"):"width" + my("padleft"), 0];
+			divomathUpdateResults();
 		);
 		vbar:"alignbar"; // Initially set coord
 
@@ -975,6 +1038,7 @@ new Grid(c, rows, cols) := (
 		btn:"script" := (
 			self():"value" = 1 + mod(my("value"),3);
 			self():"parent":"tool" = my("tool");
+			divomathUpdateResults();
 		);
 
 		btn; // Return toolbutton
@@ -984,8 +1048,10 @@ new Grid(c, rows, cols) := (
 	grid:"expression" = (
 		regional(expr); expr = {};
 		expr:"type" = "Expression";
-		expr:"parent" = self();
-		expr:"coord" := (screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"parent" = grid;
+		expr:"coord" := [3,20]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"fontsize" = 'fontsize;
+		expr:"font" = NADA;
 		expr:"width" := (
 			regional(box);
 			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
@@ -996,25 +1062,28 @@ new Grid(c, rows, cols) := (
 			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
 			box_4_2 - box_1_2;
 		);
-		expr:"value" = nada; //self():"rows" * self():"cols";
-		expr:"verbalvalue" = nada; //"Ich sehe was, was du nicht siehst."; 
-		expr:"fontsize" = 'fontsize;
-		expr:"font" = nada;
-	
-		expr:"hitbox" := getboundingbox(my("value"), my("coord"), my("fontsize"), my("font"));
-		expr:"shape" := my("hitbox");
-		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
-	
-		expr:"draw" := (
-			// Draw expression
-			if('drawexpression,
-				drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
-			);
+		expr:"baseline" := (
+			regional(size);
+			size = pixelsize(my("value"), size->my("fontsize"), font->my("font"));
+			size_3 / screenresolution();
+		);
 
-			// Draw verbal description
-			if('drawverbal,
-				drawtext(my("coord") - [0, if('drawexpression,my("height"),0)], my("verbalvalue"), font->my("font"), size->my("fontsize"));
-			);
+		expr:"value" = NADA; // gets set by grid:"updateexpression";
+
+		expr:"bgcolor" = DZLMCOLORLIGHT;
+		expr:"padding" = .3;
+		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
+		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
+		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ismoveable" = 'expressionmoveable;
+		expr:"getaction" = "move";
+
+		expr:"draw" := (
+			// Draw box
+			fill(my("shape"), color->my("bgcolor"));
+
+			// Draw expression	
+			drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
 
 			// Debug draw
 			if('debuglevel > 0,
@@ -1023,8 +1092,63 @@ new Grid(c, rows, cols) := (
 			);
 		);
 
+		expr:"move" := if(my("ismoveable"), self():"coord" = my("coord") + mousedelta);
+
 		expr; // Return expression
 	);
+
+	grid:"verbal" = (
+		regional(expr); expr = {};
+		expr:"type" = "Expression";
+		expr:"parent" = grid;
+		expr:"coord" := [3,2]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"fontsize" = 'fontsize;
+		expr:"font" = NADA;
+		expr:"width" := (
+			regional(box);
+			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
+			box_2_1 - box_1_1;
+		);
+		expr:"height" := (
+			regional(box);
+			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
+			box_4_2 - box_1_2;
+		);
+		expr:"baseline" := (
+			regional(size);
+			size = pixelsize(my("value"), size->my("fontsize"), font->my("font"));
+			size_3 / screenresolution();
+		);
+
+		expr:"value" = NADA; // gets set by grid:"updateexpression";
+
+		expr:"bgcolor" = DZLMCOLORLIGHT;
+		expr:"padding" = .3;
+		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
+		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
+		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ismoveable" = 'verbalmoveable;
+		expr:"getaction" = "move";
+
+		expr:"draw" :=	(
+			// Draw box
+			fill(my("shape"), color->my("bgcolor"));
+
+			// Draw expression	
+			drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
+
+			// Debug draw
+			if('debuglevel > 0,
+				drawpoly(my("shape"), color->[1,0,0]);
+				draw(my("coord"), color->[1,0,0]);
+			);
+		);
+
+		expr:"move" := if(my("ismoveable"), self():"coord" = my("coord") + mousedelta);
+
+		expr; // Return expression
+	);
+
 	grid:"updateexpression"; // Update value and verbalvalue for init
 
 	grid; // Return Grid
@@ -1034,9 +1158,19 @@ new Grid(c, rows, cols) := (
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	'gridposition = if(!isundefined('urlparams:"gridposition"), parse('urlparams:"gridposition"), [10,7]);
+	// Grid state settings
+	'gridposition = if(!isundefined('urlparams:"gridposition"), parse('urlparams:"gridposition"), [6,10]);
 	'rows = if(!isundefined('urlparams:"rows"), parse('urlparams:"rows"), 5);
 	'cols = if(!isundefined('urlparams:"cols"), parse('urlparams:"cols"), 7);
+	'coloredrowindex = if(!isundefined('urlparams:"coloredrowindex"), parse('urlparams:"coloredrowindex"), NADA);
+	'coloredcolindex = if(!isundefined('urlparams:"coloredcolindex"), parse('urlparams:"coloredcolindex"), NADA);
+	'cuthorizontally = if(!isundefined('urlparams:"cuthorizontally"), parse('urlparams:"cuthorizontally"), false);
+	'cutvertically = if(!isundefined('urlparams:"cutvertically"), parse('urlparams:"cutvertically"), false);
+	'groupby = if(!isundefined('urlparams:"groupby"), 'urlparams:"groupby", "NONE");
+	'groupingtype = if(!isundefined('urlparams:"groupingtype"), 'urlparams:"groupingtype", "ROWCOL"); // one of "NONE", "ROW", "COL", "ROWCOL"
+
+	// UI settings
+	// - Grid
 	'atomsize = if(!isundefined('urlparams:"size"), parse('urlparams:"size"), 1);
 	'atomradius = if(!isundefined('urlparams:"cornerradius"), parse('urlparams:"cornerradius"), .5);
 	'atomverticalpadding = if(!isundefined('urlparams:"verticalpadding"), parse('urlparams:"verticalpadding"), .1);
@@ -1044,10 +1178,22 @@ if(!usedivomath,
 	'groupspacing = if(!isundefined('urlparams:"groupspacing"), parse('urlparams:"groupspacing"), .2);
 	'cutwidth = if(!isundefined('urlparams:"cutwidth"), parse('urlparams:"cutwidth"), .3);
 	'gridmoveable = if(!isundefined('urlparams:"gridmoveable"), parse('urlparams:"gridmoveable"), true);
+	'animationspeed = if(!isundefined('urlparams:"animationspeed"), parse('urlparams:"animationspeed"), .15);
+	// - Button
 	'buttonsize = if(!isundefined('urlparams:"buttonsize"), parse('urlparams:"buttonsize"), 2);
 	'buttonpadding = if(!isundefined('urlparams:"buttonpadding"), parse('urlparams:"buttonpadding"), .4);
-	'lblpadding = if(!isundefined('urlparams:"lblpadding"), parse('urlparams:"lblpadding"), .3);
-	'animationspeed = if(!isundefined('urlparams:"animationspeed"), parse('urlparams:"animationspeed"), .15);
+	'toolbuttonx = if(!isundefined('urlparams:"toolbuttonx"), parse('urlparams:"toolbuttonx"), NADA); // right edge by default
+	'toolbuttony = if(!isundefined('urlparams:"toolbuttony"), parse('urlparams:"toolbuttony"), NADA); // top edge by default
+	'drawtoolbutton = if(!isundefined('urlparams:"drawtoolbutton"), parse('urlparams:"drawtoolbutton"), true);
+	'tool = if(!isundefined('urlparams:"tool"), 'urlparams:"tool", "hand"); // one of "hand", "bucket", "scissors"
+	// - Text
+	'fontsize = if(!isundefined('urlparams:"fontsize"), parse('urlparams:"fontsize"), 18);
+	'drawexpression = if(!isundefined('urlparams:"drawexpression"), parse('urlparams:"drawexpression"), true);
+	'expressionposition = if(!isundefined('urlparams:"expressionposition"), parse('urlparams:"expressionposition"), NADA);
+	'expressionmoveable = if(!isundefined('urlparams:"expressionmoveable"), parse('urlparams:"expressionmoveable"), false);
+	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), true);
+	'verbalposition = if(!isundefined('urlparams:"verbalposition"), parse('urlparams:"verbalposition"), NADA);
+	'verbalmoveable = if(!isundefined('urlparams:"verbalmoveable"), parse('urlparams:"verbalmoveable"), true);
 );
 
 // Build grid
@@ -1055,13 +1201,31 @@ if(!usedivomath,
 regional(grid);
 grid = new Grid('gridposition,'rows,'cols);
 
+// Set initial coloring
+if('coloredrowindex > 0, grid:"flags":"color-row" = 'coloredrowindex);
+if('coloredcolindex > 0, grid:"flags":"color-col" = grid:"cols" - 'coloredcolindex + 1);
+grid:"repaint";
 
+// Set initial cutting
+if('cuthorizontally & 'coloredrowindex > 0, eval(grid:"cutgrid", 'activeindex->grid:"flags":"color-row", 'direction->"HORIZONTAL"));
+if('cutvertically & 'coloredcolindex > 0, eval(grid:"cutgrid", 'activeindex->grid:"flags":"color-col", 'direction->"VERTICAL"));
+
+// Set initial grouping
+if('groupby != "NONE",
+	grid:"flags":"group-by" = 'groupby;
+	grid:"groupatoms";
+);
+
+// Set up expressions
+if(!isundefined('expressionposition), grid:"expression":"coord" = 'expressionposition);
+if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
+
+// Build
 obj = obj :> grid;
 obj = obj :> obj_1:"vbar";
 obj = obj :> obj_1:"hbar";
 if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
-obj = obj :> obj_1:"expression";
-
-
+if('drawexpression, obj = obj :> obj_1:"expression");
+if('drawverbal, obj = obj :> obj_1:"verbal");
 
 ); // End VAM if
