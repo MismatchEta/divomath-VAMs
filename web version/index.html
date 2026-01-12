@@ -110,7 +110,15 @@
       </select>
     </div>
     <div class="field">
-      <label for="distributive-groupingtype">Art der Gruppierung: </label>
+      <label for="distributive-groupby">Gruppierung bei Start: </label>
+      <select id="distributive-groupby" name="groupby">
+        <option value="NONE">Keine</option>
+        <option value="ROW">Zeilen</option>
+        <option value="COLUMN">Spalten</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-groupingtype">Erlaubte Arten der Gruppierung: </label>
       <select id="distributive-groupingtype" name="groupingtype">
         <option value="ROWCOL">Zeilen & Spalten</option>
         <option value="ROW">nur Zeilen</option>
