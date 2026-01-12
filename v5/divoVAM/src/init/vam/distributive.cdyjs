@@ -1,4 +1,4 @@
-// v7
+// v8
 // recent changes:
 // - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 // - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -6,6 +6,7 @@
 // - added handles for configuring initial grid state (coloring, cutting, grouping)
 // - made position of verbal description and expression properly configurable
 // - implemented divomath state and result reporting functions
+// - replaced divomathAddResult() with wrapper divomathPutResult()
 
 // Distributivfeld
 if(vam == "distributive",
@@ -46,7 +47,7 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'buttonsize = defaultstateto("buttonsize", 2); // Size of Tool button
 'buttonpadding = defaultstateto("buttonpadding", .4); // Size of Tool button;
 'animationspeed = defaultstateto("animationspeed", .15); // Speed modifier for animations
-'lblpadding = defaultstateto("labelpadding", .3); // Padding between output text and border;
+'lblpadding = defaultstateto("labelpadding", 10.3); // Padding between output text and border;
 'fontsize = defaultstateto("fontsize", 18); // Text size for text display
 'drawexpression = defaultstateto("drawexpression", true); // Draw value or dont
 'drawverbal = defaultstateto("drawverbal", true); // Draw verbal description or dont
@@ -71,13 +72,13 @@ divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
 	if('debuglevel>2, println("===updateResults()=================================================="));
 
-	divomathAddResult("rows", grid:"rows"); // Report number of rows
-	divomathAddResult("columns", grid:"rows"); // Report number of cols
-	divomathAddResult("coloredrows", grid:"flags":"color-row"); // Report number of colored rows
-	divomathAddResult("coloredcolumns", grid:"cols" - grid:"flags":"color-col" + 1); // Report number of colored cols
-	divomathAddResult("cuthorizontally", grid:"flags":"cut-row"); // Report wether grid is horiontally cut
-	divomathAddResult("cutvertically", grid:"flags":"cut-col"); // Report wether grid is vertically cut
-	divomathAddResult("groupby", grid:"flags":"group-by"); // Report grouping state
+	divomathPutResult("rows", grid:"rows"); // Report number of rows
+	divomathPutResult("columns", grid:"cols"); // Report number of cols
+	divomathPutResult("coloredrows", if(isundefined(grid:"flags":"color-row"),0,grid:"flags":"color-row")); // Report number of colored rows
+	divomathPutResult("coloredcolumns", if(isundefined(grid:"flags":"color-col"),0,grid:"cols" - grid:"flags":"color-col" + 1)); // Report number of colored cols
+	divomathPutResult("cuthorizontally", grid:"flags":"cut-row"); // Report wether grid is horiontally cut
+	divomathPutResult("cutvertically", grid:"flags":"cut-col"); // Report wether grid is vertically cut
+	divomathPutResult("groupby", QUOTE+grid:"flags":"group-by"+QUOTE); // Report grouping state
 
 	divomathSendResult();
 );
