@@ -1,4 +1,4 @@
-// v8
+// v9
 // recent changes:
 // - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 // - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -7,6 +7,7 @@
 // - made position of verbal description and expression properly configurable
 // - implemented divomath state and result reporting functions
 // - replaced divomathAddResult() with wrapper divomathPutResult()
+// - added call to divomathUpdateResults() when moving hbar
 
 // Distributivfeld
 if(vam == "distributive",
@@ -78,7 +79,7 @@ divomathUpdateResults() := if(usedivomath,
 	divomathPutResult("coloredcolumns", if(isundefined(grid:"flags":"color-col"),0,grid:"cols" - grid:"flags":"color-col" + 1)); // Report number of colored cols
 	divomathPutResult("cuthorizontally", grid:"flags":"cut-row"); // Report wether grid is horiontally cut
 	divomathPutResult("cutvertically", grid:"flags":"cut-col"); // Report wether grid is vertically cut
-	divomathPutResult("groupby", QUOTE+grid:"flags":"group-by"+QUOTE); // Report grouping state
+	divomathPutResult("groupby", grid:"flags":"group-by"); // Report grouping state
 
 	divomathSendResult();
 );
@@ -942,6 +943,7 @@ new Grid(c, rows, cols) := (
 		hbar:"coord" := nada; // Gets assigned by my("alignbar")
 		hbar:"alignbar" := ( // (Re-)sets bar position
 			self():"coord" := my("parent"):"coord" - [0, my("padup")];
+			divomathUpdateResults();
 		);
 		hbar:"alignbar"; // Initially set coord
 
