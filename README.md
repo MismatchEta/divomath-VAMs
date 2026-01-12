@@ -88,7 +88,7 @@ cindyjs:
   - Schalter, ob das gesamte Rechteckfeld verschoben werden kann.
   - default *true*
 - buttonsize: *\<float>*
-  - Die Größe der Werkzeug-Buttons.
+  - Die Größe der Werk18zeug-Buttons.
   - default 2
 - buttonpadding: *\<float>*
   - Abstand des Buttons zum oberen und rechten Rand.
@@ -99,6 +99,30 @@ cindyjs:
 - animationspeed: *\<float>*
   - Modifier für alle Animationen. Je größer, desto schneller laufen Animationen ab.
   - default .15
+- fonsize: *\<int>*
+  - Schriftgröße für Term- und Beschreibungsdarstellung.
+  - default 18
+- drawexpression: *\<bool>*
+  - Term zeichen oder nicht
+  - default true
+- drawverbal: *\<bool>*
+  - Verbale Beschreibung zeichnen oder nicht
+  - default true
+- drawtoolbutton: *\<bool>*
+  - Tool Button zeichnen oder nicht
+  - default true
+- tool: *\<string>*
+  - Eingestelltes Tool beim Starten des VAMs. Muss eins von **"hand"**, **"bucket"** oder **"scissors"** sein.
+  - default "hand"
+- toolbuttonx: *\<float>*
+  - x-Koordinate des Tool Buttons. Wenn nicht definiert (NADA), dann am rechten Rand (mit padding).
+  - default NADA
+- toolbuttony: *\<float>*
+  - y-Koordinate des Tool Buttons. Wenn nicht definiert (NADA), dann am oberen Rand (mit padding).
+  - default NADA
+- groupingtype: *\<string>*
+  - Gibt an, welche Gruppierungen mit Klick auf das Rechteckfeld eingestellt werden können. Keine = **"NONE"** | nur Zeilen = **"ROW"** | nur Spalten = **"COL"** | Beides = **"ROWCOL"**
+  - default "ROWCOL"
 
 ### Zustand: divisors
 
@@ -240,7 +264,8 @@ cindyjs:
   - **Beispiel**: Für **vertices**=[0,3,4] sowie **rows**=3 stellt ["1,2,2", "3,3,3", ""] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.
   - default ["", "", ...]
 - limit: *\<list>*
-  - Definiert, wie viele Polygone pro Band erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
+  - Definiert, wie viele Polygone pro Band 
+    - Init Zustand **fontsize**: erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
   - default [10,10,...] (potenziell 100 Bänder)
 - interactable: *\<bool>*
   - Konfiguriert, ob mit dem Container interagiert werden kann, i.e. ob dort Polygone verschoben, hinzugefügt oder entfernt werden können.
@@ -360,6 +385,7 @@ cindyjs:
     - true
   color: false
   colortoggle: true
+    - Init Zustand **fontsize**: 
   alpha: 0.5
   separator: .
 ```
@@ -371,6 +397,31 @@ Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird d
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+
+### v5.2.0
+- VAM:
+  - distributive:
+    - Init Zustand **groupby**: Initialer Gruppierungszustand
+    - Init Zustand **expressionposition**: Initialer Gruppierungszustand
+
+
+
+    - visuelle Linie zeigt Zerschnitten-Zustand zusätzlich zu Abstand an
+    - Darstellung der Texte geändert
+    - Fix: einige String URL-Parameter nicht mehr parsen (gibt sonst NADA)
+    - gelöscht: Init Zustand **lblpadding**
+
+### v5.1.0
+- VAM:
+  - distributive:
+    - Init Zustand **fontsize**: Schriftgröße für Term und verbale Beschreibung
+    - Init Zustand **drawexpression**: Term anzeigen
+    - Init Zustand **drawverbal**: Verbale Beschreibung des Terms anzeigen
+    - Init Zustand **drawtoolbutton**: Tool Button (nicht) anzeigen
+    - Init Zustand **tool**: Bei Start eingestelltes Tool
+    - Init Zustand **toolbuttonx**: x-Koordinate des Tool Buttons
+    - Init Zustand **toolbuttony**: y-Koordinate des Tool Buttons
+    - Init Zustand **groupingtype**: Welche Gruppierungen sind mit Klick möglich (Keine, Zeile, Spalte, Beide)
 
 ### v5.0.0
 - FW:

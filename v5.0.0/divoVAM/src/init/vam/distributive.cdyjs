@@ -1,6 +1,7 @@
-// v5
+// v6
 // recent changes:
-// - added web/SL controls
+// - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
+// - @TODO: implement new handles as web controls
 
 // Distributivfeld
 if(vam == "distributive",
@@ -14,6 +15,12 @@ configuration:
   ...
 =======================================================
 ";
+
+//@Overwrite
+NUMERALS:"13" = "dreizehn";NUMERALS:"14" = "vierzehn";NUMERALS:"15" = "fünfzehn";NUMERALS:"16" = "sechszehn";NUMERALS:"17" = "siebzehn";
+NUMERALS:"18" = "achtzehn";NUMERALS:"19" = "neunzehn";NUMERALS:"20" = "zwanzig";NUMERALS:"21" = "einundzwanzig";NUMERALS:"22" = "zweiundzwanzig";
+NUMERALS:"23" = "dreiundzwanzig";NUMERALS:"24" = "vierundzwanzig";NUMERALS:"25" = "fünfundzwanzig";NUMERALS:"26" = "sechsundzwanzig";
+NUMERALS:"27" = "siebenundzwanzig";NUMERALS:"28" = "achtundzwanzig";NUMERALS:"29" = "neunundzwanzig";NUMERALS:"30" = "dreißig";
 
 // VAM global vars
 regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atomverticalpadding, 'atomhorizontalpadding, 'groupspacing,
@@ -40,8 +47,16 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'gridmoveable = defaultstateto("gridmoveable", true); // Flag, if whole grid is moveable
 'buttonsize = defaultstateto("buttonsize", 2); // Size of Tool button
 'buttonpadding = defaultstateto("buttonpadding", .4); // Size of Tool button;
-'lblpadding = defaultstateto("labelpadding", .3); // Padding between output text and border;
 'animationspeed = defaultstateto("animationspeed", .15); // Speed modifier for animations
+'lblpadding = defaultstateto("labelpadding", .3); // Padding between output text and border;
+'fontsize = defaultstateto("fontsize", 18); // Text size for text display
+'drawexpression = defaultstateto("drawexpression", true); // Draw value or dont
+'drawverbal = defaultstateto("drawverbal", true); // Draw verbal description or dont
+'drawtoolbutton = defaultstateto("drawtoolbutton", true); // Draw button for changing tool
+'tool = defaultstateto("tool", "hand"); // Preset tool (one of "hand", "bucket" or "scissors")
+'toolbuttonx = defaultstateto("toolbuttonx", NADA); // Custom x coord for toolbutton (right edge if NADA)
+'toolbuttony = defaultstateto("toolbuttony", NADA); // Custom y coord for toolbutton (top edge if NADA)
+'groupingtype = defaultstateto("groupingtype", "ROWCOL"); // One of "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -105,8 +120,8 @@ new Grid(c, rows, cols) := (
 	grid:"cutwidth" = 'cutwidth;
 	grid:"flags" = {
 		"group-by": "NONE", // "NONE", "ROW" or "COLUMN" depending on how atoms should be visually grouped by increasing the padding
-		"color-row": nada, // MAX index of colored row
-		"color-col": nada, // MIN index of colored col
+		"color-row": NADA, // MAX index of colored row
+		"color-col": NADA, // MIN index of colored col
 		"cut-row": false, // flag, if row is cut (bigger gap)
 		"cut-col": false // flag, if column is cut (bigger gap)
 	};
@@ -252,59 +267,67 @@ new Grid(c, rows, cols) := (
 		regional(state);
 		state = my("flags"):"group-by";
 
-		if(state == "NONE", // group by "ROW"
-			// Increase y-coord of every atom in second row or higher
-			apply(1..my("rows"), rowindex, apply(my("grid")_rowindex, atom, 
-				// atom:"coord" = atom:"coord" + (rowindex-1)*[0,'groupspacing] // no animation
+		// 1. Set new state
+		if(state == "NONE",
+			if('groupingtype == "ROWCOL" % 'groupingtype == "ROW", state = "ROW"
+			,
+				if('groupingtype == "COL", state = "COLUMN");
+			);
+		, // else if
+		if(state == "ROW",
+			if('groupingtype == "ROWCOL" % 'groupingtype == "COL", state = "COLUMN"
+			,
+				state = "NONE";
+			);
+		, // else if
+		if(state == "COLUMN", state = "NONE";
+		)));
+		
+		// Update global state var
+		self():"flags":"group-by" = state;
+
+		// 1. Animate Atoms accordingly
+		regional(refatom, atom); 
+		refatom = my("grid")_1_1;
+		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
+			atom = my("grid")_rowindex_colindex;
+			if(state == "NONE" & 'groupingtype != "NONE",	  // second part for efficiency only
 				new animationobject(
 					atom,
 					"coord",
 					atom:"coord",
-					atom:"coord" + (rowindex-1)*[0,'groupspacing],
+					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding)],
 					'animationspeed,
 					"accel"
 				);
-			));
+			); // END IF NONE
 
-			// Update state
-			self():"flags":"group-by" = "ROW";
-		);
-
-		if(state == "ROW", // group by "COLUMN"
-			// Decrease y-coord of every atom in second row or higher
-			// Also increase x-coord of every atom in second col or higher
-			apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex, 
+			if(state == "ROW",	 
 				new animationobject(
-					my("grid")_rowindex_colindex,
+					atom,
 					"coord",
-					my("grid")_rowindex_colindex:"coord",
-					my("grid")_rowindex_colindex:"coord" - (rowindex-1)*[0,'groupspacing] + (colindex-1)*['groupspacing,0],
+					atom:"coord",
+					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding+'groupspacing)],
 					'animationspeed,
 					"accel"
 				);
-			));
+			); // END IF ROW
 
-			// Update state
-			self():"flags":"group-by" = "COLUMN";
-		);
-
-		if(state == "COLUMN", // ungroup ("NONE")
-			// Decrease x-coord of every atom in second col or higher
-			apply(my("grid"), row, apply(1..my("cols"), atomindex, 
-				// row_atomindex:"coord" = row_atomindex:"coord" - (atomindex-1)*['groupspacing,0] // no animation
+			if(state == "COLUMN",	 
 				new animationobject(
-					row_atomindex,
+					atom,
 					"coord",
-					row_atomindex:"coord",
-					row_atomindex:"coord" - (atomindex-1)*['groupspacing,0],
+					atom:"coord",
+					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding+'groupspacing),(rowindex-1)*('atomsize+'atomverticalpadding)],
 					'animationspeed,
 					"accel"
 				);
-			));
+			); // END IF COLUMN
 
-			// Update state
-			self():"flags":"group-by" = "NONE";
-		);
+		)); // END applys
+
+
+
 
 		// Update expression text
 		my("updateexpression");
@@ -930,16 +953,21 @@ new Grid(c, rows, cols) := (
 	);
 
 	// === UI: Tool button
-	grid:"tool" = "hand"; // Initial tools name
+	grid:"tool" = 'tool; // Initial tools name
 	grid:"toolbutton" := (
-		regional(btn);
-		btn = new Button((screenbounds()_2).xy - ('buttonsize+'buttonpadding) * [1,1], 'buttonsize, 'buttonsize, "", 14);
+		regional(btn, c);
+
+		c = (screenbounds()_2).xy - ('buttonsize+'buttonpadding) * [1,1];
+		if(!isundefined('toolbuttonx), c_1 = 'toolbuttonx);
+		if(!isundefined('toolbuttony), c_2 = 'toolbuttony);
+		btn = new Button(c, 'buttonsize, 'buttonsize, "", 14);
+
 		btn:"parent" = self();
 		btn:"center" := my("coord") + .5*[my("width"),my("height")];
 		btn:"imgscale" = .3;
-		btn:"value" = 1;
+		btn:"value" = {"hand":1,"bucket":2,"scissors":3}:'tool;
 		btn:"tool" := ["hand", "bucket", "scissors"]_(my("value"));
-	
+
 		btn:"drawafter" := (
 			drawimage(my("center"), ICONS:(my("tool")), scale->my("imgscale"));
 		);
@@ -970,7 +998,7 @@ new Grid(c, rows, cols) := (
 		);
 		expr:"value" = nada; //self():"rows" * self():"cols";
 		expr:"verbalvalue" = nada; //"Ich sehe was, was du nicht siehst."; 
-		expr:"fontsize" = 20;
+		expr:"fontsize" = 'fontsize;
 		expr:"font" = nada;
 	
 		expr:"hitbox" := getboundingbox(my("value"), my("coord"), my("fontsize"), my("font"));
@@ -979,10 +1007,14 @@ new Grid(c, rows, cols) := (
 	
 		expr:"draw" := (
 			// Draw expression
-			drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
+			if('drawexpression,
+				drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
+			);
 
 			// Draw verbal description
-			drawtext(my("coord") - [0, my("height")], my("verbalvalue"), font->my("font"), size->my("fontsize"));
+			if('drawverbal,
+				drawtext(my("coord") - [0, if('drawexpression,my("height"),0)], my("verbalvalue"), font->my("font"), size->my("fontsize"));
+			);
 
 			// Debug draw
 			if('debuglevel > 0,
@@ -1018,10 +1050,18 @@ if(!usedivomath,
 	'animationspeed = if(!isundefined('urlparams:"animationspeed"), parse('urlparams:"animationspeed"), .15);
 );
 
-obj = obj :> new Grid('gridposition,'rows,'cols);
+// Build grid
+// ==========
+regional(grid);
+grid = new Grid('gridposition,'rows,'cols);
+
+
+obj = obj :> grid;
 obj = obj :> obj_1:"vbar";
 obj = obj :> obj_1:"hbar";
-obj = obj :> obj_1:"toolbutton";
+if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
 obj = obj :> obj_1:"expression";
+
+
 
 ); // End VAM if

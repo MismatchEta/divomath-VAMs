@@ -9,7 +9,13 @@
             margin: 0px;
             padding: 0px;
         }
-        
+        #CSCanvas {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			width: 100%;
+			height: 100%;
+		}
         #CSConsole {
             background-color: #FAFAFA;
             border-top: 1px solid #333333;
@@ -2354,14 +2360,13 @@ obj = obj :> o;
 
 ;
 //VAM: distributive
-// v7
+// v6
 // recent changes:
 // - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 // - fixed grid not properly displaying cutting when first cut and then regrouped
 // - added line visualizing cut
 // - added handles for configuring initial grid state (coloring, cutting, grouping)
-// - made position of verbal description and expression properly configurable
-// - implemented divomath state and result reporting functions
+
 
 // Distributivfeld
 if(vam == "distributive",
@@ -2413,71 +2418,17 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'groupingtype = defaultstateto("groupingtype", "ROWCOL"); // One of "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
 'coloredrowindex = defaultstateto("coloredrowindex", NADA);
 'coloredcolindex = defaultstateto("coloredcolindex", NADA);
-'cuthorizontally = defaultstateto("cuthorizontally", false);
-'cutvertically = defaultstateto("cutvertically", false);
+'cuthorizontally = defaultstateto("cuthorizontally", true);
+'cutvertically = defaultstateto("cutvertically", true);
 'groupby = defaultstateto("groupby", "NONE");
-'expressionposition = defaultstateto("expressionposition", NADA);
-'expressionmoveable = defaultstateto("expressionmoveable", false);
-'verbalposition = defaultstateto("verbalposition", NADA);
-'verbalmoveable = defaultstateto("verbalmoveable", false);
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
 divomathUpdateResults() := if(usedivomath,
-	divomathClearResult();
-	if('debuglevel>2, println("===updateResults()=================================================="));
-
-	divomathAddResult("rows", grid:"rows"); // Report number of rows
-	divomathAddResult("columns", grid:"rows"); // Report number of cols
-	divomathAddResult("coloredrows", grid:"flags":"color-row"); // Report number of colored rows
-	divomathAddResult("coloredcolumns", grid:"cols" - grid:"flags":"color-col" + 1); // Report number of colored cols
-	divomathAddResult("cuthorizontally", grid:"flags":"cut-row"); // Report wether grid is horiontally cut
-	divomathAddResult("cutvertically", grid:"flags":"cut-col"); // Report wether grid is vertically cut
-	divomathAddResult("groupby", grid:"flags":"group-by"); // Report grouping state
-
-	divomathSendResult();
 );
 
 // Overwrite divomath setState()
 divomathSetState() := (
-	regional(state);
-
-	// Build state object with current values
-	state = {
-		"gridposition" : grid:"coord",
-		"rows" : grid:"rows",
-		"cols" : grid:"cols",
-		"atomsize" : 'atomsize,
-		"atomradius" : 'atomradius,
-		"atomverticalpadding" : 'atomverticalpadding,
-		"atomhorizontalpadding" : 'atomhorizontalpadding,
-		"groupspacing" : 'groupspacing,
-		"cutwidth" : 'cutwidth,
-		"gridmoveable" : 'gridmoveable,
-		"buttonsize" : 'buttonsize,
-		"buttonpadding" : 'buttonpadding,
-		"animationspeed" : 'animationspeed,
-		"lblpadding" : 'lblpadding,
-		"fontsize" : 'fontsize,
-		"drawexpression" : 'drawexpression,
-		"drawverbal" : 'drawverbal,
-		"drawtoolbutton" : 'drawtoolbutton,
-		"tool" : grid:"tool",
-		"toolbuttonx" : grid:"toolbutton":"coord"_1,
-		"toolbuttony" : grid:"toolbutton":"coord"_2,
-		"groupingtype" : 'groupingtype,
-		"coloredrowindex" : grid:"flags":"color-row",
-		"coloredcolindex" : grid:"flags":"color-col",
-		"cuthorizontally" : grid:"flags":"cut-row",
-		"cutvertically" : grid:"flags":"cut-col",
-		"groupby" : grid:"flags":"group-by",
-		"expressionposition" : grid:"expression":"coord",
-		"expressionmoveable" : grid:"expression":"ismoveable",
-		"verbalposition" :  grid:"verbal":"coord",
-		"verbalmoveable" : grid:"verbal":"ismoveable"
-	};
-
-	state; // Return
 );
 
 // C | Classes
@@ -2527,9 +2478,7 @@ new Grid(c, rows, cols) := (
 	grid:"cols" = max(1,cols);
 	grid:"verticalpadding" = 'atomverticalpadding;
 	grid:"horizontalpadding" = 'atomhorizontalpadding;
-	grid:"width" := (
-		my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
-	);
+	grid:"width" := my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
 	grid:"height" := my("grid")_(-1)_1:"coord"_2 + 'atomsize - my("coord")_2;
 	grid:"ismoveable" := 'gridmoveable % my("tool") != "hand";
 
@@ -2796,23 +2745,49 @@ new Grid(c, rows, cols) := (
 		state = my("flags"):"group-by";
 
 		// 1. Animate Atoms accordingly
-		regional(refatom, atom, newcoord); 
+		regional(refatom, atom); 
 		refatom = my("grid")_1_1;
 		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
 			atom = my("grid")_rowindex_colindex;
+			if(state == "NONE" & 'groupingtype != "NONE",	  // second part for efficiency only
+				new animationobject(
+					atom,
+					"coord",
+					atom:"coord",
+					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding)] +
+						if(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex, [0,'cutwidth], [0,0]) + // add row cutting offset
+						if(my("flags"):"cut-col" & my("flags"):"color-col" < colindex+1, ['cutwidth,0], [0,0]), // add row cutting offset
+					'animationspeed,
+					"accel"
+				);
+			); // END IF NONE
 
-			// Calculate basis for new coordinate without groupspacing (ROW or COLUMN)
-			newcoord = refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),0]; // x-offset normally;
-			newcoord = newcoord + [0,(rowindex-1)*('atomsize+'atomhorizontalpadding)]; // x-offset with groupspacing;
-			if(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex, newcoord = newcoord + [0,'cutwidth]); // add row cutting offset
-			if(my("flags"):"cut-col" & my("flags"):"color-col" < colindex+1, newcoord = newcoord + ['cutwidth,0]); // add row cutting offset
+			if(state == "ROW",
+				new animationobject(
+					atom,
+					"coord",
+					atom:"coord",
+					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding+'groupspacing)] +
+						if(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex, [0,'cutwidth], [0,0]) + // add row cutting offset
+						if(my("flags"):"cut-col" & my("flags"):"color-col" < colindex+1, ['cutwidth,0], [0,0]), // add row cutting offset
+					'animationspeed,
+					"accel"
+				);
+			); // END IF ROW
 
-			// Adjust for row and column grouping
-			if(state == "ROW", newcoord = newcoord + [0,(rowindex-1)*'groupspacing]);
-			if(state == "COLUMN",newcoord = newcoord + [(colindex-1)*'groupspacing,0]);
-			
-			// Animate Atom
-			new animationobject(atom, "coord", atom:"coord", newcoord, 'animationspeed, "accel");
+			if(state == "COLUMN",	 
+				new animationobject(
+					atom,
+					"coord",
+					atom:"coord",
+					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding+'groupspacing),(rowindex-1)*('atomsize+'atomverticalpadding)] +
+						if(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex, [0,'cutwidth], [0,0]) + // add row cutting offset
+						if(my("flags"):"cut-col" & my("flags"):"color-col" < colindex+1, ['cutwidth,0], [0,0]), // add row cutting offset
+					'animationspeed,
+					"accel"
+				);
+			); // END IF COLUMN
+
 		)); // END applys
 	);
 
@@ -3207,7 +3182,6 @@ new Grid(c, rows, cols) := (
 		vbar:"coord" := nada; // Gets assigned by my("alignbar")
 		vbar:"alignbar" := ( // (Re-)sets bar position
 			self():"coord" := my("parent"):"coord" + [my("parent"):"width" + my("padleft"), 0];
-			divomathUpdateResults();
 		);
 		vbar:"alignbar"; // Initially set coord
 
@@ -3394,7 +3368,6 @@ new Grid(c, rows, cols) := (
 		btn:"script" := (
 			self():"value" = 1 + mod(my("value"),3);
 			self():"parent":"tool" = my("tool");
-			divomathUpdateResults();
 		);
 
 		btn; // Return toolbutton
@@ -3518,10 +3491,10 @@ if(!usedivomath,
 	'gridposition = if(!isundefined('urlparams:"gridposition"), parse('urlparams:"gridposition"), [6,10]);
 	'rows = if(!isundefined('urlparams:"rows"), parse('urlparams:"rows"), 5);
 	'cols = if(!isundefined('urlparams:"cols"), parse('urlparams:"cols"), 7);
-	'coloredrowindex = if(!isundefined('urlparams:"coloredrowindex"), parse('urlparams:"coloredrowindex"), NADA);
-	'coloredcolindex = if(!isundefined('urlparams:"coloredcolindex"), parse('urlparams:"coloredcolindex"), NADA);
-	'cuthorizontally = if(!isundefined('urlparams:"cuthorizontally"), parse('urlparams:"cuthorizontally"), false);
-	'cutvertically = if(!isundefined('urlparams:"cutvertically"), parse('urlparams:"cutvertically"), false);
+	'coloredrowindex = if(!isundefined('urlparams:"coloredrowindex"), parse('urlparams:"coloredrowindex"), 0);
+	'coloredcolindex = if(!isundefined('urlparams:"coloredcolindex"), parse('urlparams:"coloredcolindex"), 0);
+	'cuthorizontally = if(!isundefined('urlparams:"cuthorizontally"), parse('urlparams:"cuthorizontally"), true);
+	'cutvertically = if(!isundefined('urlparams:"cutvertically"), parse('urlparams:"cutvertically"), true);
 	'groupby = if(!isundefined('urlparams:"groupby"), 'urlparams:"groupby", "NONE");
 	'groupingtype = if(!isundefined('urlparams:"groupingtype"), 'urlparams:"groupingtype", "ROWCOL"); // one of "NONE", "ROW", "COL", "ROWCOL"
 
@@ -3549,7 +3522,7 @@ if(!usedivomath,
 	'expressionmoveable = if(!isundefined('urlparams:"expressionmoveable"), parse('urlparams:"expressionmoveable"), false);
 	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), true);
 	'verbalposition = if(!isundefined('urlparams:"verbalposition"), parse('urlparams:"verbalposition"), NADA);
-	'verbalmoveable = if(!isundefined('urlparams:"verbalmoveable"), parse('urlparams:"verbalmoveable"), true);
+	'verbalmoveable = if(!isundefined('urlparams:"verbalmoveable"), parse('urlparams:"verbalmoveable"), false);
 );
 
 // Build grid
@@ -7664,7 +7637,7 @@ new DisplayHandler(coord) := (
 		height = (height_3 - height_1)_2;
 		height = height + 2 * toolbarmargin;
 	);
-	display:"boxradius" = .0;
+	display:"boxradius" = .2;
 	display:"boxpadding" = .2;
 	display:"boxshapes" := (
 		apply(1..my("rows"),
@@ -7675,11 +7648,7 @@ new DisplayHandler(coord) := (
 			lblwidth = lblwidth_2_1 - lblwidth_1_1;
 			bottomleftcoord = my("coord")-row*[0,my("boxpadding")+my("boxheight")] + col*[my("boxwidth")+2*toolbarmargin+lblwidth,0];
 
-			if(my("boxradius") == 0,
-				rectangle(bottomleftcoord, my("boxwidth"), my("boxheight"));
-			,
-				roundedrectangle(bottomleftcoord, my("boxwidth"), my("boxheight"), my("boxradius")));		
-			);
+			roundedrectangle(bottomleftcoord, my("boxwidth"), my("boxheight"), my("boxradius")));		
 	);
 	display:"boxhitboxes" := (
 		regional(boxes, shiftby);
@@ -7726,14 +7695,8 @@ new DisplayHandler(coord) := (
 		regional(currentlabel, pos, boundingbox, textheight, textwidth);
 		repeat(my("rows"),
 			// Draw boxes
-			if(my("boxradius") == 0,
-				fillpoly(my("boxshapes")_#, 
-					color->if(#==my("hotboxindex"),my("highlightcolor"),if(isodd(#),my("boxcolors")_1,my("boxcolors")_2))
-				);
-			,
-				fill(my("boxshapes")_#, 
-					color->if(#==my("hotboxindex"),my("highlightcolor"),if(isodd(#),my("boxcolors")_1,my("boxcolors")_2))
-				);
+			fill(my("boxshapes")_#, 
+				color->if(#==my("hotboxindex"),my("highlightcolor"),if(isodd(#),my("boxcolors")_1,my("boxcolors")_2))
 			);
 
 			// Draw labels
@@ -8120,6 +8083,7 @@ if(!true,
 );
 );
 
+
 ;
 
 </script>
@@ -8458,7 +8422,7 @@ var cdy = CindyJS({
   },
   angleUnit: "°",
   geometry: [
-    {name: "copyrighttext", type: "Button", pos: [4.0, 0.189873417721519, 0.14852163967966173], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
+    {name: "copyrighttext", type: "Button", pos: [4.0, 0.0949367088607595, 0.14852163967966173], color: [1.0, 1.0, 1.0], fillcolor: [0.278, 0.467, 0.522], fillalpha: 1.0, visible: false, pinned: true, script: "if(cindyjs, \n  javascript(\"window.open('\"+url+\"','_blank')\"),\n  openurl(url)\n);", text: "VAM by Leuders & Kortenkamp (DZLM), CC-BY-NC 4.0", textsize: 8.0}
   ],
   animation: {
     autoplay: false,
@@ -8470,10 +8434,8 @@ var cdy = CindyJS({
   autoplay: false,
   animcontrols: false,
   ports: [{
-    width: 897,
-    height: 504,
     id: "CSCanvas",
-    transform: [{visibleRect: [-1.7258704824220432, 22.351088099515103, 36.49896464677728, 0.873588762707454]}],
+    transform: [{visibleRect: [-1.7258704824220432, 22.351088099515103, 36.49896464677728, 0.23437747292151204]}],
     axes: true,
     grid: 2.5,
     background: "rgb(255,255,255)"

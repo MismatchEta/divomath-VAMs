@@ -41,6 +41,7 @@ body {
 .btn-vam-divisors       { background: linear-gradient(135deg, #388e3c, #a5d6a7); }
 .btn-vam-numbercards    { background: linear-gradient(135deg, #f57c00, #ffcc80); }
 .btn-vam-percentagebar  { background: linear-gradient(135deg, #7c00f0, #b5d6f6); }
+.btn-vam-thales         { background: linear-gradient(135deg, #0085e0, #a5d6a7); }
 
 /* Modal */
 

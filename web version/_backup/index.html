@@ -9,16 +9,6 @@
   <h1>Virtuelle Arbeitsmittel</h1>
   <p>Wähle ein Arbeitsmittel, konfiguriere weitere Parameter im Popup.</p>
 
-  <form id="generalconfigForm">
-    <div class="field">
-      <label for="vam-fullscreen">VAM im Vollbild anzeigen: </label>
-      <select id="vam-fullscreen" name="fullscreen">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-  </form>
-
   <div class="button-grid">
     <button class="image-button btn-vam-distributive"
             data-first-key="vam"
@@ -74,52 +64,18 @@
 
   <!-- Templates -->
   <template id="tmpl-distributive">
-    <h3>Zustand des Rechteckfeldes</h3>
     <div class="field">
-      <label for="distributive-gridposition">Position in der Form [x,y]: </label>
+      <label for="distributive-gridposition">Position: </label>
       <input type="text" id="distributive-gridposition" name="gridposition" placeholder="[10,7]">
     </div>
     <div class="field">
-      <label for="distributive-rows">Anzahl derZeilen: </label>
+      <label for="distributive-rows">Zeilen: </label>
       <input type="number" min="0" id="distributive-rows" name="rows" placeholder="5">
     </div>
     <div class="field">
-      <label for="distributive-cols">Anzahl der Spalten: </label>
+      <label for="distributive-cols">Spalten: </label>
       <input type="number" min="0" id="distributive-cols" name="cols" placeholder="7">
     </div>
-    <div class="field">
-      <label for="distributive-coloredrowindex">Anzahl gefärbter Zeilen: </label>
-      <input type="number" min="0" id="distributive-coloredrowindex" name="coloredrowindex" placeholder="0">
-    </div>
-    <div class="field">
-      <label for="distributive-coloredcolindex">Anzahl gefärbter Spalten: </label>
-      <input type="number" min="0" id="distributive-coloredcolindex" name="coloredcolindex" placeholder="0">
-    </div>
-    <div class="field">
-      <label for="distributive-cuthorizontally">Waagerecht zerschneiden: </label>
-      <select id="distributive-cuthorizontally" name="cuthorizontally">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="distributive-cutvertically">Senkrecht zerschneiden: </label>
-      <select id="distributive-cutvertically" name="cutvertically">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="distributive-groupingtype">Art der Gruppierung: </label>
-      <select id="distributive-groupingtype" name="groupingtype">
-        <option value="ROWCOL">Zeilen & Spalten</option>
-        <option value="ROW">nur Zeilen</option>
-        <option value="COL">nur Spalten</option>
-        <option value="NONE">Keine</option>
-      </select>
-    </div>
-    <h3>UI Einstellungen</h3>
-    <h4>- Look & Feel Rechteckfeld</h4>
     <div class="field">
       <label for="distributive-atomsize">Größe: </label>
       <input type="text" id="distributive-atomsize" name="size" placeholder="1">
@@ -152,12 +108,7 @@
       </select>
     </div>
     <div class="field">
-      <label for="distributive-animationspeed">Timing (Animation): </label>
-      <input type="text" id="distributive-animationspeed" name="animationspeed" placeholder=".15">
-    </div>
-    <h4>- Look & Feel Button</h4>
-    <div class="field">
-      <label for="distributive-buttonsize">Größe: </label>
+      <label for="distributive-buttonsize">Buttongröße: </label>
       <input type="text" id="distributive-buttonsize" name="buttonsize" placeholder=".2">
     </div>
     <div class="field">
@@ -165,70 +116,13 @@
       <input type="text" id="distributive-buttonpadding" name="buttonpadding" placeholder=".4">
     </div>
     <div class="field">
-      <label for="distributive-toolbuttonx">x-Koordinate Button: </label>
-      <input type="text" id="distributive-toolbuttonx" name="toolbuttonx" placeholder="AUTOALIGN">
+      <label for="distributive-lblpadding">Abstand Text-Rand: </label>
+      <input type="text" id="distributive-lblpadding" name="lblpadding" placeholder=".3">
     </div>
     <div class="field">
-      <label for="distributive-toolbuttony">y-Koordinate Button: </label>
-      <input type="text" id="distributive-toolbuttony" name="toolbuttony" placeholder="AUTOALIGN">
+      <label for="distributive-animationspeed">Timing (Animation): </label>
+      <input type="text" id="distributive-animationspeed" name="animationspeed" placeholder=".15">
     </div>
-    <div class="field">
-      <label for="distributive-drawtoolbutton">Button anzeigen: </label>
-      <select id="distributive-drawtoolbutton" name="drawtoolbutton">
-        <option value="true">Ja</option>
-        <option value="false">Nein</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="distributive-tool">Bei Start ausgewähltes Tool: </label>
-      <select id="distributive-tool" name="tool">
-        <option value="hand">Hand</option>
-        <option value="bucket">Farbeimer</option>
-        <option value="scissors">Schere</option>
-      </select>
-    </div>
-    <h4>- Look & Feel Text</h4>
-    <div class="field">
-      <label for="distributive-fontsize">Textgröße: </label>
-      <input type="text" id="distributive-fontsize" name="fontsize" placeholder="18">
-    </div>    
-    <div class="field">
-      <label for="distributive-drawexpression">Term anzeigen: </label>
-      <select id="distributive-drawexpression" name="drawexpression">
-        <option value="true">Ja</option>
-        <option value="false">Nein</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="distributive-expressionposition">Position des Terms: </label>
-      <input type="text" id="distributive-expressionposition" name="expressionposition" placeholder="AUTOALIGN">
-    </div>
-    <div class="field">
-      <label for="distributive-expressionmoveable">Term verschiebbar: </label>
-      <select id="distributive-expressionmoveable" name="expressionmoveable">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="distributive-drawverbal">Verbale Beschreibung anzeigen: </label>
-      <select id="distributive-drawverbal" name="drawverbal">
-        <option value="true">Ja</option>
-        <option value="false">Nein</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="distributive-verbalposition">Position der verbalen Beschreibung: </label>
-      <input type="text" id="distributive-verbalposition" name="verbalposition" placeholder="AUTOALIGN">
-    </div>
-    <div class="field">
-      <label for="distributive-verbalmoveable">Verbale Beschreibung verschiebbar: </label>
-      <select id="distributive-verbalmoveable" name="verbalmoveable">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-    
     <button type="submit">VAM erzeugen</button>
   </template>
 
@@ -586,6 +480,10 @@
       </select>
     </div>
 
+
+
+
+
     <div class="field">
       <label for="thales-drawcenter">Mittelpunkt von AB zeichnen: </label>
       <select id="thales-drawcenter" name="drawcenter">
@@ -614,10 +512,10 @@
       <input type="text" id="thales-constructionbuttoncoord" name="constructionbuttoncoord" placeholder="AUTOALIGN">
     </div>
     <div class="field">
-      <label for="thales-softc">Robust construction: </label>
+      <label for="thales-softc">Soft construction: </label>
       <select id="thales-softc" name="softc">
-        <option value="false">Nein</option>
         <option value="true">Ja</option>
+        <option value="false">Nein</option>
       </select>
     </div>
     <div class="field">
@@ -774,61 +672,12 @@
       <label for="thales-imgoffset">Offset für Toggle Bilder (CindyJS Workaround): </label>
       <input type="text" id="thales-imgoffset" name="imgoffset" placeholder="[0,.65]">
     </div>
-    <div class="field">
-      <label for="thales-stampbuttonimage">Bild für den Stempel-Button: </label>
-      <select id="thales-stampbuttonimage" name="stampbuttonimage">
-        <option value="stamp">Stempeln</option>
-        <option value="measure-angle">Winkel messen</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="thales-stampmode">Stempel-Modus: </label>
-      <select id="thales-stampmode" name="stampmode">
-        <option value="stamp">Stempeln</option>
-        <option value="trace">Spur</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="thales-drawtrace">Trace zu Beginn einschalten: </label>
-      <select id="thales-drawtrace" name="drawtrace">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="thales-gammalistcoord">Referenzposition für Messwerttabelle: </label>
-      <input type="text" id="thales-gammalistcoord" name="gammalistcoord" placeholder="AUTOALIGN">
-    </div>
-    <div class="field">
-      <label for="thales-displayanglefontsize">Schriftgröße der Messwerttabelle: </label>
-      <input type="text" id="thales-displayanglefontsize" name="displayanglefontsize" placeholder="24">
-    </div>
-    <div class="field">
-      <label for="thales-displayanglefully">Zeige Winkel mit &quot;gamma=..&quot; in MW-Tabelle: </label>
-      <select id="thales-displayanglefully" name="displayanglefully">
-        <option value="false">Nein</option>
-        <option value="true">Ja</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="thales-generalsnapsize">Genereller Magnet für Gamma (in Grad): </label>
-      <input type="text" id="thales-generalsnapsize" name="generalsnapsize" placeholder="5">
-    </div>
-    <div class="field">
-      <label for="thales-generalsnapdifference">Empfindlichkeit des generellen Magneten (in Grad): </label>
-      <input type="text" id="thales-generalsnapdifference" name="generalsnapdifference" placeholder=".5">
-    </div>
-    <div class="field">
-      <label for="thales-defaultanglesizes">Darstellung der Winkelsektoren (als [a,b,g,g1,g2]): </label>
-      <input type="text" id="thales-defaultanglesizes" name="defaultanglesizes" placeholder="[3,3,2,3,3]">
-    </div>
-
 
     <button type="submit">VAM erzeugen</button>
   </template>
   
   <script>
-    let baseUrl;
+    const baseUrl = 'https://abako.dzlm.de/cindy/vam/divoVAM.html';
 
     const backdrop = document.getElementById('modalBackdrop');
     const modal = document.getElementById('modal');
@@ -867,13 +716,6 @@
     backdrop.addEventListener('submit', e => {
       if (e.target.id !== 'configForm') return;
       e.preventDefault();
-      
-      // Base Config einsammeln
-      baseUrl = 'https://abako.dzlm.de/cindy/vam/'
-      if(document.getElementById('vam-fullscreen').value === "false")
-        baseUrl += 'divoVAM.html';
-      else
-        baseUrl += 'divoVAM-full.html';
 
       const form = e.target;
       const params = [];

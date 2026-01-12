@@ -2,6 +2,10 @@
 - in VAM überführen
 
 # strapwork
+## 11.12.2025
+- Button sollte nicht mit size skalieren sondern feste Größe haben, oder Bild skaliert mit
+- Separator verschiebt sich seltsam, wenn man scrollt und Folien wechselt
+
 ## 27.11.2025
 - **27.11.2025** normaler Container soll auch manchmal nicht interagierbar sein
 
@@ -41,7 +45,6 @@
 - Wenn Patterncontainer reingezogen, werden die Polygone getauscht, weil immer an Mauszeiger eingefügt wird.
 - Wunsch: Patterncontainer Zeilen immer so viele wie richtiger Container
 
-
 # divisors
 ## früher
 - **erledigt** Schieberegler (war ausgeblendet) wird bei vor/zurück wieder eingeblendet
@@ -53,20 +56,31 @@
 
 
 # distributive
+## 15.12.2025
+- **erledigt, 15.12.2025** neues Tool (kreativ zerlegen, 24.11.2025, s.u.) brauchen wir nicht mehr
+- **erledigt, 15.12.2025** Text und Term präsenter und getrennt
+- **erledigt, 07.01.2025** Text und Term Position konfigurierbar (aber nur in divomath)
+- **15.12.2025, erledigt** Schnittlinie visuell anzeigen (nicht nur Lücke) (noch nicht, die Damen überlegen nochmal)
+- **15.12.2025, erledigt** Voreinstellung des Felds (was ist gefärbt? was geschnitten? Sind die Reihen geteilt? in divomath)
+- **erledigt, 07.01.2025** Referenzierung implementieren
+- **erledigt, 07.01.2025** Validierung implementieren
+
 ## 24.11.2025
-- neue Version: (Kreativ zerlegen)
+- **brauchen wir alles nicht mehr** neue Version: (Kreativ zerlegen)
     - im Prinzip genauso, aber man kann in jede Richtung 2 mal schneiden.
     - Färben umbauen, orange Markierung zeigt Farbe in der gerade markiert würde
     - Farben spalten und zeilenweise vordefiniert, werden nacheinander genutzt.
     - Nach links und rechts (bzw. oben und unten) Färben noch überlegen
 - alte Version:
-    - Voreinstellen, ob Text angezeigt oder nicht
-    - Textgröße änderbar, damit nicht über Button liegt (oder sinnvoll automatisch machen)
-    - Voreinstellung des Felds (was ist gefärbt? Sind die Reihen geteilt?)
-    - Position des Buttons einstellbar
-    - Zahlen ausschreiben bis 30.
-    - BUG: Wenn bei (auseinandergeschobene Reihen) neue Reihen hinzugefügt werden, dann sind die neuen manchmal zusammgedrängt
-    - Einstellbar, ob man in Spalten und Zeilen Gruppieren kann oder NUR zeilenweise
+    - **27.11.2025, erledigt** Voreinstellen, ob Text angezeigt oder nicht
+    - **27.11.2025, erledigt** Einstellbar, ob Toolbutton verfügbar
+    - **27.11.2025, erledigt** Initiales Werkzeug voreinstellbar
+    - **27.11.2025, erledigt** Textgröße änderbar, damit nicht über Button liegt (oder sinnvoll automatisch machen)
+    - **27.11.2025, erledigt** Zahlen ausschreiben bis 30.
+    - **27.11.2025, erledigt** Position des Buttons einstellbar
+    - **27.11.2025, erledigt** Einstellbar, ob man in Spalten und Zeilen gruppieren kann oder NUR zeilenweise
+    - **27.11.2025, könnte sich mit einstellbarer Gruppierung erledigt haben, da Animation neu** BUG: Wenn bei (auseinandergeschobene Reihen) neue Reihen hinzugefügt werden, dann sind die neuen manchmal zusammengedrängt
+
 
 ## früher
 - **erledigt** Färben anders: Zeilenweises Markieren färbt markierte Spalten (nach RICHTUNG auffüllen, wenn in Mitte), und umgekehrt
