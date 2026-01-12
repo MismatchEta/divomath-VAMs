@@ -1,4 +1,4 @@
-() => ({ // ***build 145 | 2025-11-28T21:21:36.360Z***
+() => ({ // ***build 147 | 2026-01-12T11:45:09.845Z***
 scripts: {
     draw: 
 `// v4
@@ -42,9 +42,20 @@ if(usedivomath & 'firstdraw, divomathUpdateResults());
 `,
 
     init: 
-`// v14
+`// v23
 // last changes:
 // - added reset icon
+// - added unicode and map for greek letters
+// - added unicode for sideways u-shaped buttons
+// - added unicode for circled plus
+// - added unicode for cross mark
+// - added sub/superscript numbers
+// - added ICON showing a point on an arc (pointoncircle)
+// - added second paintbucket ICON (bucket2)
+// - added the numbers 13 to 19 to NUMERALS
+// - added TENSNUMERALS which contains the numerals of all tens (10,20,...)
+// - added BIGNUMBERNUMERALS with names of big numbers (million, billion, ...)
+// - added icons for reset, undo, stamp and measure angle in DZLMCOLORDARK
 
 // Predefined Constants
 // - Convention: Captilize constants
@@ -155,6 +166,8 @@ checkbox0=CB0 = unicode("2610");
 checkbox1=CB1 = unicode("2612");
 cdot=CDOT = " " + unicode("00B7") + " ";
 QUOTE = unicode("0022");
+CIRCLEDPLUS = unicode("2295");
+CROSSMARK = unicode("274C");
 LEFTARROW = unicode("2190");
 RIGHTARROW = unicode("2192");
 UPARROW = unicode("2191");
@@ -163,19 +176,70 @@ DOWNARROWTIPLEFT = unicode("21B2");
 DOWNARROWTIPRIGHT = unicode("21B3");
 ANTICLOCKWISEARROW = unicode("21BA");
 CLOCKWISEARROW = unicode("21BB");
+ANTICLOCKWISEARROWU = unicode("2B8C");
+CLOCKWISEARROWU = unicode("2B8E");
 
 ARROWS = [LEFTARROW, RIGHTARROW, UPARROW, DOWNARROW,
-DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW];
+DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW,
+ANTICLOCKWISEARROWU, CLOCKWISEARROWU];
+
+SUP=SUPERSCRIPT = {
+	"0" : unicode("2070"), "1" : unicode("00B9"),	"2" : unicode("00B2"),
+	"3" : unicode("00B3"), "4" : unicode("2074"),	"5" : unicode("2075"),
+	"6" : unicode("2076"), "7" : unicode("2077"),	"8" : unicode("2078"),
+	"9" : unicode("2079")
+};
+
+SUB=SUBSCRIPT = {
+	"0" : unicode("2080"), "1" : unicode("2081"),	"2" : unicode("2082"),
+	"3" : unicode("2083"), "4" : unicode("2084"),	"5" : unicode("2085"),
+	"6" : unicode("2086"), "7" : unicode("2087"),	"8" : unicode("2088"),
+	"9" : unicode("2089")
+};
+
+// C.2.1 | Greek letters
+GREEK = {
+  "a" : unicode("03B1"),  "A" : unicode("0391"),  // alpha
+  "b" : unicode("03B2"),  "B" : unicode("0392"),  // beta
+  "g" : unicode("03B3"),  "G" : unicode("0393"),  // gamma
+  "d" : unicode("03B4"),  "D" : unicode("0394"),  // delta
+  "e" : unicode("03B5"),  "E" : unicode("0395"),  // epsilon
+  "z" : unicode("03B6"),  "Z" : unicode("0396"),  // zeta
+  "h" : unicode("03B7"),  "H" : unicode("0397"),  // eta
+  "th": unicode("03B8"),  "TH": unicode("0398"),  // theta
+  "i" : unicode("03B9"),  "I" : unicode("0399"),  // iota
+  "k" : unicode("03BA"),  "K" : unicode("039A"),  // kappa
+  "l" : unicode("03BB"),  "L" : unicode("039B"),  // lambda
+  "m" : unicode("03BC"),  "M" : unicode("039C"),  // mu
+  "n" : unicode("03BD"),  "N" : unicode("039D"),  // nu
+  "x" : unicode("03BE"),  "X" : unicode("039E"),  // xi
+  "o" : unicode("03BF"),  "O" : unicode("039F"),  // omikron
+  "p" : unicode("03C0"),  "P" : unicode("03A0"),  // pi
+  "r" : unicode("03C1"),  "R" : unicode("03A1"),  // rho
+  "s" : unicode("03C3"),  "S" : unicode("03A3"),  // sigma
+  "t" : unicode("03C4"),  "T" : unicode("03A4"),  // tau
+  "y" : unicode("03C5"),  "Y" : unicode("03A5"),  // upsilon
+  "f" : unicode("03C6"),  "F" : unicode("03A6"),  // phi
+  "ch": unicode("03C7"), "CH" : unicode("03A7"),  // chi
+  "y" : unicode("03C8"),  "Y" : unicode("03A8"),  // psi
+  "w" : unicode("03C9"),  "W" : unicode("03A9")   // omega
+};
 
 // D | Images
 ICONS = {
-	"reset": "icon-reset.png",
-	"hand": "icon-hand.png",
-	"bucket": "icon-bucket.png",
-	"scissors": "icon-scissors.png",
-	"clap": "clap.png",
-	"snap": "snap.png",
-	"legs": "legs.png"
+	"reset" : "icon-reset.png",
+	"reset2" : "icon-reset-DZLMDARK.png",
+	"undo" : "icon-undo-DZLMDARK.png",
+	"stamp" : "icon-stamp-DZLMDARK.png",
+	"measure-angle" : "icon-measure-angle-DZLMDARK.png",
+	"hand" : "icon-hand.png",
+	"bucket" : "icon-bucket.png",
+	"scissors" : "icon-scissors.png",
+	"pointoncircle" : "icon-pointoncircle.png",
+	"bucket2" : "icon-paintbucket.png",
+	"clap" : "clap.png",
+	"snap" : "snap.png",
+	"legs" : "legs.png"
 };
 
 // E | Other
@@ -184,10 +248,18 @@ PI = 3.141592653589793238462643383279;
 PHI = (1 + sqrt(5)) / 2;
 
 NUMERALS = {
-	"1" : "eins", "2" : "zwei", "3" : "drei", "4" : "vier", "5" : "fünf",
+	"0" : "null", "1" : "eins", "2" : "zwei", "3" : "drei", "4" : "vier", "5" : "fünf",
 	"6" : "sechs", "7" : "sieben", "8" : "acht", "9" : "neun", "10" : "zehn", 
-	"11" : "elf", "12" : "zwölf"
+	"11" : "elf", "12" : "zwölf", "13" : "dreizehn", "14" : "vierzehn", "15" : "fünfzehn",
+	"16" : "sechzehn", "17" : "siebzehn", "18" : "achtzehn", "19" : "neunzehn"
 };
+
+TENSNUMERALS = {
+	"10" : "zehn", "20" : "zwanzig", "30" : "dreißig", "40" : "vierzig", "50" : "fünfzig",
+	 "60" : "sechzig", "70" : "siebzig", "80" : "achtzig", "90" : "neunzig"
+};
+
+BIGNUMBERNUMERALS = ["", "tausend", "Million", "Milliarde", "Billion", "Billiarde", "Trillion", "Trilliarde", "Quadrillion", "Quadrilliarde"];
 
 VALUEMAP = {
 	"1" : "Einser", "2" : "Zweier", "3" : "Dreier", "4" : "Vierer", "5" : "Fünfer", 
@@ -327,10 +399,12 @@ killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(1
 coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
 );
 
-// v19
+// v21
 // Recent changes:
-// - defaultstateto(): added dm editor state ("cindyjs") as proper option
-// - numeral(): returns numeral to corresponding number up to 12, returns number itself if 13 or greater
+// - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
+// - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
+// - added convencience drawtextbox overwrite
+// - updated numerals function to return the numeral of ANY number in style of the Duden
 
 // Convenience functions
 // A | VAM object functions
@@ -750,9 +824,54 @@ ellipse(center, a, b, angle, t1, t2, steps) := (
 
   points;
 );
-
 ellipse(center, a, b, t1, t2) := ellipse(center, a, b, nada, t1, t2, nada);
 ellipse(center, a, b) := ellipse(center, a, b, nada, nada, nada, nada);
+
+// B.3 | Random geometry
+todeg(angle) := angle/PI*180;
+torad(angle) := angle/180*PI;
+
+directedangle(p1,p2,p3) := (
+	regional(v1,v2);
+	v1 = p1 - p2;
+	v2 = p3 - p2;
+	arctan2(v2_1, v2_2) - arctan2(v1_1, v1_2);
+);
+angle(p1,p2,p3) := (
+	regional(angle);
+	angle = directedangle(p1,p2,p3);
+	if(angle < 0, angle = angle + 2* PI, angle);
+);
+
+arc(p1,p2,p3,r) := ( // p1..p3 points, r distance from p2
+	regional(v1,v2,startangle,stopangle);
+	
+	// Corresponding vectors
+	v1 = p1 - p2;
+	v2 = p3 - p2;
+
+	// Calc start and stop angle of vectors
+	startangle = arctan2(v1_1, v1_2);
+	stopangle = arctan2(v2_1, v2_2);
+	if(stopangle < startangle, stopangle = stopangle + 2*PI); // Adjust stopangle to always be bigger than startangle
+
+	// Return
+	ellipse(p2,r,r,startangle, stopangle);
+);
+
+drawarc(p1,p2,p3,r) := connect(arc(p1,p2,p3,r), color->color);
+drawclosedarc(p1,p2,p3,r) := connect([p2] ++ arc(p1,p2,p3,r) ++ [p2], color->color);
+drawclosedarc(p1,p2,p3,r1,r2) := draw(polygon([p2] ++ arc(p1,p2,p3,r1) ++ [p2]) -- polygon([p2] ++ arc(p1,p2,p3,r2) ++ [p2]), color->color);
+fillclosedarc(p1,p2,p3,r) := fillpoly([p2] ++ arc(p1,p2,p3,r) ++ [p2], color->color, alpha->alpha);
+fillclosedarc(p1,p2,p3,r1,r2) := fill(polygon([p2] ++ arc(p1,p2,p3,r1) ++ [p2]) -- polygon([p2] ++ arc(p1,p2,p3,r2) ++ [p2]), color->color, alpha->alpha);
+drawangle(p1,p2,p3,r) := drawclosedarc(p1,p2,p3,r);
+drawangle(p1,p2,p3,r1,r2) := drawclosedarc(p1,p2,p3,r1,r2);
+fillangle(p1,p2,p3,r) := fillclosedarc(p1,p2,p3,r);
+fillangle(p1,p2,p3,r1,r2) := fillclosedarc(p1,p2,p3,r1,r2);
+
+vectorlength(vector) := sqrt(sum(apply(vector,#^2)));
+
+normalize(vector) := vector/vectorlength(vector);
 
 // C | Textboxes
 // (Overloaded) Gets the bounding rectangle for a text with given size and font
@@ -761,8 +880,17 @@ getboundingbox(text, coord, size, font) := (
 	bold = defaultto(bold, false);
 
 	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
-	pxsize = pxsize / screenresolution(); // divide by resolution to geht values in coords
-	rectangle(coord,pxsize_1,pxsize_2); // return rectangle
+	pxsize = pxsize / screenresolution(); // convert to world units
+	rectangle(coord,pxsize_1,pxsize_2); // return rectangle moved down by half the baseline to center box around text
+);
+// Get box, wherein text is actually horizontally centered
+getadjustedboundingbox(text, coord, size, font) := (
+	regional(pxsize);
+	bold = defaultto(bold, false);
+
+	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
+	pxsize = pxsize / screenresolution(); // convert to world units
+	rectangle(coord-[0,.5*pxsize_3],pxsize_1,pxsize_2); // return rectangle moved down by half the baseline to center box around text
 );
 
 // Draws a textbox with optional backgroundcolor
@@ -772,8 +900,9 @@ drawtextbox(coord, text, size, font, bgcolor) := (
 	alpha = defaultto(alpha, 1);
 
 	// fillpoly(getboundingbox(text, coord, size, font), color->bgcolor, alpha->alpha);
-	drawtext(coord, text, size->size, font->font, bold->bold);
+	drawtext(coord, text, size->size, font->font, bold->bold, color->color);
 );
+drawtextbox(coord, text) := drawtextbox(coord,text,NADA,NADA,NADA);
 
 // D | Commands
 or(list)  := (regional(x);x=false;forall(list,x=x%#));
@@ -1026,8 +1155,71 @@ getURLparams() := (
 	urlparams; // Return value
 );
 
+// Return type of input (as string)
+type(data) := (
+	regional(type);
+	if(isundefined(type) & islist(data), type = "list");
+	if(isundefined(type) & !isundefined(keys(data)), type = "object"); // undefined if not object or list (list returns next)
+	if(isundefined(type) & isstring(data), type = "string");
+	if(isundefined(type) & isinteger(data), type = "integer");
+	if(isundefined(type) & isreal(data), type = "float");
+	if(isundefined(type) & iscomplex(data), type = "complex");
+	if(isundefined(type) & isbool(data), type = "boolean");
+
+	type;
+);
+
 // String stuff
-numeral(number) := if(isundefined(NUMERALS:number), number, NUMERALS:number);
+//** Returns the numeral for a given number **//
+numeral(number) := (
+	regional(nameindex, value, numeral, subnumeral);
+	numeral = "";
+	number = abs(number); // get absolute value of number
+	nameindex = 1;
+	while(number>0, 
+		value = mod(number,1000); // get last 3 digits of number
+		number = floor(number/1000); // get remaining digits of number
+		subnumeral = "";
+
+		// handle triples from right to left
+		if(value != 0, // only crunch, if value needs to be written as numeral
+			// handle hundreds
+			if(value >= 100,
+				subnumeral = NUMERALS:((value+"")_1); // get hundreds
+				if(subnumeral == "eins", subnumeral = "ein"); // fix grammar inconsistency 
+				subnumeral = subnumeral + "hundert";
+			);
+			// handle tens
+			value = mod(value,100);
+			if(value > 0, // only crunch, if value has tens or units
+				if(value < 20,
+					subnumeral = subnumeral + NUMERALS:value;
+					if(subnumeral == "eins" & nameindex > 2, subnumeral = "eine"); // fix grammar inconsistency 
+					if(subnumeral == "eins" & nameindex == 2, subnumeral = "ein"); // fix grammar inconsistency 
+				, // else: value >= 20
+					subnumeral = subnumeral + if(mod(value,10)==1, "ein", if(mod(value,10) != 0, NUMERALS:(mod(value,10)), "")); // ones digit
+					subnumeral = subnumeral + if(mod(value,10)!=0, "und", "");
+					subnumeral = subnumeral + TENSNUMERALS:(10*floor(value/10)); // tens digit
+				);
+			);
+		);
+
+		// add big number numeral
+		if(subnumeral != "",
+			if(nameindex == 2, subnumeral = subnumeral + BIGNUMBERNUMERALS_nameindex); 
+			if(nameindex > 2, 
+				subnumeral = subnumeral + " " + BIGNUMBERNUMERALS_nameindex;
+				subnumeral = subnumeral + if(subnumeral_(-1) == "e", "n ", "en ");
+			);
+		);
+
+		// piece together
+		numeral = subnumeral + numeral;
+		nameindex = nameindex + 1; // next big number (million, billion, ...)
+	);
+	
+	numeral; // return
+);
 // v6
 // Recent changes:
 // - put after helper functions
@@ -1362,9 +1554,11 @@ new WorkbenchElement(center, size, color, copyonmove, label) := (
 	obj; // Return WorkbenchElement.
 );
 
-// v7
+// v8
 // Recent changes:
 // - Added new Button type: ImageButton (inherits from Button)
+// - Fixed click hightling not restoring to normal coloring
+// - changed drawing of label in "draw"
 
 new Button(coord,width,height,label,fontsize) := (
 	regional(obj);
@@ -1391,6 +1585,8 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"hasshadow" = true;
 	obj:"hasborder" = true;
 	obj:"show" = true;
+	obj:"customlabeloffset" = [0,0];
+	obj:"shadowoffset" = [0.03,-.05];
 	obj:"hitbox" := rectangle(
 		my("coord"),
 		my("width"),
@@ -1406,7 +1602,7 @@ new Button(coord,width,height,label,fontsize) := (
 		// Draw shadow
 		if(my("hasshadow"),
 			fill(roundedrectangle(
-				my("coord")+[0.03,-0.05],
+				my("coord")+my("shadowoffset"),
 				my("width"),
 				my("height"),
 				my("cornerradius")
@@ -1415,27 +1611,37 @@ new Button(coord,width,height,label,fontsize) := (
 				alpha->0.2
 			);
 		);
-		// Draw box and border
+
+		// Fill box
 		fill(
 			my("shape"),
-			color->if(my("ishot"),0.95*my("color"),my("color")),
+			color->if(mousedown&my("ishot"),0.95*my("color"),my("color")),
 			alpha->1
 		);
-		if(my("hasborder"), draw(
-			my("shape"),
-			color->my("bordercolor");
-		));
+
+
+		// Draw border
+		if(my("hasborder"), draw(my("shape"), color->my("bordercolor")));
+		
 		// Draw Label
-			drawtext(
-				my("coord")+(my("width"),
-				my("height")/2)/2, 
-				align->"center",
-				color->my("fontcolor"),
-				my("label"),
-				size->my("fontsize")
-			);
+		regional(boxcenter, offset);
+		
+		offset = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1); // Button center
+		boxcenter = getadjustedboundingbox(my("label"), offset, my("fontsize"), my("fontfamily")); // labels bounding box
+		boxcenter = boxcenter_1 + .5 * (boxcenter_3 - boxcenter_1);
+		offset = offset + offset - boxcenter;
+		
+		drawtextbox(offset + my("customlabeloffset"), my("label"), my("fontsize"), my("fontfamily"), NADA, color->my("fontcolor"), bold-> false);
+
 		// Draw something after the button
 		my("drawafter");
+
+		// Debug draw
+		if('debuglevel > 2,
+			connect([my("hitbox")_1,my("hitbox")_3], color->[0,1,0]);
+			connect([my("hitbox")_2,my("hitbox")_4], color->[0,1,0]);
+			drawpoly(getboundingbox(my("label"), offset+my("customlabeloffset"), my("fontsize"), my("fontfamily")));
+		);
 	);
 	obj:"drawafter" := nada;
 	obj:"ishot" := if(my("show"),inrectangle(my("hitbox"),mouse().xy));
@@ -1473,7 +1679,7 @@ new ImageButton(coord,width,height,imgpath) := (
 		// Draw box and border
 		fill(
 			my("shape"),
-			color->if(my("ishot"),0.95*my("color"),my("color")),
+			color->if(mousedown&my("ishot"),0.95*my("color"),my("color")),
 			alpha->1
 		);
 		if(my("hasborder"), draw(
@@ -1490,12 +1696,18 @@ new ImageButton(coord,width,height,imgpath) := (
 
 	imgbtn; // Return the button.
 );
-// v1
+// v2
+// recent changes:
+// - draw border in darker highlightcolor (factor .7)
+
 new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
 	o:"type" = "Toggle";
-	
+
+	o:"circleoffset" = if(state,.5*[o:"width",0], [0,0]);
+	o:"animationtiming" = .05;
+
 	o:"cornerradius" = width;
 	o:"state" = if(!isundefined(state),state,false);
 	o:"highlightcolor" = DARKBLUE;
@@ -1509,16 +1721,13 @@ new Toggle(coord,width,state,label,fontsize) := (
 		);
 		draw(
 			my("shape"),
-			color->grey(0.5),
+			color->.7*my("highlightcolor"),
 			alpha->1
 		);
 
 		// Draw circle
 		regional(center);
-		center = my("coord")+[my("height"),my("height")] / 2,
-		if(my("state"), // move circle right, if toggled
-			center = center + [my("width")-my("height"),0]
-		);
+		center = my("coord")+[my("height"),my("height")] / 2 + my("circleoffset"),
 
 		fillcircle(
 			center,
@@ -1534,16 +1743,30 @@ new Toggle(coord,width,state,label,fontsize) := (
 			color->dzlmcolordark,
 			size->my("fontsize")
 		);
+
 		// Draw something after the button
 		my("drawafter");
 	);
 	
 	o:"click"	:= (
+		// Change state
 		set my("state", !my("state"));
+
+		// Animate position to match state
+		new animationobject(
+			self(),
+			"circleoffset",
+			my("circleoffset"),
+			my("circleoffset") + if(my("state"),1,-1)*[my("width")-my("height"),0], 
+			my("animationtiming"),
+			"accel"
+		);
+		
+		// Execute custom script
 		my("script");
 	);
 
-	o:"script" := ();
+	o:"script" := (); // Can have script in the same way as button has
 
 	o; // Return the toggle.
 );
@@ -2119,10 +2342,14 @@ obj = obj :> o;
 'debuglevel = 10;
 );
 
-// v6
+// v7
 // recent changes:
 // - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
-// - @TODO: implement new handles as web controls
+// - fixed grid not properly displaying cutting when first cut and then regrouped
+// - added line visualizing cut
+// - added handles for configuring initial grid state (coloring, cutting, grouping)
+// - made position of verbal description and expression properly configurable
+// - implemented divomath state and result reporting functions
 
 // Distributivfeld
 if(vam == "distributive",
@@ -2136,12 +2363,6 @@ configuration:
   ...
 =======================================================
 ";
-
-//@Overwrite
-NUMERALS:"13" = "dreizehn";NUMERALS:"14" = "vierzehn";NUMERALS:"15" = "fünfzehn";NUMERALS:"16" = "sechszehn";NUMERALS:"17" = "siebzehn";
-NUMERALS:"18" = "achtzehn";NUMERALS:"19" = "neunzehn";NUMERALS:"20" = "zwanzig";NUMERALS:"21" = "einundzwanzig";NUMERALS:"22" = "zweiundzwanzig";
-NUMERALS:"23" = "dreiundzwanzig";NUMERALS:"24" = "vierundzwanzig";NUMERALS:"25" = "fünfundzwanzig";NUMERALS:"26" = "sechsundzwanzig";
-NUMERALS:"27" = "siebenundzwanzig";NUMERALS:"28" = "achtundzwanzig";NUMERALS:"29" = "neunundzwanzig";NUMERALS:"30" = "dreißig";
 
 // VAM global vars
 regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atomverticalpadding, 'atomhorizontalpadding, 'groupspacing,
@@ -2178,13 +2399,74 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'toolbuttonx = defaultstateto("toolbuttonx", NADA); // Custom x coord for toolbutton (right edge if NADA)
 'toolbuttony = defaultstateto("toolbuttony", NADA); // Custom y coord for toolbutton (top edge if NADA)
 'groupingtype = defaultstateto("groupingtype", "ROWCOL"); // One of "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
+'coloredrowindex = defaultstateto("coloredrowindex", NADA);
+'coloredcolindex = defaultstateto("coloredcolindex", NADA);
+'cuthorizontally = defaultstateto("cuthorizontally", false);
+'cutvertically = defaultstateto("cutvertically", false);
+'groupby = defaultstateto("groupby", "NONE");
+'expressionposition = defaultstateto("expressionposition", NADA);
+'expressionmoveable = defaultstateto("expressionmoveable", false);
+'verbalposition = defaultstateto("verbalposition", NADA);
+'verbalmoveable = defaultstateto("verbalmoveable", false);
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
-divomathUpdateResults() := if(usedivomath,);
+divomathUpdateResults() := if(usedivomath,
+	divomathClearResult();
+	if('debuglevel>2, println("===updateResults()=================================================="));
+
+	divomathAddResult("rows", grid:"rows"); // Report number of rows
+	divomathAddResult("columns", grid:"rows"); // Report number of cols
+	divomathAddResult("coloredrows", grid:"flags":"color-row"); // Report number of colored rows
+	divomathAddResult("coloredcolumns", grid:"cols" - grid:"flags":"color-col" + 1); // Report number of colored cols
+	divomathAddResult("cuthorizontally", grid:"flags":"cut-row"); // Report wether grid is horiontally cut
+	divomathAddResult("cutvertically", grid:"flags":"cut-col"); // Report wether grid is vertically cut
+	divomathAddResult("groupby", grid:"flags":"group-by"); // Report grouping state
+
+	divomathSendResult();
+);
 
 // Overwrite divomath setState()
-divomathSetState() := ();
+divomathSetState() := (
+	regional(state);
+
+	// Build state object with current values
+	state = {
+		"gridposition" : grid:"coord",
+		"rows" : grid:"rows",
+		"cols" : grid:"cols",
+		"atomsize" : 'atomsize,
+		"atomradius" : 'atomradius,
+		"atomverticalpadding" : 'atomverticalpadding,
+		"atomhorizontalpadding" : 'atomhorizontalpadding,
+		"groupspacing" : 'groupspacing,
+		"cutwidth" : 'cutwidth,
+		"gridmoveable" : 'gridmoveable,
+		"buttonsize" : 'buttonsize,
+		"buttonpadding" : 'buttonpadding,
+		"animationspeed" : 'animationspeed,
+		"lblpadding" : 'lblpadding,
+		"fontsize" : 'fontsize,
+		"drawexpression" : 'drawexpression,
+		"drawverbal" : 'drawverbal,
+		"drawtoolbutton" : 'drawtoolbutton,
+		"tool" : grid:"tool",
+		"toolbuttonx" : grid:"toolbutton":"coord"_1,
+		"toolbuttony" : grid:"toolbutton":"coord"_2,
+		"groupingtype" : 'groupingtype,
+		"coloredrowindex" : grid:"flags":"color-row",
+		"coloredcolindex" : grid:"flags":"color-col",
+		"cuthorizontally" : grid:"flags":"cut-row",
+		"cutvertically" : grid:"flags":"cut-col",
+		"groupby" : grid:"flags":"group-by",
+		"expressionposition" : grid:"expression":"coord",
+		"expressionmoveable" : grid:"expression":"ismoveable",
+		"verbalposition" :  grid:"verbal":"coord",
+		"verbalmoveable" : grid:"verbal":"ismoveable"
+	};
+
+	state; // Return
+);
 
 // C | Classes
 // C.1 | Atom: Thing that gets arranged into a rectangle
@@ -2233,7 +2515,9 @@ new Grid(c, rows, cols) := (
 	grid:"cols" = max(1,cols);
 	grid:"verticalpadding" = 'atomverticalpadding;
 	grid:"horizontalpadding" = 'atomhorizontalpadding;
-	grid:"width" := my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
+	grid:"width" := (
+		my("grid")_1_(-1):"coord"_1 + 'atomsize - my("coord")_1;
+	);
 	grid:"height" := my("grid")_(-1)_1:"coord"_2 + 'atomsize - my("coord")_2;
 	grid:"ismoveable" := 'gridmoveable % my("tool") != "hand";
 
@@ -2249,9 +2533,9 @@ new Grid(c, rows, cols) := (
 
 	// Scissors controls
 	grid:"linetreshold" = 'atomsize; // treshold, at which line is either VERTICAL or HORIZONTAL
-	grid:"linedirection" = nada; // "VERTICAL" or "HORIZONTAL" depending on linetreshold
-	grid:"linestart" = nada; // point
-	grid:"lineend" = nada; // point
+	grid:"linedirection" = NADA; // "VERTICAL" or "HORIZONTAL" depending on linetreshold
+	grid:"linestart" = NADA; // point
+	grid:"lineend" = NADA; // point
 
 	grid:"grid" = (
 		regional(atoms, newatom);
@@ -2292,6 +2576,24 @@ new Grid(c, rows, cols) := (
 				size->if(my("tool") == "bucket", 20, 4),
 				dashtype->if(my("tool") == "bucket", 0, 2);
 			);
+		);
+
+		// Draw persistent cutting line (HORIZONTAL)
+		if(my("flags"):"cut-row",
+			regional(refrow, point1, point2);
+			refrow = my("flags"):"color-row" + 1; // line above the cut
+			point1 = centroid([my("grid")_refrow_1:"coord",my("grid")_(refrow-1)_1:"coord"+[0,'atomsize]]);
+			point2 = centroid([my("grid")_refrow_(-1):"coord" + ['atomsize,0], my("grid")_(refrow-1)_(-1):"coord" + ['atomsize,'atomsize]]);
+			connect([point1, point2], color->grey(.5), size->1);
+		);
+
+		// Draw persistent cutting line (VERTICAL)
+		if(my("flags"):"cut-col",
+			regional(refcol, point1, point2);
+			refcol = my("flags"):"color-col"; // line to the right of cut
+			point1 = centroid([my("grid")_1_refcol:"coord",my("grid")_1_(refcol-1):"coord"+['atomsize,0]]);
+			point2 = centroid([my("grid")_(-1)_refcol:"coord"+[0,'atomsize],my("grid")_(-1)_(refcol-1):"coord"+['atomsize,'atomsize]]);
+			connect([point1, point2], color->grey(.5), size->1);
 		);
 
 		// Debug Draw
@@ -2404,51 +2706,9 @@ new Grid(c, rows, cols) := (
 		if(state == "COLUMN", state = "NONE";
 		)));
 		
-		// Update global state var
+		// Update global state var and move atoms into place
 		self():"flags":"group-by" = state;
-
-		// 1. Animate Atoms accordingly
-		regional(refatom, atom); 
-		refatom = my("grid")_1_1;
-		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
-			atom = my("grid")_rowindex_colindex;
-			if(state == "NONE" & 'groupingtype != "NONE",	  // second part for efficiency only
-				new animationobject(
-					atom,
-					"coord",
-					atom:"coord",
-					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding)],
-					'animationspeed,
-					"accel"
-				);
-			); // END IF NONE
-
-			if(state == "ROW",	 
-				new animationobject(
-					atom,
-					"coord",
-					atom:"coord",
-					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),(rowindex-1)*('atomsize+'atomverticalpadding+'groupspacing)],
-					'animationspeed,
-					"accel"
-				);
-			); // END IF ROW
-
-			if(state == "COLUMN",	 
-				new animationobject(
-					atom,
-					"coord",
-					atom:"coord",
-					refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding+'groupspacing),(rowindex-1)*('atomsize+'atomverticalpadding)],
-					'animationspeed,
-					"accel"
-				);
-			); // END IF COLUMN
-
-		)); // END applys
-
-
-
+		my("groupatoms");
 
 		// Update expression text
 		my("updateexpression");
@@ -2519,6 +2779,31 @@ new Grid(c, rows, cols) := (
 	);
 
 // === Convenience and Eval Methods
+	grid:"groupatoms" := (
+		regional(state);
+		state = my("flags"):"group-by";
+
+		// 1. Animate Atoms accordingly
+		regional(refatom, atom, newcoord); 
+		refatom = my("grid")_1_1;
+		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
+			atom = my("grid")_rowindex_colindex;
+
+			// Calculate basis for new coordinate without groupspacing (ROW or COLUMN)
+			newcoord = refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),0]; // x-offset normally;
+			newcoord = newcoord + [0,(rowindex-1)*('atomsize+'atomhorizontalpadding)]; // x-offset with groupspacing;
+			if(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex, newcoord = newcoord + [0,'cutwidth]); // add row cutting offset
+			if(my("flags"):"cut-col" & my("flags"):"color-col" < colindex+1, newcoord = newcoord + ['cutwidth,0]); // add row cutting offset
+
+			// Adjust for row and column grouping
+			if(state == "ROW", newcoord = newcoord + [0,(rowindex-1)*'groupspacing]);
+			if(state == "COLUMN",newcoord = newcoord + [(colindex-1)*'groupspacing,0]);
+			
+			// Animate Atom
+			new animationobject(atom, "coord", atom:"coord", newcoord, 'animationspeed, "accel");
+		)); // END applys
+	);
+
 	grid:"repaint" := ( // Repaints all atoms in a grid based on color-flags
 		regional(rowthresh, colthresh, topleft, topright, bottomleft, bottomright);
 		
@@ -2834,7 +3119,7 @@ new Grid(c, rows, cols) := (
 
 		// Set expression handlers value and verbalvalue to built expressions
 		self():"expression":"value" = value + ""; // force string for value, might be int
-		self():"expression":"verbalvalue" = "Ich sehe " + verbal;
+		self():"verbal":"value" = "Ich sehe " + verbal;
 	);
 	
 	grid:"cutgrid" := ( //de-/increases atom distance at coloring edges... eval with 'activeindex for cut position and 'direction of cut from linedirection
@@ -2910,6 +3195,7 @@ new Grid(c, rows, cols) := (
 		vbar:"coord" := nada; // Gets assigned by my("alignbar")
 		vbar:"alignbar" := ( // (Re-)sets bar position
 			self():"coord" := my("parent"):"coord" + [my("parent"):"width" + my("padleft"), 0];
+			divomathUpdateResults();
 		);
 		vbar:"alignbar"; // Initially set coord
 
@@ -3096,6 +3382,7 @@ new Grid(c, rows, cols) := (
 		btn:"script" := (
 			self():"value" = 1 + mod(my("value"),3);
 			self():"parent":"tool" = my("tool");
+			divomathUpdateResults();
 		);
 
 		btn; // Return toolbutton
@@ -3105,8 +3392,10 @@ new Grid(c, rows, cols) := (
 	grid:"expression" = (
 		regional(expr); expr = {};
 		expr:"type" = "Expression";
-		expr:"parent" = self();
-		expr:"coord" := (screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"parent" = grid;
+		expr:"coord" := [3,20]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"fontsize" = 'fontsize;
+		expr:"font" = NADA;
 		expr:"width" := (
 			regional(box);
 			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
@@ -3117,25 +3406,28 @@ new Grid(c, rows, cols) := (
 			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
 			box_4_2 - box_1_2;
 		);
-		expr:"value" = nada; //self():"rows" * self():"cols";
-		expr:"verbalvalue" = nada; //"Ich sehe was, was du nicht siehst."; 
-		expr:"fontsize" = 'fontsize;
-		expr:"font" = nada;
-	
-		expr:"hitbox" := getboundingbox(my("value"), my("coord"), my("fontsize"), my("font"));
-		expr:"shape" := my("hitbox");
-		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
-	
-		expr:"draw" := (
-			// Draw expression
-			if('drawexpression,
-				drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
-			);
+		expr:"baseline" := (
+			regional(size);
+			size = pixelsize(my("value"), size->my("fontsize"), font->my("font"));
+			size_3 / screenresolution();
+		);
 
-			// Draw verbal description
-			if('drawverbal,
-				drawtext(my("coord") - [0, if('drawexpression,my("height"),0)], my("verbalvalue"), font->my("font"), size->my("fontsize"));
-			);
+		expr:"value" = NADA; // gets set by grid:"updateexpression";
+
+		expr:"bgcolor" = DZLMCOLORLIGHT;
+		expr:"padding" = .3;
+		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
+		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
+		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ismoveable" = 'expressionmoveable;
+		expr:"getaction" = "move";
+
+		expr:"draw" := (
+			// Draw box
+			fill(my("shape"), color->my("bgcolor"));
+
+			// Draw expression	
+			drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
 
 			// Debug draw
 			if('debuglevel > 0,
@@ -3144,8 +3436,63 @@ new Grid(c, rows, cols) := (
 			);
 		);
 
+		expr:"move" := if(my("ismoveable"), self():"coord" = my("coord") + mousedelta);
+
 		expr; // Return expression
 	);
+
+	grid:"verbal" = (
+		regional(expr); expr = {};
+		expr:"type" = "Expression";
+		expr:"parent" = grid;
+		expr:"coord" := [3,2]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"fontsize" = 'fontsize;
+		expr:"font" = NADA;
+		expr:"width" := (
+			regional(box);
+			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
+			box_2_1 - box_1_1;
+		);
+		expr:"height" := (
+			regional(box);
+			box = getboundingbox(my("value"), [0,0], my("fontsize"), my("font"));
+			box_4_2 - box_1_2;
+		);
+		expr:"baseline" := (
+			regional(size);
+			size = pixelsize(my("value"), size->my("fontsize"), font->my("font"));
+			size_3 / screenresolution();
+		);
+
+		expr:"value" = NADA; // gets set by grid:"updateexpression";
+
+		expr:"bgcolor" = DZLMCOLORLIGHT;
+		expr:"padding" = .3;
+		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
+		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
+		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ismoveable" = 'verbalmoveable;
+		expr:"getaction" = "move";
+
+		expr:"draw" :=	(
+			// Draw box
+			fill(my("shape"), color->my("bgcolor"));
+
+			// Draw expression	
+			drawtext(my("coord"), my("value"), font->my("font"), size->my("fontsize"));
+
+			// Debug draw
+			if('debuglevel > 0,
+				drawpoly(my("shape"), color->[1,0,0]);
+				draw(my("coord"), color->[1,0,0]);
+			);
+		);
+
+		expr:"move" := if(my("ismoveable"), self():"coord" = my("coord") + mousedelta);
+
+		expr; // Return expression
+	);
+
 	grid:"updateexpression"; // Update value and verbalvalue for init
 
 	grid; // Return Grid
@@ -3155,9 +3502,19 @@ new Grid(c, rows, cols) := (
 // D.0 | SL Config
 // ===============
 if(!usedivomath,
-	'gridposition = if(!isundefined('urlparams:"gridposition"), parse('urlparams:"gridposition"), [10,7]);
+	// Grid state settings
+	'gridposition = if(!isundefined('urlparams:"gridposition"), parse('urlparams:"gridposition"), [6,10]);
 	'rows = if(!isundefined('urlparams:"rows"), parse('urlparams:"rows"), 5);
 	'cols = if(!isundefined('urlparams:"cols"), parse('urlparams:"cols"), 7);
+	'coloredrowindex = if(!isundefined('urlparams:"coloredrowindex"), parse('urlparams:"coloredrowindex"), NADA);
+	'coloredcolindex = if(!isundefined('urlparams:"coloredcolindex"), parse('urlparams:"coloredcolindex"), NADA);
+	'cuthorizontally = if(!isundefined('urlparams:"cuthorizontally"), parse('urlparams:"cuthorizontally"), false);
+	'cutvertically = if(!isundefined('urlparams:"cutvertically"), parse('urlparams:"cutvertically"), false);
+	'groupby = if(!isundefined('urlparams:"groupby"), 'urlparams:"groupby", "NONE");
+	'groupingtype = if(!isundefined('urlparams:"groupingtype"), 'urlparams:"groupingtype", "ROWCOL"); // one of "NONE", "ROW", "COL", "ROWCOL"
+
+	// UI settings
+	// - Grid
 	'atomsize = if(!isundefined('urlparams:"size"), parse('urlparams:"size"), 1);
 	'atomradius = if(!isundefined('urlparams:"cornerradius"), parse('urlparams:"cornerradius"), .5);
 	'atomverticalpadding = if(!isundefined('urlparams:"verticalpadding"), parse('urlparams:"verticalpadding"), .1);
@@ -3165,10 +3522,22 @@ if(!usedivomath,
 	'groupspacing = if(!isundefined('urlparams:"groupspacing"), parse('urlparams:"groupspacing"), .2);
 	'cutwidth = if(!isundefined('urlparams:"cutwidth"), parse('urlparams:"cutwidth"), .3);
 	'gridmoveable = if(!isundefined('urlparams:"gridmoveable"), parse('urlparams:"gridmoveable"), true);
+	'animationspeed = if(!isundefined('urlparams:"animationspeed"), parse('urlparams:"animationspeed"), .15);
+	// - Button
 	'buttonsize = if(!isundefined('urlparams:"buttonsize"), parse('urlparams:"buttonsize"), 2);
 	'buttonpadding = if(!isundefined('urlparams:"buttonpadding"), parse('urlparams:"buttonpadding"), .4);
-	'lblpadding = if(!isundefined('urlparams:"lblpadding"), parse('urlparams:"lblpadding"), .3);
-	'animationspeed = if(!isundefined('urlparams:"animationspeed"), parse('urlparams:"animationspeed"), .15);
+	'toolbuttonx = if(!isundefined('urlparams:"toolbuttonx"), parse('urlparams:"toolbuttonx"), NADA); // right edge by default
+	'toolbuttony = if(!isundefined('urlparams:"toolbuttony"), parse('urlparams:"toolbuttony"), NADA); // top edge by default
+	'drawtoolbutton = if(!isundefined('urlparams:"drawtoolbutton"), parse('urlparams:"drawtoolbutton"), true);
+	'tool = if(!isundefined('urlparams:"tool"), 'urlparams:"tool", "hand"); // one of "hand", "bucket", "scissors"
+	// - Text
+	'fontsize = if(!isundefined('urlparams:"fontsize"), parse('urlparams:"fontsize"), 18);
+	'drawexpression = if(!isundefined('urlparams:"drawexpression"), parse('urlparams:"drawexpression"), true);
+	'expressionposition = if(!isundefined('urlparams:"expressionposition"), parse('urlparams:"expressionposition"), NADA);
+	'expressionmoveable = if(!isundefined('urlparams:"expressionmoveable"), parse('urlparams:"expressionmoveable"), false);
+	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), true);
+	'verbalposition = if(!isundefined('urlparams:"verbalposition"), parse('urlparams:"verbalposition"), NADA);
+	'verbalmoveable = if(!isundefined('urlparams:"verbalmoveable"), parse('urlparams:"verbalmoveable"), true);
 );
 
 // Build grid
@@ -3176,14 +3545,32 @@ if(!usedivomath,
 regional(grid);
 grid = new Grid('gridposition,'rows,'cols);
 
+// Set initial coloring
+if('coloredrowindex > 0, grid:"flags":"color-row" = 'coloredrowindex);
+if('coloredcolindex > 0, grid:"flags":"color-col" = grid:"cols" - 'coloredcolindex + 1);
+grid:"repaint";
 
+// Set initial cutting
+if('cuthorizontally & 'coloredrowindex > 0, eval(grid:"cutgrid", 'activeindex->grid:"flags":"color-row", 'direction->"HORIZONTAL"));
+if('cutvertically & 'coloredcolindex > 0, eval(grid:"cutgrid", 'activeindex->grid:"flags":"color-col", 'direction->"VERTICAL"));
+
+// Set initial grouping
+if('groupby != "NONE",
+	grid:"flags":"group-by" = 'groupby;
+	grid:"groupatoms";
+);
+
+// Set up expressions
+if(!isundefined('expressionposition), grid:"expression":"coord" = 'expressionposition);
+if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
+
+// Build
 obj = obj :> grid;
 obj = obj :> obj_1:"vbar";
 obj = obj :> obj_1:"hbar";
 if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
-obj = obj :> obj_1:"expression";
-
-
+if('drawexpression, obj = obj :> obj_1:"expression");
+if('drawverbal, obj = obj :> obj_1:"verbal");
 
 ); // End VAM if
 // v14
@@ -4142,9 +4529,10 @@ world:"updateglobalscaling"; // is that still necessary?
 
 ); // end vam-if
 
-// v21
+// v22
 // last changes:
 // - added web/SL controls
+// - removed parsing for URL param "separator"
 
 if(vam == "numbercards",
 
@@ -4756,7 +5144,7 @@ if(!usedivomath,
 	monte = if(!isundefined('urlparams:"color"), parse('urlparams:"color"), true);
 	showmontetoggle = if(!isundefined('urlparams:"colortoggle"), parse('urlparams:"colortoggle"), true);
 	alpha = if(!isundefined('urlparams:"alpha"), parse('urlparams:"alpha"), .2);
-	separator = if(!isundefined('urlparams:"separator"), parse('urlparams:"separator"), "");
+	separator = if(!isundefined('urlparams:"separator"), 'urlparams:"separator", "");
 );
 
 max = max(apply(edit,length(#))); // Get max length of digits for cards
@@ -5618,7 +6006,7 @@ toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
 
 ); // end vam-if
-// v34
+// v35
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -5626,6 +6014,7 @@ toggles:"showtf-divvalue":"script";
 // - added configurable state for initial state of pattern container (patternstate)
 // - added drawresetbutton as handle
 // - added interactable as handle
+// - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
 if(vam == "strapwork",
@@ -6780,7 +7169,7 @@ container:"dropcontainer";
 `,
 
     keydown: 
-`// v4
+`// v5
 // Recent changes:
 // - added call to divomathUpdateResults() on "S"-Key
 // - added function to increment/decrement debuglevel with +/- keys
@@ -6804,9 +7193,8 @@ if(key() == "s" % key() == "S",
 	divomathUpdateResults();
 );
 
-if(key() == "+", 'debuglevel = 'debuglevel + 1; println("'debuglevel++: " + 'debuglevel));
+if(key() == "+" % key() == "_", 'debuglevel = 'debuglevel + 1; println("'debuglevel++: " + 'debuglevel));
 if(key() == "-", 'debuglevel = 'debuglevel - 1; println("'debuglevel--: " + 'debuglevel));
-
 `,
 
     mouseclick: 
