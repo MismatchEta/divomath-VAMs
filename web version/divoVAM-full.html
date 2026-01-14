@@ -6547,7 +6547,7 @@ new Separator(coord, height, parent) := (
 		position = sum(position); // count all Polys to the left
 
 		// Alter by position of the scrollbar (basically a lazy workaround to not have to implement proper moving and displaying of Separators)
-		position -= my("original"):"parent":"scrollbar":"adjustedvalue";
+		position = position - my("original"):"parent":"scrollbar":"adjustedvalue";
 
 		position; // Return
 	);

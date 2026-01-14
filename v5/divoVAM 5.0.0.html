@@ -299,6 +299,7 @@ preview=false;
 my(property) := ( // Getter some property.
 	self():property;
 );
+
 set my(key, value) := self():key = value; // Setter
 
 namedef(object) := ( // Sets a "name" property
@@ -1307,7 +1308,7 @@ if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debugl
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-vam = "distributive"; // comment before production
+vam = "strapwork"; // comment before production
 if(!isundefined('urlparams:"vam"), vam = 'urlparams:"vam");
 
 if('debuglevel > 3,
@@ -2370,16 +2371,18 @@ obj = obj :> o;
 
 ;
 //VAM: distributive
-// v9
-// recent changes:
-// - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
-// - fixed grid not properly displaying cutting when first cut and then regrouped
-// - added line visualizing cut
-// - added handles for configuring initial grid state (coloring, cutting, grouping)
-// - made position of verbal description and expression properly configurable
-// - implemented divomath state and result reporting functions
-// - replaced divomathAddResult() with wrapper divomathPutResult()
-// - added call to divomathUpdateResults() when moving hbar
+/* v11
+* recent changes:
+* - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
+* - fixed grid not properly displaying cutting when first cut and then regrouped
+* - added line visualizing cut
+* - added handles for configuring initial grid state (coloring, cutting, grouping)
+* - made position of verbal description and expression properly configurable
+* - implemented divomath state and result reporting functions
+* - replaced divomathAddResult() with wrapper divomathPutResult()
+* - added call to divomathUpdateResults() when moving hbar
+* - fixed incorrect positioning of atoms when adding rows
+*/
 
 // Distributivfeld
 if(vam == "distributive",
@@ -2699,7 +2702,7 @@ new Grid(c, rows, cols) := (
 			);
 			my("repaint"),
 		);
-
+		
 		// Scissors logic ((un-)cutting stuff)
 		if(my("tool") == "scissors",
 			if(my("linedirection") == "VERTICAL", activeindex = activeindex_1_2);
@@ -2752,6 +2755,9 @@ new Grid(c, rows, cols) := (
 		// Loop over every row and add an Atom to the right
 		repeat(my("rows"), row,
 			newcoord = self():"grid"_row_(-1):"coord" + ['atomsize+my("verticalpadding"),0];
+			if(my("flags"):"group-by" == "COLUMN", newcoord = newcoord + ['groupspacing,0]); // Adjust for spacing
+
+			// Add new Atom in row
 			self():"grid"_row = my("grid")_row :> new Atom(newcoord, self());
 		);
 		my("repaint");
@@ -2774,8 +2780,10 @@ new Grid(c, rows, cols) := (
 	);
 
 	grid:"addrow" := (
-		regional(newcoord);
+		regional(newcoord, offset);
 		offset = [0, 'atomsize+my("horizontalpadding")]; // offset to move down by for new row
+		if(my("flags"):"group-by" == "ROW", offset = offset + [0,'groupspacing]); // Adjust for spacing
+		
 		self():"grid" = [] <: my("grid"); // Prepend empty row to grid
 
 		self():"coord" = my("coord") - offset;
@@ -6048,7 +6056,7 @@ toggles:"showtf-divvalue":"script";
 ); // end vam-if
 ;
 //VAM: strapwork
-// v35
+// v36
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6056,6 +6064,8 @@ toggles:"showtf-divvalue":"script";
 // - added configurable state for initial state of pattern container (patternstate)
 // - added drawresetbutton as handle
 // - added interactable as handle
+// - changed Reset button not resizing with size attribute
+// - fixed and refactored getting separator position with regards to parent container (and getting state string)
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -6094,7 +6104,7 @@ COLORMAP = { // Maps color names
 // B | Divomath config
 // ===================
 // States
-regional (size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
+regional(size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
 
 size = defaultstateto("size", 1); // Configure general size of Polys and Container
 vertices = defaultstateto("polys", [0,3,6]); // Configure number of RegPolys or list of number of vertices
@@ -6148,7 +6158,7 @@ divomathUpdateResults() := if(usedivomath,
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathAddResult(todivomath_1, todivomath_2);
+			divomathPutResult(todivomath_1, todivomath_2);
 			if('debuglevel>2, println("Added key: " +todivomath_1+ ", val: " + todivomath_2));
 			polycounter = polycounter + 1;
 
@@ -6323,7 +6333,7 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 	);
 	regpoly:"ismoveable" 	= true;
 	regpoly:"copyonmove"	= false;
-	regpoly:"parent" 			= nada; // Workbench or Container or similar
+	regpoly:"parent" 			= NADA; // Workbench or Container or similar
 	regpoly:"colorkey"		= palettecolor;
 	regpoly:"color" 			= DIVOPALETTE_(mod(palettecolor-1,	length(DIVOPALETTE)) + 1);
 
@@ -6400,7 +6410,7 @@ new Separator(coord, height, parent) := (
 	sep:"coord" = coord;
 	sep:"parent" = parent; // should be a Container
 	parent:"childseparator" = sep;
-	sep:"original" = nada; // reference for copies of Separator
+	sep:"original" = NADA; // reference for copies of Separator
 	sep:"timing" = parent:"timing";
 	sep:"color" = grey(.3);
 	sep:"ismoveable" = false;
@@ -6446,7 +6456,7 @@ new Separator(coord, height, parent) := (
 			polyX = select(strips, length(#) >= position)_1; // first strip with enough RegPolys for correct positioning
 			polyX = polyX_position; // RegPoly at appropriate position of that strip
 			polyX = polyX:"coord"_1; // its x-coord
-		); // polyX nada, if position is 0 (Separator dropped before first Poly or no Poly in Container)
+		); // polyX NADA, if position is 0 (Separator dropped before first Poly or no Poly in Container)
 
 		// Get xcoord where to insert and check if there already is a Separator at that position
 		regional(sepxpos, sepalreadyexists);
@@ -6473,7 +6483,6 @@ new Separator(coord, height, parent) := (
 		
 		// Update divomath states/results
 		divomathUpdateResults();
-
 	);
 
 	sep:"copy" := (
@@ -6485,7 +6494,7 @@ new Separator(coord, height, parent) := (
 		copy:"color" = copy:"color";
 
 		self():"copies" = my("copies") ++ [copy];
-
+		
 		copy;
 	);
 
@@ -6520,27 +6529,24 @@ new Separator(coord, height, parent) := (
 
 	);
 
-	sep:"getcopypositions" := (
-		regional(refstrip, copies, positions, maxlength);
-		copies = my("copies");
-		positions = apply(1..length(copies), #=0); // [0,...,0]
+	// Get position in relation to parent container (i.e. max number of polys to the left of self())
+	sep:"getcontainerposition" := (
+		regional(refstrip, position, maxlength);
+		position = NADA;
 
 		// Get strip with most polys
-		refstrip = apply(my("parent"):"strips", length(#));
-		maxlength = max(refstrip);
-		forall(1..length(refstrip), stripindex,
-			if(refstrip_stripindex == maxlength, refstrip = my("parent"):"strips"_stripindex);
-		);
-
-		// Get number of polys left of each Separator
-		forall(refstrip, poly, // loop over every poly in longest strip...
-			repeat(length(copies), sepindex, // ...and compare against every Separator...
-				// ...with regards to their x position to increase respective position counter
-				if(copies_sepindex:"coord"_1 > poly:"coord"_1, positions_sepindex = positions_sepindex + 1);
-			);
-		);
+		refstrip = apply(my("parent"):"strips", length(#)); // length of all strips
+		refstrip = select(my("parent"):"strips", length(#) == max(refstrip)); // select longest strip
+		refstrip = refstrip_1; // Select first element of list (should be only one, but select returns list)
 		
-		positions; // Return (max) number of polys left of Separator
+		// Get number of polys left of Separator
+		position = apply(refstrip, if(#:"coord"_1 < my("coord")_1,1,0)); // Store a 1 for every poly left of Separator
+		position = sum(position); // count all Polys to the left
+
+		// Alter by position of the scrollbar (basically a lazy workaround to not have to implement proper moving and displaying of Separators)
+		position = position - my("original"):"parent":"scrollbar":"adjustedvalue";
+
+		position; // Return
 	);
 
 	sep:"getstatestring" := (
@@ -6548,17 +6554,18 @@ new Separator(coord, height, parent) := (
 		statestring = QUOTE; // add leading quotation mark
 
 		// Add positions separated by comma
-		forall(my("getcopypositions"),
-			statestring = statestring + # + ",";
-		);		
+		forall(my("copies"),
+			statestring = statestring + #:"getcontainerposition" + ",";
+		);
 
+		// Replace last comma with trailing quotation mark
 		if(length(statestring)>1,
-			statestring_(-1) = QUOTE; // replace last comma with trailing quotation mark
+			statestring_(-1) = QUOTE;
 		,
 			statestring = statestring + QUOTE;
 		);
 
-		statestring;
+		statestring; // Return string
 	);
 
 	sep; // Return
@@ -6574,7 +6581,7 @@ new Container(coord, numofstrips, limits) := (
 	cont:"polyoffset" = 2*size + cont:"polypadding"; // distance between center of two RegPolys in a strip
 
 	cont:"coord" = coord;
-	cont:"childseparator" = nada; // gets set when initialising Separator
+	cont:"childseparator" = NADA; // gets set when initialising Separator
 	cont:"#strips" = numofstrips; // int: number of strips
 	cont:"strips" = ( // Stores RegPolys per strip
 		regional(strips);
@@ -6795,6 +6802,12 @@ new Container(coord, numofstrips, limits) := (
 		divomathUpdateResults();
 	);
 
+	cont:"moveseparatorsintoplace" := ( // Move Separators to appropriate positions in *all* strips
+		//println("TODO");
+		apply(my("childseparator"):"copies", println(">>" + #:"getcontainerposition"));
+		println(my("childseparator"):"getstatestring");
+	);
+
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
 		regional(polygons);
 		polygons = [];
@@ -6864,13 +6877,14 @@ new Container(coord, numofstrips, limits) := (
 			regional(adjval, currval);
 			adjval = my("adjustedvalue"); // Current adjusted value
 			currval = my("value"); // Current value (executes "script" in the first place)
-			
+
 			// Change adjusted value and toggle WHICH RegPolys and Separators are drawn WHERE
 			if(adjval != round(currval),
 				self():"adjustedvalue" = round(currval);
 			);
 
 			my("parent"):"movepolysintoplace";
+			my("parent"):"moveseparatorsintoplace";
 		);
 		
 		// Display bar at the start
@@ -6888,7 +6902,7 @@ new PatternContainer(coord, rows, limit) := (
 
 	// Inherited from Container, don't use
 	obj = obj -- [cont:"scrollbar"];
-	cont:"showscrollbar" = false; // don't ever show scrollbar, scrollbar can't be nada without breaking errors though.
+	cont:"showscrollbar" = false; // don't ever show scrollbar, scrollbar can't be NADA without breaking errors though.
 
 	// Fields
 	cont:"subtype" = "Pattern";
@@ -6959,7 +6973,7 @@ if(!usedivomath,
 	limit = [-2,3];
 	patternlimit = 4;
 	patternstate = ["2,2,2", "3,1"];
-	state = ["3,6,1,1,1,1,1,1,1,1,2,3", "3,1,3"];
+	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
 	sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
 	interactable = true;
@@ -7097,8 +7111,8 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new ImageButton(NADA, 2*size, size, ICONS:"reset");
-btn:"coord" := (container:"shape"_3).xy - [2*size,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
+btn = new ImageButton(NADA, 2, 1, ICONS:"reset");
+btn:"coord" := (container:"shape"_3).xy - [2,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
 btn:"imgscale" = .9;
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
@@ -7210,7 +7224,10 @@ container:"dropcontainer";
 );
 ;
 //VAM: thales
-// v1
+/** v2
+* Recent changes:
+* - clamped point movement at screen edges
+*/
 
 // Satz des Thales und Umkehrung
 if(vam == "thales",
@@ -7314,7 +7331,7 @@ new ThalesTrig(A,B,C) := (
 		!isundefined(ishot);
 	);
 	trig:"lasthot" = NADA;
-
+	
 	trig:"draw" := (
 		// Draw circle
 		if(my("drawcircle"),drawcircle(centroid([my("A"),my("B")]), .5*dist(my("A"),my("B")), size->my("circlelinesize"), color->my("circlelinecolor")));
@@ -7574,6 +7591,15 @@ new ThalesTrig(A,B,C) := (
 		if(my("bmoveable") & my("lasthot")=="B", self():"B" = my("B") + mousedelta); // Move B with mouse
 		if(my("lasthot")=="C", self():"C" = my("C") + mousedelta); // Move C with mouse
 
+		// Handle clamping at frame edges
+		regional(screen, margin);
+		screen = reverse(apply(screenbounds(), #.xy));
+		margin = 1;
+		self():"C" = [
+				min(max(my("C")_1,screen_1_1+margin),screen_2_1-margin),
+				min(max(my("C")_2,screen_1_2+margin),screen_4_2-margin)
+			];
+
 		// Handle snapping to 90°
 		if(my("snap") & dist(my("gamma"), PI/2) < my("snapdifference")° & my("lasthot") == "C" % my("softc"),
 			self():"C" = my("M") + .5*dist(my("B"),my("A"))*normalize(my("C") - my("M"));			
@@ -7608,7 +7634,7 @@ new ThalesTrig(A,B,C) := (
 					// Choose side: same side as C relative to AB
 					regional(sign, midpoint);
 					sign = if(det([[ab_1,ab_2],[ac_1,ac_2]]) >= 0, 1, -1); // get orientation for correct circle
-					O = my("M") +  sign * h * normalvec; // Midpoint (DRAW A PICTURE);	
+					O = my("M") +  sign * h * normalvec; // Midpoint (works, DRAW A PICTURE);	
 
 					// Get next point on the circle (through radial projection)
 					w = my("C") - O;
@@ -8503,7 +8529,7 @@ var cdy = CindyJS({
     "icon-undo-DZLMDARK.png": "data:image/png;base64,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"
   },
   use: ["katex"],
-  cinderella: {build: 2111, version: [3, 0, 2111]}
+  cinderella: {build: 2121, version: [3, 0, 2121]}
 });
     </script>
 </head>
