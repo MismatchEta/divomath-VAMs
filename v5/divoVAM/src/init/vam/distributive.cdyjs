@@ -1,14 +1,15 @@
-// v10
-// recent changes:
-// - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
-// - fixed grid not properly displaying cutting when first cut and then regrouped
-// - added line visualizing cut
-// - added handles for configuring initial grid state (coloring, cutting, grouping)
-// - made position of verbal description and expression properly configurable
-// - implemented divomath state and result reporting functions
-// - replaced divomathAddResult() with wrapper divomathPutResult()
-// - added call to divomathUpdateResults() when moving hbar
-// - fixed state reporting for divomath
+/* v11
+* recent changes:
+* - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
+* - fixed grid not properly displaying cutting when first cut and then regrouped
+* - added line visualizing cut
+* - added handles for configuring initial grid state (coloring, cutting, grouping)
+* - made position of verbal description and expression properly configurable
+* - implemented divomath state and result reporting functions
+* - replaced divomathAddResult() with wrapper divomathPutResult()
+* - added call to divomathUpdateResults() when moving hbar
+* - fixed incorrect positioning of atoms when adding rows
+*/
 
 // Distributivfeld
 if(vam == "distributive",
@@ -109,15 +110,15 @@ divomathSetState() := (
 		"drawexpression" : 'drawexpression,
 		"drawverbal" : 'drawverbal,
 		"drawtoolbutton" : 'drawtoolbutton,
-		"tool" : QUOTE + grid:"tool" + QUOTE,
+		"tool" : grid:"tool",
 		"toolbuttonx" : grid:"toolbutton":"coord"_1,
 		"toolbuttony" : grid:"toolbutton":"coord"_2,
-		"groupingtype" : QUOTE + 'groupingtype + QUOTE,
-		"coloredrowindex" : if(isundefined(grid:"flags":"color-row"),0,grid:"flags":"color-row"),
-		"coloredcolindex" : if(isundefined(grid:"flags":"color-col"),0,grid:"flags":"color-col"),
+		"groupingtype" : 'groupingtype,
+		"coloredrowindex" : grid:"flags":"color-row",
+		"coloredcolindex" : grid:"flags":"color-col",
 		"cuthorizontally" : grid:"flags":"cut-row",
 		"cutvertically" : grid:"flags":"cut-col",
-		"groupby" : QUOTE + grid:"flags":"group-by" + QUOTE,
+		"groupby" : grid:"flags":"group-by",
 		"expressionposition" : grid:"expression":"coord",
 		"expressionmoveable" : grid:"expression":"ismoveable",
 		"verbalposition" :  grid:"verbal":"coord",
@@ -328,7 +329,7 @@ new Grid(c, rows, cols) := (
 			);
 			my("repaint"),
 		);
-
+		
 		// Scissors logic ((un-)cutting stuff)
 		if(my("tool") == "scissors",
 			if(my("linedirection") == "VERTICAL", activeindex = activeindex_1_2);
@@ -381,6 +382,9 @@ new Grid(c, rows, cols) := (
 		// Loop over every row and add an Atom to the right
 		repeat(my("rows"), row,
 			newcoord = self():"grid"_row_(-1):"coord" + ['atomsize+my("verticalpadding"),0];
+			if(my("flags"):"group-by" == "COLUMN", newcoord = newcoord + ['groupspacing,0]); // Adjust for spacing
+
+			// Add new Atom in row
 			self():"grid"_row = my("grid")_row :> new Atom(newcoord, self());
 		);
 		my("repaint");
@@ -403,8 +407,10 @@ new Grid(c, rows, cols) := (
 	);
 
 	grid:"addrow" := (
-		regional(newcoord);
+		regional(newcoord, offset);
 		offset = [0, 'atomsize+my("horizontalpadding")]; // offset to move down by for new row
+		if(my("flags"):"group-by" == "ROW", offset = offset + [0,'groupspacing]); // Adjust for spacing
+		
 		self():"grid" = [] <: my("grid"); // Prepend empty row to grid
 
 		self():"coord" = my("coord") - offset;

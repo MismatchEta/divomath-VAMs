@@ -1,4 +1,4 @@
-// v35
+// v36
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6,6 +6,8 @@
 // - added configurable state for initial state of pattern container (patternstate)
 // - added drawresetbutton as handle
 // - added interactable as handle
+// - changed Reset button not resizing with size attribute
+// - fixed and refactored getting separator position with regards to parent container (and getting state string)
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -44,7 +46,7 @@ COLORMAP = { // Maps color names
 // B | Divomath config
 // ===================
 // States
-regional (size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
+regional(size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
 
 size = defaultstateto("size", 1); // Configure general size of Polys and Container
 vertices = defaultstateto("polys", [0,3,6]); // Configure number of RegPolys or list of number of vertices
@@ -98,7 +100,7 @@ divomathUpdateResults() := if(usedivomath,
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathAddResult(todivomath_1, todivomath_2);
+			divomathPutResult(todivomath_1, todivomath_2);
 			if('debuglevel>2, println("Added key: " +todivomath_1+ ", val: " + todivomath_2));
 			polycounter = polycounter + 1;
 
@@ -273,7 +275,7 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 	);
 	regpoly:"ismoveable" 	= true;
 	regpoly:"copyonmove"	= false;
-	regpoly:"parent" 			= nada; // Workbench or Container or similar
+	regpoly:"parent" 			= NADA; // Workbench or Container or similar
 	regpoly:"colorkey"		= palettecolor;
 	regpoly:"color" 			= DIVOPALETTE_(mod(palettecolor-1,	length(DIVOPALETTE)) + 1);
 
@@ -350,7 +352,7 @@ new Separator(coord, height, parent) := (
 	sep:"coord" = coord;
 	sep:"parent" = parent; // should be a Container
 	parent:"childseparator" = sep;
-	sep:"original" = nada; // reference for copies of Separator
+	sep:"original" = NADA; // reference for copies of Separator
 	sep:"timing" = parent:"timing";
 	sep:"color" = grey(.3);
 	sep:"ismoveable" = false;
@@ -396,7 +398,7 @@ new Separator(coord, height, parent) := (
 			polyX = select(strips, length(#) >= position)_1; // first strip with enough RegPolys for correct positioning
 			polyX = polyX_position; // RegPoly at appropriate position of that strip
 			polyX = polyX:"coord"_1; // its x-coord
-		); // polyX nada, if position is 0 (Separator dropped before first Poly or no Poly in Container)
+		); // polyX NADA, if position is 0 (Separator dropped before first Poly or no Poly in Container)
 
 		// Get xcoord where to insert and check if there already is a Separator at that position
 		regional(sepxpos, sepalreadyexists);
@@ -423,7 +425,6 @@ new Separator(coord, height, parent) := (
 		
 		// Update divomath states/results
 		divomathUpdateResults();
-
 	);
 
 	sep:"copy" := (
@@ -435,7 +436,7 @@ new Separator(coord, height, parent) := (
 		copy:"color" = copy:"color";
 
 		self():"copies" = my("copies") ++ [copy];
-
+		
 		copy;
 	);
 
@@ -470,27 +471,24 @@ new Separator(coord, height, parent) := (
 
 	);
 
-	sep:"getcopypositions" := (
-		regional(refstrip, copies, positions, maxlength);
-		copies = my("copies");
-		positions = apply(1..length(copies), #=0); // [0,...,0]
+	// Get position in relation to parent container (i.e. max number of polys to the left of self())
+	sep:"getcontainerposition" := (
+		regional(refstrip, position, maxlength);
+		position = NADA;
 
 		// Get strip with most polys
-		refstrip = apply(my("parent"):"strips", length(#));
-		maxlength = max(refstrip);
-		forall(1..length(refstrip), stripindex,
-			if(refstrip_stripindex == maxlength, refstrip = my("parent"):"strips"_stripindex);
-		);
-
-		// Get number of polys left of each Separator
-		forall(refstrip, poly, // loop over every poly in longest strip...
-			repeat(length(copies), sepindex, // ...and compare against every Separator...
-				// ...with regards to their x position to increase respective position counter
-				if(copies_sepindex:"coord"_1 > poly:"coord"_1, positions_sepindex = positions_sepindex + 1);
-			);
-		);
+		refstrip = apply(my("parent"):"strips", length(#)); // length of all strips
+		refstrip = select(my("parent"):"strips", length(#) == max(refstrip)); // select longest strip
+		refstrip = refstrip_1; // Select first element of list (should be only one, but select returns list)
 		
-		positions; // Return (max) number of polys left of Separator
+		// Get number of polys left of Separator
+		position = apply(refstrip, if(#:"coord"_1 < my("coord")_1,1,0)); // Store a 1 for every poly left of Separator
+		position = sum(position); // count all Polys to the left
+
+		// Alter by position of the scrollbar (basically a lazy workaround to not have to implement proper moving and displaying of Separators)
+		position -= my("original"):"parent":"scrollbar":"adjustedvalue";
+
+		position; // Return
 	);
 
 	sep:"getstatestring" := (
@@ -498,17 +496,18 @@ new Separator(coord, height, parent) := (
 		statestring = QUOTE; // add leading quotation mark
 
 		// Add positions separated by comma
-		forall(my("getcopypositions"),
-			statestring = statestring + # + ",";
-		);		
+		forall(my("copies"),
+			statestring = statestring + #:"getcontainerposition" + ",";
+		);
 
+		// Replace last comma with trailing quotation mark
 		if(length(statestring)>1,
-			statestring_(-1) = QUOTE; // replace last comma with trailing quotation mark
+			statestring_(-1) = QUOTE;
 		,
 			statestring = statestring + QUOTE;
 		);
 
-		statestring;
+		statestring; // Return string
 	);
 
 	sep; // Return
@@ -524,7 +523,7 @@ new Container(coord, numofstrips, limits) := (
 	cont:"polyoffset" = 2*size + cont:"polypadding"; // distance between center of two RegPolys in a strip
 
 	cont:"coord" = coord;
-	cont:"childseparator" = nada; // gets set when initialising Separator
+	cont:"childseparator" = NADA; // gets set when initialising Separator
 	cont:"#strips" = numofstrips; // int: number of strips
 	cont:"strips" = ( // Stores RegPolys per strip
 		regional(strips);
@@ -745,6 +744,12 @@ new Container(coord, numofstrips, limits) := (
 		divomathUpdateResults();
 	);
 
+	cont:"moveseparatorsintoplace" := ( // Move Separators to appropriate positions in *all* strips
+		//println("TODO");
+		apply(my("childseparator"):"copies", println(">>" + #:"getcontainerposition"));
+		println(my("childseparator"):"getstatestring");
+	);
+
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
 		regional(polygons);
 		polygons = [];
@@ -814,13 +819,14 @@ new Container(coord, numofstrips, limits) := (
 			regional(adjval, currval);
 			adjval = my("adjustedvalue"); // Current adjusted value
 			currval = my("value"); // Current value (executes "script" in the first place)
-			
+
 			// Change adjusted value and toggle WHICH RegPolys and Separators are drawn WHERE
 			if(adjval != round(currval),
 				self():"adjustedvalue" = round(currval);
 			);
 
 			my("parent"):"movepolysintoplace";
+			my("parent"):"moveseparatorsintoplace";
 		);
 		
 		// Display bar at the start
@@ -838,7 +844,7 @@ new PatternContainer(coord, rows, limit) := (
 
 	// Inherited from Container, don't use
 	obj = obj -- [cont:"scrollbar"];
-	cont:"showscrollbar" = false; // don't ever show scrollbar, scrollbar can't be nada without breaking errors though.
+	cont:"showscrollbar" = false; // don't ever show scrollbar, scrollbar can't be NADA without breaking errors though.
 
 	// Fields
 	cont:"subtype" = "Pattern";
@@ -909,7 +915,7 @@ if(!usedivomath,
 	limit = [-2,3];
 	patternlimit = 4;
 	patternstate = ["2,2,2", "3,1"];
-	state = ["3,6,1,1,1,1,1,1,1,1,2,3", "3,1,3"];
+	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
 	sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
 	interactable = true;
@@ -1047,8 +1053,8 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new ImageButton(NADA, 2*size, size, ICONS:"reset");
-btn:"coord" := (container:"shape"_3).xy - [2*size,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
+btn = new ImageButton(NADA, 2, 1, ICONS:"reset");
+btn:"coord" := (container:"shape"_3).xy - [2,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
 btn:"imgscale" = .9;
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;

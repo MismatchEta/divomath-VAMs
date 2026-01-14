@@ -3,7 +3,7 @@
 
 # strapwork
 ## 11.12.2025
-- Button sollte nicht mit size skalieren sondern feste Größe haben, oder Bild skaliert mit
+- **13.01.2026, erledigt** Button sollte nicht mit size skalieren sondern feste Größe haben, oder Bild skaliert mit
 - Separator verschiebt sich seltsam, wenn man scrollt und Folien wechselt
 
 ## 27.11.2025
