@@ -2,9 +2,19 @@
 - in VAM überführen
 
 # strapwork
+## 15.01.2025
+- **15.01.2026, erledigt** Validierung funktionier nicht mehr, wenn Folie neu besucht wird und die eigentlich richtige Sache schon eingestellt ist --> scheinbar doch
+- **15.01.2026 erledigt** Wenn ich Blobs hinzufüge, dann verschwinden sie, wenn ich die Folie neu besuche.
+- **15.01.2026, erledigt** Marker verschwinden nur, wenn ich von einer vorherigen Folie komme.
+- **15.01.2026, erledigt** Wenn mit Button die Sichtbarkeit einer Komponente getoggled wird, dann ändert sich der Zustand, wenn ein zweites Mal die Sichtbarkeit getoggled wird. (Seit wann geht das überhaupt?)
+- **15.01.2026, erledigt** Validierung generell nochmal anschauen, das reportet nicht immer korrekt. (Bsp.: https://editor.divomath-nrw.de/folien/68c27cc37fd72b7e7d0302f4/65f088073b0cce6f7059c307/68b561021e375bb973034763/4/6965eec81a99cc6f8003f5f3)
+- Marker soll nicht mit size mitskalieren
+    - **Die Ellipse skaliert schon nicht mit, damit sie groß genug zum anfassen bleibt. Wahrscheinlich sollte die eigentlich skalieren?**
+- Rechter Rand der Box schmaler, wenn fixe Länge des strips, sonst sieht es so aus, als passe noch etwas hin
+
 ## 11.12.2025
 - **13.01.2026, erledigt** Button sollte nicht mit size skalieren sondern feste Größe haben, oder Bild skaliert mit
-- Separator verschiebt sich seltsam, wenn man scrollt und Folien wechselt
+- **14.01.2026, erledigt** Separator verschiebt sich seltsam, wenn man scrollt und Folien wechselt
 
 ## 27.11.2025
 - **27.11.2025** normaler Container soll auch manchmal nicht interagierbar sein

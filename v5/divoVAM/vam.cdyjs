@@ -1,4 +1,4 @@
-() => ({ // ***build 153 | 2026-01-14T22:15:54.525Z***
+() => ({ // ***build 192 | 2026-01-15T11:14:04.124Z***
 scripts: {
     draw: 
 `// v4
@@ -399,13 +399,14 @@ killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(1
 coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
 );
 
-// v22
+// v23
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
 // - added convencience drawtextbox overwrite
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
+// - updated divomathPutResult() to only call hook, when in divomath environment
 
 // Convenience functions
 // A | VAM object functions
@@ -413,6 +414,7 @@ coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(rand
 my(property) := ( // Getter some property.
 	self():property;
 );
+
 set my(key, value) := self():key = value; // Setter
 
 namedef(object) := ( // Sets a "name" property
@@ -943,12 +945,11 @@ divomathGetVarState(dmcb) := (
 divomathPutResult(key, value) := (
 	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
 
-	divomathAddResult(key, value); // call divomath hook	
-
+	// Call divomath hook	
+	if(usedivomath, divomathAddResult(key, value));
+	
 	// Maybe debug
-	if('debuglevel > 2, 
-		println(">> Add result to DM with (key,value): (" + key + "," + value + ")")
-	);
+	if('debuglevel > 6, println(">> Add result to DM with (key,value): (" + key + "," + value + ")"));
 
 	[key, value]; // Return something
 );
@@ -6114,12 +6115,16 @@ rcinteractable = defaultstateto("rcinteractable", false); // reference container
 // Overwrite divomath result updating function.
 divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
-	if('debuglevel>2, println("===updateResults()=================================================="));
-	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
+	if('debuglevel>6, println("===updateResults()=================================================="));
+	regional(todivomath, strips, stripcounter, stripasstcring, polycounter, separators, sepisnext);
 	stripcounter = 1;
 	polycounter = 1;
 	strips = reverse(container:"strips"); // all strips (top to bottom)
-	separators = separator:"copies"; // list of Separator copies
+	
+	separators = separator:"getstatestring"; // Get state string if Separator copies...
+	if(isundefined(separators), separators = QUOTE+QUOTE); // cant be nada, because that breaks replace() in CindyJS
+	separators = replace(separators,QUOTE,""); // ...strip leading quotes needed for divomath reporting...
+	separators = parse("["+separators+"]"); // ...and parse as list.
 
 	// Add divomath result for every Poly of every strip in the form
 	// "<stripno>.<runningno>:<regpolyname>"
@@ -6135,23 +6140,17 @@ divomathUpdateResults() := if(usedivomath,
 
 			// Push Poly to divomath
 			divomathPutResult(todivomath_1, todivomath_2);
-			if('debuglevel>2, println("Added key: " +todivomath_1+ ", val: " + todivomath_2));
-			polycounter = polycounter + 1;
-
-			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
-			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
-			sepisnext = length(sepisnext) > 0;
 
 			// if Separator is next, push a 0 to divomath
-			if(sepisnext,
+			if(contains(separators, polycounter),
 				todivomath = [stripcounter + "." + polycounter, 0];
-				divomathAddResult(todivomath_1, todivomath_2);
-				if('debuglevel>2, println("Added key: " +todivomath_1+ ", val: " + todivomath_2));
+				divomathPutResult(todivomath_1, todivomath_2);
 				stripasstring = stripasstring + "0";
-				polycounter = polycounter + 1;
 			);
 
+			polycounter = polycounter + 1;
 		);
+
 		// Report entire strip as string and reset
 		divomathAddResult("row" + stripcounter, stripasstring);
 		if('debuglevel>2, println("Added key: " +"row" + stripcounter+ ", val: " + stripasstring));
@@ -6609,6 +6608,7 @@ new Container(coord, numofstrips, limits) := (
 		width = 2*cont:"stripmargin"; // margin to the left and right
 		width = width + size; // space for next Poly
 		width = width + (2*size + cont:"polypadding")*cont:"hardpolylimit"; // size for max Polys
+		if(length(select(cont:"limits",#<0)) == 0, width = width - size - cont:"polypadding", width);
 	);
 
 	cont:"ismoveable" = false;
@@ -6959,7 +6959,7 @@ if(!usedivomath,
 	limit = [-2,3];
 	patternlimit = 4;
 	patternstate = ["2,2,2", "3,1"];
-	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
+	state = ["3,6,1,2,3,3,2,1,2", "3,1,3"];
 	sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
 	interactable = true;
@@ -6970,7 +6970,7 @@ if(!usedivomath,
 	polypadding = 1;
 	rcrows = 2;
 	rcstate = ["1,1,2", "2,1,3"];
-	rclimit = [-1,5];
+	rclimit = [1,3];
 	rcsepstate = "1";
 	drawrccontainer = true;
 	drawrcseparator = true;

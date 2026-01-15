@@ -6,10 +6,11 @@ const filename = path.join(__dirname, 'vam.cdyjs');
 
 // Read building blocks and extract build number
 let buildnr = fs.readFileSync(path.join(__dirname, 'buildingblocks'), 'utf8');
-console.log(buildnr);
 buildnr = buildnr.split('\n');
 buildnr = parseInt(buildnr[0].split(' ')[1]) + 1; // New build number as int
 const date = new Date().toISOString();
+console.log("build " + buildnr);
+console.log(date);
 
 // Write new build number and date back to buildingblocks file
 let output = 'build ' + buildnr + '\n' + date;

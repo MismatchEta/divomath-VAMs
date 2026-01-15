@@ -1,10 +1,11 @@
-// v22
+// v23
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
 // - added convencience drawtextbox overwrite
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
+// - updated divomathPutResult() to only call hook, when in divomath environment
 
 // Convenience functions
 // A | VAM object functions
@@ -12,6 +13,7 @@
 my(property) := ( // Getter some property.
 	self():property;
 );
+
 set my(key, value) := self():key = value; // Setter
 
 namedef(object) := ( // Sets a "name" property
@@ -542,12 +544,11 @@ divomathGetVarState(dmcb) := (
 divomathPutResult(key, value) := (
 	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
 
-	divomathAddResult(key, value); // call divomath hook	
-
+	// Call divomath hook	
+	if(usedivomath, divomathAddResult(key, value));
+	
 	// Maybe debug
-	if('debuglevel > 2, 
-		println(">> Add result to DM with (key,value): (" + key + "," + value + ")")
-	);
+	if('debuglevel > 6, println(">> Add result to DM with (key,value): (" + key + "," + value + ")"));
 
 	[key, value]; // Return something
 );
