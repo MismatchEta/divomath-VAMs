@@ -8,7 +8,7 @@
 - **15.01.2026, erledigt** Marker verschwinden nur, wenn ich von einer vorherigen Folie komme.
 - **15.01.2026, erledigt** Wenn mit Button die Sichtbarkeit einer Komponente getoggled wird, dann ändert sich der Zustand, wenn ein zweites Mal die Sichtbarkeit getoggled wird. (Seit wann geht das überhaupt?)
 - **15.01.2026, erledigt** Validierung generell nochmal anschauen, das reportet nicht immer korrekt. (Bsp.: https://editor.divomath-nrw.de/folien/68c27cc37fd72b7e7d0302f4/65f088073b0cce6f7059c307/68b561021e375bb973034763/4/6965eec81a99cc6f8003f5f3)
-- Marker soll nicht mit size mitskalieren
+- **22.01.2026, erledigt** Marker soll nicht mit size mitskalieren
     - **Die Ellipse skaliert schon nicht mit, damit sie groß genug zum anfassen bleibt. Wahrscheinlich sollte die eigentlich skalieren?**
 - **15.01.2026, erledigt** Rechter Rand der Box schmaler, wenn fixe Länge des strips, sonst sieht es so aus, als passe noch etwas hin
 

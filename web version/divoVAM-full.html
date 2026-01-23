@@ -305,6 +305,7 @@ preview=false;
 my(property) := ( // Getter some property.
 	self():property;
 );
+
 set my(key, value) := self():key = value; // Setter
 
 namedef(object) := ( // Sets a "name" property
@@ -2375,6 +2376,7 @@ obj = obj :> o;
 );
 
 ;
+//VAM: distributive
 /* v11
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
@@ -6059,18 +6061,7 @@ toggles:"showtf-divvalue":"script";
 
 ); // end vam-if
 ;
-// v36
-// Recent changes:
-// - fixed Scrollbar overlaying Reset Button
-// - fixed Scrollbar not showing on start
-// - changed displaying of triangle (smaller)
-// - added configurable state for initial state of pattern container (patternstate)
-// - added drawresetbutton as handle
-// - added interactable as handle
-// - changed Reset button not resizing with size attribute
-// - fixed and refactored getting separator position with regards to parent container (and getting state string)
-// - @TODO: implement new handles as web controls
-
+//VAM: strapwork
 // v37
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
@@ -6233,7 +6224,7 @@ divomathSetState() := (
 		"drawrcseparator" : drawrcseparator,
 		"rcinteractable" : rcinteractable
 	};
-
+println(state:"sepstate");
 	// Configure vertices to handle image-strings correctly
 	regional(polys);
 	polys = apply(vertices, # = if(isstring(#), QUOTE + # + QUOTE, #));
@@ -6906,7 +6897,7 @@ new Container(coord, numofstrips, limits) := (
 				self():"adjustedvalue" = round(currval);
 			);
 
-my("parent"):"childseparator":"getstatestring";
+divomathSetState();
 
 			my("parent"):"movepolysintoplace";
 			my("parent"):"moveseparatorsintoplace"; // @NOT IMPLEMENTED YET
@@ -7248,7 +7239,10 @@ container:"dropcontainer";
 );
 ;
 //VAM: thales
-// v1
+/** v2
+* Recent changes:
+* - clamped point movement at screen edges
+*/
 
 // Satz des Thales und Umkehrung
 if(vam == "thales",
@@ -7352,7 +7346,7 @@ new ThalesTrig(A,B,C) := (
 		!isundefined(ishot);
 	);
 	trig:"lasthot" = NADA;
-
+	
 	trig:"draw" := (
 		// Draw circle
 		if(my("drawcircle"),drawcircle(centroid([my("A"),my("B")]), .5*dist(my("A"),my("B")), size->my("circlelinesize"), color->my("circlelinecolor")));
@@ -7612,6 +7606,15 @@ new ThalesTrig(A,B,C) := (
 		if(my("bmoveable") & my("lasthot")=="B", self():"B" = my("B") + mousedelta); // Move B with mouse
 		if(my("lasthot")=="C", self():"C" = my("C") + mousedelta); // Move C with mouse
 
+		// Handle clamping at frame edges
+		regional(screen, margin);
+		screen = reverse(apply(screenbounds(), #.xy));
+		margin = 1;
+		self():"C" = [
+				min(max(my("C")_1,screen_1_1+margin),screen_2_1-margin),
+				min(max(my("C")_2,screen_1_2+margin),screen_4_2-margin)
+			];
+
 		// Handle snapping to 90°
 		if(my("snap") & dist(my("gamma"), PI/2) < my("snapdifference")° & my("lasthot") == "C" % my("softc"),
 			self():"C" = my("M") + .5*dist(my("B"),my("A"))*normalize(my("C") - my("M"));			
@@ -7646,7 +7649,7 @@ new ThalesTrig(A,B,C) := (
 					// Choose side: same side as C relative to AB
 					regional(sign, midpoint);
 					sign = if(det([[ab_1,ab_2],[ac_1,ac_2]]) >= 0, 1, -1); // get orientation for correct circle
-					O = my("M") +  sign * h * normalvec; // Midpoint (DRAW A PICTURE);	
+					O = my("M") +  sign * h * normalvec; // Midpoint (works, DRAW A PICTURE);	
 
 					// Get next point on the circle (through radial projection)
 					w = my("C") - O;

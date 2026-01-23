@@ -1308,7 +1308,7 @@ if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debugl
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-vam = "strapwork"; // comment before production
+vam = "distributive"; // comment before production
 if(!isundefined('urlparams:"vam"), vam = 'urlparams:"vam");
 
 if('debuglevel > 3,
@@ -6056,7 +6056,7 @@ toggles:"showtf-divvalue":"script";
 ); // end vam-if
 ;
 //VAM: strapwork
-// v36
+// v37
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6218,7 +6218,7 @@ divomathSetState() := (
 		"drawrcseparator" : drawrcseparator,
 		"rcinteractable" : rcinteractable
 	};
-
+println(state:"sepstate");
 	// Configure vertices to handle image-strings correctly
 	regional(polys);
 	polys = apply(vertices, # = if(isstring(#), QUOTE + # + QUOTE, #));
@@ -6409,7 +6409,6 @@ new Separator(coord, height, parent) := (
 	
 	sep:"coord" = coord;
 	sep:"parent" = parent; // should be a Container
-	parent:"childseparator" = sep;
 	sep:"original" = NADA; // reference for copies of Separator
 	sep:"timing" = parent:"timing";
 	sep:"color" = grey(.3);
@@ -6494,7 +6493,7 @@ new Separator(coord, height, parent) := (
 		copy:"color" = copy:"color";
 
 		self():"copies" = my("copies") ++ [copy];
-		
+
 		copy;
 	);
 
@@ -6531,6 +6530,13 @@ new Separator(coord, height, parent) := (
 
 	// Get position in relation to parent container (i.e. max number of polys to the left of self())
 	sep:"getcontainerposition" := (
+		regional(refposition, position, distance);
+
+		refposition = my("original"):"coord"_1 - (my("original"):"parent":"polypadding"/2-my("original"):"parent":"stripmargin"); // adjust original position
+		position = my("coord")_1;
+		distance = polypadding + 2*size; // should be distance between to separators
+		round((position - refposition) / distance);
+/* old version (doesnt really work that well)
 		regional(refstrip, position, maxlength);
 		position = NADA;
 
@@ -6540,13 +6546,15 @@ new Separator(coord, height, parent) := (
 		refstrip = refstrip_1; // Select first element of list (should be only one, but select returns list)
 		
 		// Get number of polys left of Separator
+		refstrip = select(refstrip, contains(obj,#));
 		position = apply(refstrip, if(#:"coord"_1 < my("coord")_1,1,0)); // Store a 1 for every poly left of Separator
 		position = sum(position); // count all Polys to the left
 
 		// Alter by position of the scrollbar (basically a lazy workaround to not have to implement proper moving and displaying of Separators)
-		position = position - my("original"):"parent":"scrollbar":"adjustedvalue";
+		//position = position - my("original"):"parent":"scrollbar":"adjustedvalue";
 
 		position; // Return
+		*/
 	);
 
 	sep:"getstatestring" := (
@@ -6803,9 +6811,9 @@ new Container(coord, numofstrips, limits) := (
 	);
 
 	cont:"moveseparatorsintoplace" := ( // Move Separators to appropriate positions in *all* strips
-		//println("TODO");
-		apply(my("childseparator"):"copies", println(">>" + #:"getcontainerposition"));
-		println(my("childseparator"):"getstatestring");
+		println("cont:movespearatorsintoplace >> TODO");
+		//apply(my("childseparator"):"copies", println(">>" + #:"getcontainerposition"));
+		//println(my("childseparator"):"getstatestring");
 	);
 
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
@@ -6883,8 +6891,10 @@ new Container(coord, numofstrips, limits) := (
 				self():"adjustedvalue" = round(currval);
 			);
 
+divomathSetState();
+
 			my("parent"):"movepolysintoplace";
-			my("parent"):"moveseparatorsintoplace";
+			my("parent"):"moveseparatorsintoplace"; // @NOT IMPLEMENTED YET
 		);
 		
 		// Display bar at the start
@@ -7088,7 +7098,6 @@ forall(state, row, // iterate over config for every row
 // ======================
 regional(separator);
 separator = new Separator(container:"coord", container:"height", container);
-container:"childseparator" = separator;
 
 // Apply sepstate to initialize copies
 sepstate = set(tokenize(sepstate,","));
