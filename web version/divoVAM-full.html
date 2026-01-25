@@ -5256,12 +5256,12 @@ forall(cards, card,
 ); // End VAM-if
 
 ;
-//VAM: percentagebar
-// v3
+// v4
 // recent changes:
 // - fixed toggle button label not showing supplied unit
 // - fixed "Eingabe P" textfield not displaying correct number
 // - fixed different wrong calculations and interaction between the different text inputs
+// - added position of bar as configurable
 
 // Prozentstreifen
 if(vam == "percentagebar",
@@ -5280,6 +5280,7 @@ regional(item);
 barprecision = defaultstateto("barprecision", 1);
 barprecision = barprecision / 100; // Adjust to not be expressed as y%
 
+barposition = defaultstateto("barposition", [0,17]);
 barwidth = defaultstateto("barwidth", 16); // initial width of bar
 barheight = defaultstateto("barheight", 2); // height of bar
 
@@ -5670,6 +5671,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 // ===============
 if(!usedivomath,
 	barprecision = if(!isundefined('urlparams:"barprecision"), parse('urlparams:"barprecision"), .05);
+	barposition = if(!isundefined('urlparams:"barposition"), parse('urlparams:"barposition"), [0,17]);
 	barwidth = if(!isundefined('urlparams:"barwidth"), parse('urlparams:"barwidth"), 16);
 	barheight = if(!isundefined('urlparams:"barheight"), parse('urlparams:"barheight"), 2);
 	barvalue = if(!isundefined('urlparams:"barvalue"), parse('urlparams:"barvalue"), 0);
@@ -6008,7 +6010,7 @@ toggles:"showtf-divvalue":"script" := if(my("state"),
 // Init Percentagebar
 // new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
 // ==================================================================================
-bar = new Percentagebar([-2,17], barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+bar = new Percentagebar(barposition, barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
 bar:"drawpercentagelabels"	:= toggles:"percentages":"state";
 bar:"drawvaluelabels"				:= toggles:"parts":"state";
 bar:"drawbasevaluelabel"		:= toggles:"basevalue":"state";
