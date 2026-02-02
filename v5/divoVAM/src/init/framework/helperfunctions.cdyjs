@@ -1,11 +1,11 @@
-// v23
+// v24
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
 // - added convencience drawtextbox overwrite
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
-// - updated divomathPutResult() to only call hook, when in divomath environment
+// - changed defaultstateto() ordering to look for divomath result before overwrites
 
 // Convenience functions
 // A | VAM object functions
@@ -233,7 +233,7 @@ inpoly(poly, point) := (
 			edgeStart = poly_#;
 			edgeDir = poly_1 - poly_#;
 		);
-	
+
 		// Check ray and edge for intersection
 		A = [[rayDir_1, -edgeDir_1], [rayDir_2, -edgeDir_2]];
 		solution = linearsolve(A, edgeStart - rayStart);
@@ -544,11 +544,14 @@ divomathGetVarState(dmcb) := (
 divomathPutResult(key, value) := (
 	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
 
-	// Call divomath hook	
-	if(usedivomath, divomathAddResult(key, value));
-	
+	if(usedivomath,
+		divomathAddResult(key, value); // call divomath hook	
+	);
+
 	// Maybe debug
-	if('debuglevel > 6, println(">> Add result to DM with (key,value): (" + key + "," + value + ")"));
+	if('debuglevel > 2, 
+		println(">> Add result to DM with (key,value): (" + key + "," + value + ")")
+	);
 
 	[key, value]; // Return something
 );
@@ -575,11 +578,11 @@ defaultstateto(key, value) := (
 	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
 
 	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
-	if(!isundefined(resultvalue), 
-		value = resultvalue; // try overwrite value if any
+	if(!isundefined(prevansvalue), 
+		value = prevansvalue; // try prev ans if any
 	, 
-		if(!isundefined(prevansvalue),
-			value = prevansvalue; // else: try prev ans if any
+		if(!isundefined(resultvalue),
+			value = resultvalue; // else: try overwrite value if any
 		,
 			if(!isundefined(statevalue), 
 				value = statevalue; // else: try state if any

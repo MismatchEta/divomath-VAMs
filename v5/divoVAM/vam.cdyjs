@@ -1,4 +1,4 @@
-() => ({ // ***build 193 | 2026-01-25T12:32:08.627Z***
+() => ({ // ***build 194 | 2026-02-02T11:03:54.463Z***
 scripts: {
     draw: 
 `// v4
@@ -399,14 +399,14 @@ killanimationtest() := new animationobject(obj_1,"coord",obj_1:"coord",(random(1
 coloranimationtest() := new animationobject(obj_1,"color",obj_1:"color",hue(random(1)),0.5,"linear");
 );
 
-// v23
+// v24
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
 // - added convencience drawtextbox overwrite
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
-// - updated divomathPutResult() to only call hook, when in divomath environment
+// - changed defaultstateto() ordering to look for divomath result before overwrites
 
 // Convenience functions
 // A | VAM object functions
@@ -634,7 +634,7 @@ inpoly(poly, point) := (
 			edgeStart = poly_#;
 			edgeDir = poly_1 - poly_#;
 		);
-	
+
 		// Check ray and edge for intersection
 		A = [[rayDir_1, -edgeDir_1], [rayDir_2, -edgeDir_2]];
 		solution = linearsolve(A, edgeStart - rayStart);
@@ -945,11 +945,14 @@ divomathGetVarState(dmcb) := (
 divomathPutResult(key, value) := (
 	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
 
-	// Call divomath hook	
-	if(usedivomath, divomathAddResult(key, value));
-	
+	if(usedivomath,
+		divomathAddResult(key, value); // call divomath hook	
+	);
+
 	// Maybe debug
-	if('debuglevel > 6, println(">> Add result to DM with (key,value): (" + key + "," + value + ")"));
+	if('debuglevel > 2, 
+		println(">> Add result to DM with (key,value): (" + key + "," + value + ")")
+	);
 
 	[key, value]; // Return something
 );
@@ -976,11 +979,11 @@ defaultstateto(key, value) := (
 	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
 
 	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
-	if(!isundefined(resultvalue), 
-		value = resultvalue; // try overwrite value if any
+	if(!isundefined(prevansvalue), 
+		value = prevansvalue; // try prev ans if any
 	, 
-		if(!isundefined(prevansvalue),
-			value = prevansvalue; // else: try prev ans if any
+		if(!isundefined(resultvalue),
+			value = resultvalue; // else: try overwrite value if any
 		,
 			if(!isundefined(statevalue), 
 				value = statevalue; // else: try state if any
@@ -5233,11 +5236,12 @@ forall(cards, card,
 
 ); // End VAM-if
 
-// v3
+// v4
 // recent changes:
 // - fixed toggle button label not showing supplied unit
 // - fixed "Eingabe P" textfield not displaying correct number
 // - fixed different wrong calculations and interaction between the different text inputs
+// - added position of bar as configurable
 
 // Prozentstreifen
 if(vam == "percentagebar",
@@ -5256,6 +5260,7 @@ regional(item);
 barprecision = defaultstateto("barprecision", 1);
 barprecision = barprecision / 100; // Adjust to not be expressed as y%
 
+barposition = defaultstateto("barposition", [0,17]);
 barwidth = defaultstateto("barwidth", 16); // initial width of bar
 barheight = defaultstateto("barheight", 2); // height of bar
 
@@ -5338,8 +5343,9 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 	o:"ishot" := inrectangle(my("hitbox"), mouse().xy);
 
 	o:"draw" := (
-		// Draw background box
+		// Draw background box	
 		fillpoly(my("box"), color->grey(.9));
+		drawpoly(my("box"), color->grey(.3), size->1);
 
 		// Draw actual draggable bar
 		fill(my("shape"), color->my("color"));
@@ -5645,6 +5651,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 // ===============
 if(!usedivomath,
 	barprecision = if(!isundefined('urlparams:"barprecision"), parse('urlparams:"barprecision"), .05);
+	barposition = if(!isundefined('urlparams:"barposition"), parse('urlparams:"barposition"), [0,17]);
 	barwidth = if(!isundefined('urlparams:"barwidth"), parse('urlparams:"barwidth"), 16);
 	barheight = if(!isundefined('urlparams:"barheight"), parse('urlparams:"barheight"), 2);
 	barvalue = if(!isundefined('urlparams:"barvalue"), parse('urlparams:"barvalue"), 0);
@@ -5983,7 +5990,7 @@ toggles:"showtf-divvalue":"script" := if(my("state"),
 // Init Percentagebar
 // new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
 // ==================================================================================
-bar = new Percentagebar([-2,17], barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+bar = new Percentagebar(barposition, barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
 bar:"drawpercentagelabels"	:= toggles:"percentages":"state";
 bar:"drawvaluelabels"				:= toggles:"parts":"state";
 bar:"drawbasevaluelabel"		:= toggles:"basevalue":"state";
@@ -6024,6 +6031,8 @@ obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj :> bar;
 
+obj = obj -- [toggles:"arch"];
+
 // Call toggle scripts for G,P,p toggle to put in textfields approriately
 toggles:"showtf-base":"script";
 toggles:"showtf-value":"script";
@@ -6033,7 +6042,7 @@ toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
 
 ); // end vam-if
-// v37
+// v40
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6043,6 +6052,13 @@ toggles:"showtf-divvalue":"script";
 // - added interactable as handle
 // - changed Reset button not resizing with size attribute
 // - fixed and refactored getting separator position with regards to parent container (and getting state string)
+// - change separator hitbox/shape to scale with size attribute
+// - added resetting to referenced state in reset button
+// - Added configurable size attribute for Separators and Reset Button (sepsize)
+// - Removed some debug output
+// - Added bigger circle to (only) the hitbox of Separator for easier grabbing
+// - Fix sepstate reporting position where initially dropped (even if there are no polys in this position)
+// - Reorder drawing for RegPolys
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -6084,6 +6100,7 @@ COLORMAP = { // Maps color names
 regional(size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
 
 size = defaultstateto("size", 1); // Configure general size of Polys and Container
+sepsize = defaultstateto("sepsize", 1); // Configure general size of Separators and Reset Button
 vertices = defaultstateto("polys", [0,3,6]); // Configure number of RegPolys or list of number of vertices
 colors = defaultstateto("polycolors", 1..100); // Configure colors of the RegPolys
 rows = defaultstateto("rows", 1); // Configure number of rows/strips in Container
@@ -6092,7 +6109,7 @@ limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPoly
 sepstate = defaultstateto("sepstate", ""); // Separator positions (i.e. number of polys left of Separator)
 patternlimit = defaultstateto("patternlimit", 5); // Limit for PatternContainer
 patternstate = defaultstateto("patternstate", apply(1..rows, "")); // Configure predefined RegPoly per strip
-interactable = defaultstateto("interactable", true); // Container is interactable
+interactable = defaultstateto("cps", true); // Container is interactable (c=Container, p=Polys, s=Separators ... of Container)
 
 // Configure look and feel
 drawpolys = defaultstateto("drawpolys", true);// Draw base RegPolys
@@ -6115,16 +6132,12 @@ rcinteractable = defaultstateto("rcinteractable", false); // reference container
 // Overwrite divomath result updating function.
 divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
-	if('debuglevel>6, println("===updateResults()=================================================="));
-	regional(todivomath, strips, stripcounter, stripasstcring, polycounter, separators, sepisnext);
+	if('debuglevel>2, println("===updateResults()=================================================="));
+	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
 	stripcounter = 1;
 	polycounter = 1;
 	strips = reverse(container:"strips"); // all strips (top to bottom)
-	
-	separators = separator:"getstatestring"; // Get state string if Separator copies...
-	if(isundefined(separators), separators = QUOTE+QUOTE); // cant be nada, because that breaks replace() in CindyJS
-	separators = replace(separators,QUOTE,""); // ...strip leading quotes needed for divomath reporting...
-	separators = parse("["+separators+"]"); // ...and parse as list.
+	separators = separator:"copies"; // list of Separator copies
 
 	// Add divomath result for every Poly of every strip in the form
 	// "<stripno>.<runningno>:<regpolyname>"
@@ -6140,20 +6153,23 @@ divomathUpdateResults() := if(usedivomath,
 
 			// Push Poly to divomath
 			divomathPutResult(todivomath_1, todivomath_2);
+			polycounter = polycounter + 1;
+
+			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
+			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
+			sepisnext = length(sepisnext) > 0;
 
 			// if Separator is next, push a 0 to divomath
-			if(contains(separators, polycounter),
+			if(sepisnext,
 				todivomath = [stripcounter + "." + polycounter, 0];
 				divomathPutResult(todivomath_1, todivomath_2);
 				stripasstring = stripasstring + "0";
+				polycounter = polycounter + 1;
 			);
 
-			polycounter = polycounter + 1;
 		);
-
 		// Report entire strip as string and reset
-		divomathAddResult("row" + stripcounter, stripasstring);
-		if('debuglevel>2, println("Added key: " +"row" + stripcounter+ ", val: " + stripasstring));
+		divomathPutResult("row" + stripcounter, stripasstring);
 		stripasstring = "";
 		
 		// Set counters
@@ -6165,8 +6181,7 @@ divomathUpdateResults() := if(usedivomath,
 	regional(dmstate);
 	dmstate = divomathSetState();
 	forall(keys(dmstate), #,
-		divomathAddResult(#, dmstate:#);
-		if('debuglevel>3, println("Added key: " +#+ ", val: " +dmstate:#));
+		divomathPutResult(#, dmstate:#);
 	);
 
 	divomathSendResult();
@@ -6324,17 +6339,17 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 		fillpoly(my("shape"),color->if(isundefined(my("image")),my("color"),grey(1)));
 		if(drawborders,drawpoly(my("shape"),color->grey(0),size->bordersize));
 
-		// Debug
-		if('debuglevel > 0, 
-			draw(my("center"));
-			drawtext(my("center")+[.2,0], my("id"),color->grey(1));
-			draw(my("coord"), color->grey(.9));
-		);
-
 		// Draw image
 		if(!isundefined(my("image")),
 			drawimage(my("coord"),ICONS:(my("image")), scale->.28*my("radius"));
 		);
+		
+		// Debug
+		if('debuglevel > 0, 
+			draw(my("center"));
+			drawtext(my("center")+[.2,0], my("id"),color->apply(my("color"), abs(1-#)), bold->true);
+			draw(my("coord"), color->grey(.9));
+		);		
 	);
 
 	regpoly:"ishot" := inpoly(my("shape"),mouse().xy);
@@ -6392,22 +6407,35 @@ new Separator(coord, height, parent) := (
 	sep:"width" = .4;
 	sep:"copies" = [];
 
-	sep:"hitbox" := ( // mutliple polys
-		regional(hitbox, offset, barscale, blobscale);
+	sep:"shape" := ( // mutliple polys
+		regional(shape, blobscale, barscale);
 		blobscale = .6;
-		hitbox = [];
+		shape = [];
 
 		//hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
-		hitbox = hitbox :> ellipse(my("coord")-[0,1.5*blobscale*my("width")], .6, .3);
-		barscale = .2;
-		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
+		shape = shape :> ellipse(my("coord")-[0,1.5*sepsize*blobscale*my("width")], sepsize*.6, sepsize*.3);
+		barscale = sepsize*.2;
+		shape = shape :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
+	);
+	sep:"hitbox" := (
+		regional(hitbox, blobscale, barscale);
+		hitbox = my("shape");
+
+		// Add larger box to the bottom to make it easier to grab
+		barscale = sepsize*.2;
+		blobscale = .6;
+		hitbox = hitbox :> ellipse(my("coord")-[0,3*sepsize*blobscale*my("width")], sepsize*.6, sepsize*.6);
 	);
 	sep:"ishot" := contains(apply(my("hitbox"), inpoly(#,mouse().xy)), true); // mouse in one the parts of the hitbox
-
-	sep:"shape" := my("hitbox");
-	sep:"draw" := // draw all Polys
+	
+	sep:"draw" := (
+		// Draw all Polys
 		forall(my("shape"), fillpoly(#, color->my("color")));
 
+		// Debug draw
+		forall(my("hitbox"), drawpoly(#, color->[1,0,0]));
+	);
+	
 	sep:"move" := if(my("ismoveable"),
 		self():"coord" = my("coord") + [mousedelta_1, 0]; // move only along x-axis
 		self():"coord"_1 = max(my("parent"):"coord"_1,my("coord")_1); // limit to the left
@@ -6511,34 +6539,18 @@ new Separator(coord, height, parent) := (
 		position = my("coord")_1;
 		distance = polypadding + 2*size; // should be distance between to separators
 		round((position - refposition) / distance);
-/* old version (doesnt really work that well)
-		regional(refstrip, position, maxlength);
-		position = NADA;
-
-		// Get strip with most polys
-		refstrip = apply(my("parent"):"strips", length(#)); // length of all strips
-		refstrip = select(my("parent"):"strips", length(#) == max(refstrip)); // select longest strip
-		refstrip = refstrip_1; // Select first element of list (should be only one, but select returns list)
-		
-		// Get number of polys left of Separator
-		refstrip = select(refstrip, contains(obj,#));
-		position = apply(refstrip, if(#:"coord"_1 < my("coord")_1,1,0)); // Store a 1 for every poly left of Separator
-		position = sum(position); // count all Polys to the left
-
-		// Alter by position of the scrollbar (basically a lazy workaround to not have to implement proper moving and displaying of Separators)
-		//position = position - my("original"):"parent":"scrollbar":"adjustedvalue";
-
-		position; // Return
-		*/
 	);
 
 	sep:"getstatestring" := (
-		regional(statestring);
-		statestring = QUOTE; // add leading quotation mark
+		regional(statestring, position, maxpolycount);
+		statestring = QUOTE; // Add leading quotation mark
 
 		// Add positions separated by comma
 		forall(my("copies"),
-			statestring = statestring + #:"getcontainerposition" + ",";
+			position = #:"getcontainerposition";
+			maxpolycount = max(apply(my("parent"):"strips", length(#)));
+			position = min(position, maxpolycount);
+			statestring = statestring + position + ",";
 		);
 
 		// Replace last comma with trailing quotation mark
@@ -6571,7 +6583,18 @@ new Container(coord, numofstrips, limits) := (
 		strips = [];
 		repeat(cont:"#strips", strips = strips :> []);
 	);
-
+	cont:"longeststripindex" := ( // Returns first stripindex with max number of Polys in it
+		regional(maxlength, index);
+		maxlength = apply(my("strips"), length(#));
+		maxlength = max(maxlength);
+		
+		// Find first occurence of maxlength
+		forall(1..length(my("strips")),
+			if(isundefined(index) & length(my("strips")_#) == maxlength, index = #);
+		);
+		index; // Return
+	);
+	
 	cont:"limits" = limits; // [] int: size limits of strips
 	cont:"hardpolylimit" = ( // Calc how many Polys can at most be drawn in a line on screen
 		regional(hasinfinite, hardpolylimit);
@@ -6608,7 +6631,6 @@ new Container(coord, numofstrips, limits) := (
 		width = 2*cont:"stripmargin"; // margin to the left and right
 		width = width + size; // space for next Poly
 		width = width + (2*size + cont:"polypadding")*cont:"hardpolylimit"; // size for max Polys
-		if(length(select(cont:"limits",#<0)) == 0, width = width - size - cont:"polypadding", width);
 	);
 
 	cont:"ismoveable" = false;
@@ -6690,7 +6712,7 @@ new Container(coord, numofstrips, limits) := (
 		regional(stripindex);
 		stripindex = 1+length(select(apply(apply(1..my("#strips"),my("coord")_2 + #*my("height")/my("#strips")),#<mouse().xy_2),#));
 
-		// Put poly in makeshift container to call "cropcontainer" with
+		// Put poly in makeshift container to call "dropcontainer" with
 		regional(cont);
 		cont = {};
 		cont:"strips" = apply(1..my("#strips"), if(#==stripindex, [dropobject], []));
@@ -6782,14 +6804,11 @@ new Container(coord, numofstrips, limits) := (
 			);
 		);
 
+		// Reposition Separators too
+		my("childseparator"):"realignchildren";
+
 		// Update divomath states/results
 		divomathUpdateResults();
-	);
-
-	cont:"moveseparatorsintoplace" := ( // Move Separators to appropriate positions in *all* strips
-		println("cont:movespearatorsintoplace >> TODO");
-		//apply(my("childseparator"):"copies", println(">>" + #:"getcontainerposition"));
-		//println(my("childseparator"):"getstatestring");
 	);
 
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
@@ -6867,10 +6886,9 @@ new Container(coord, numofstrips, limits) := (
 				self():"adjustedvalue" = round(currval);
 			);
 
-my("parent"):"childseparator":"getstatestring";
+			divomathSetState();
 
 			my("parent"):"movepolysintoplace";
-			my("parent"):"moveseparatorsintoplace"; // @NOT IMPLEMENTED YET
 		);
 		
 		// Display bar at the start
@@ -6959,10 +6977,10 @@ if(!usedivomath,
 	limit = [-2,3];
 	patternlimit = 4;
 	patternstate = ["2,2,2", "3,1"];
-	state = ["3,6,1,2,3,3,2,1,2", "3,1,3"];
+	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
 	sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
-	interactable = true;
+	interactable = "cps";
 	drawpatterncontainer = false;
 	drawseparator = true;
 	drawresetbutton = true;
@@ -6970,7 +6988,7 @@ if(!usedivomath,
 	polypadding = 1;
 	rcrows = 2;
 	rcstate = ["1,1,2", "2,1,3"];
-	rclimit = [1,3];
+	rclimit = [-1,5];
 	rcsepstate = "1";
 	drawrccontainer = true;
 	drawrcseparator = true;
@@ -7083,9 +7101,18 @@ container:"childseparator" = separator;
 
 // ...=============================================================
 // Make Container and corresponding Polys/Separators non-interactable if required
-if(!interactable,
+// ...Container itself
+if(indexOf(interactable, "c") + indexOf(interactable, "C") == 0,
 	container:"ishot" = false; // Container
+);
+
+// ...Polys in Container
+if(indexOf(interactable, "p") + indexOf(interactable, "P") == 0,
 	apply(container:"strips",strip,apply(strip,poly, poly:"ishot"=false)); // Polys
+);
+
+// ...Separators of Container
+if(indexOf(interactable, "s") + indexOf(interactable, "S") == 0,
 	separator:"ishot" = false; // Separator
 	apply(container:"childseparator":"copies",sep,sep:"ishot"=false); // child Separators
 );
@@ -7096,7 +7123,7 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new ImageButton(NADA, 2, 1, ICONS:"reset");
+btn = new ImageButton(NADA, sepsize*2, sepsize*1, ICONS:"reset");
 btn:"coord" := (container:"shape"_3).xy - [2,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
 btn:"imgscale" = .9;
 btn:"cornerradius" = size;
@@ -7106,12 +7133,21 @@ btn:"fontcolor" = grey(1);
 btn:"fontsize" = btn:"fontsize" * size;
 btn:"polysref" = polys; // reference for polys, since CindyJS does not access polys var properly
 btn:"script" := ( // Resets state to editor default setting if used in divomath
-	// Reassign relevant vars with divomath default state, if applicable
+	// Reassign relevant vars with appropriate values
 	if(usedivomath,
-		state = defaultto('dmdefaultstate:"state", apply(1..rows, ""));
+		// default to divomath reference is exists or elsedefault state
+		state = divomathConfig:"__state";
+		if(isundefined(state),
+			state = defaultto('dmdefaultstate:"state", apply(1..rows, ""));
+		);
 		state = apply(state, tokenize(#,","));
-		sepstate = defaultto('dmdefaultstate:"sepstate", "");
+
+		sepstate = divomathConfig:"__sepstate";
+		if(isundefined(sepstate),
+			sepstate = defaultto('dmdefaultstate:"sepstate", "");
+		);
 	,
+		// non divomath reset
 		sepstate = separator:"getstatestring";
 		sepstate = replace(sepstate,QUOTE,""); // Remove QUOTEs for normal use of string
 	);

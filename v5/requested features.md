@@ -1,8 +1,16 @@
 # Thales (Elise)
-- in VAM überführen
+- **erledigt** in VAM überführen
 
 # strapwork
-## 15.01.2025
+## 29.01.2026
+- Marker behält seine nicht eingerastete Position, wenn ich auf neue Folie gehe
+- **NEIN** Skalierung: Kann ich in Cinderella die Skalierung basierend auf der Größe des divomath Containers konfigurieren?
+- **30.01.2026, erledigt** Marker eigener Skalierungsparameter
+    - **30.01.2026, erledigt** Button skaliert mit gleichem Skalierungsparameter
+- **30.01.2026, erledigt** Marker schwer anfassbar: Hitbox größer ohne optische Vergrößerung?
+- **30.01.2026, erledigt** Container so konfigurieren, dass wenn gewünscht nur Marker verschiebbar, Formen aber nicht verschiebbar
+
+## 15.01.2026
 - **15.01.2026, erledigt** Validierung funktionier nicht mehr, wenn Folie neu besucht wird und die eigentlich richtige Sache schon eingestellt ist --> scheinbar doch
 - **15.01.2026 erledigt** Wenn ich Blobs hinzufüge, dann verschwinden sie, wenn ich die Folie neu besuche.
 - **15.01.2026, erledigt** Marker verschwinden nur, wenn ich von einer vorherigen Folie komme.
