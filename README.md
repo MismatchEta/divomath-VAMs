@@ -267,7 +267,10 @@ cindyjs:
 ### Zustand: strapwork
 
 - size: *\<float>*
-  - stellt generelle Größe der Objekte ein
+  - stellt generelle Größe von Container und Polygonen ein
+  - default 1
+- sepsize: *\<float>*
+  - stellt generelle Größe der Trennstriche (Separatoren) und des Reset-Buttons ein
   - default 1
 - polys: *\<list>*
   - dient der genaueren Konfiguration der Basis-Polygone. Hier werden in einer Liste die Ecken der verfügbaren Polyone (und damit auch die Anzahl an Polygonen) definiert, e.g. [3,3,4,4] erzeugt zwei Dreiecke und zwei Vierecke (in verschiedenen Farben)
@@ -294,9 +297,13 @@ cindyjs:
   - Definiert, wie viele Polygone pro Band 
     - Init Zustand **fontsize**: erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie **row** vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)
   - default [10,10,...] (potenziell 100 Bänder)
-- interactable: *\<bool>*
-  - Konfiguriert, ob mit dem Container interagiert werden kann, i.e. ob dort Polygone verschoben, hinzugefügt oder entfernt werden können.
-  - default true
+- interactable: *\<string>*
+  - Konfiguriert, mit welchen Teilen des Containers interagiert werden kann, i.e. ob dort Polygone/Trennstriche verschoben, hinzugefügt oder entfernt werden können.
+  - Gesteuert wird das über die Buchstaben **"c"** (Container), **"p"** (Polygon) und **"s"** (Separator/Trennstrich)
+  - **"cps"** (default, s.u.) lässt also alles interagierbar
+  - **"cp"** lässt nur den Container selbst und die Polygone interagierbar. Mit den Trennstrichen kann nicht interagiert werden
+  - Restliche Kombinationen analog
+  - default "cps"
 - sepstate: *\<string>*
   - Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae\*\*"1,3,5"\*\* erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.
   - default **""** (leer)
@@ -433,6 +440,34 @@ Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwe
 
 ## Changelog
 
+### v5.194
+- GENERAL:
+  - Versionssystematik geändert zu <main>.<build> (momentan version 5, build 194)
+  - Build erhöht sich über Versionen hinweg
+- FRAMEWORK:
+  - helper functions:
+    - Funktionen zum Zeichnen von Kreisbögen (basierend auf einem Winkel) hinzugefügt **arc(), drawarc(), drawclosedarc(), drawangle()**
+    - Convenience Funktionen (**vectorlength(), normalize(), todeg(), torad()**)
+    - Convenience overwrite für drawtextbox hinzugefügt
+    - numerals Funktion geändert: GIbt jetzt numeral von IRGENDEINER Zahl zurück nach Normung des Dudens (hinsichtlich Leerzeichen etc.)
+    - Wrapper für divomath Funktionen hinzugefügt (**divomathPutResult()** für **divomathAddResult()**)
+    - Sortierung in **defaultstateto()** geändert, sodass zuerst letztes divomath result herangezogen wird, danach erst overwrites
+- VAM:
+  - percentagebar:
+    - Fix: Toggle Button "label" zeigte nicht die angegebene Einheit
+    - Fix: "Eingabe P" Textfeld zeigte nicht die richtige Zahl
+    - Fix: Verschiedene falsche Berechnungen bei der Interaktion der verschiedenen TextInputs
+    - Parameter zur Konfiguration der Position des Prozentstreifens hinzugefügt
+  - strapwork:
+    - Resizing Verhalten des Reset Buttons geändert
+    - Resizing Verhalten des Separators geändert
+    - Fix: Separator reportete nicht richtig seine Position in Relation zu den Polygonen seines Containers
+    - Reset Button resettet jetzt auf referenzierten Zustand
+    - Handle zum individuellen Konfigurieren der Skalierung des Separators hinzugefügt (**sepsize**)
+    - **interactable** handle zu String geändert, damit verschiedene Teile darüber (nicht-)interaktiv geschaltet werden können
+    - Größeren Kreis and die Hitbox des Separators gebaut zum einfacheren Greifen
+    - Fix: Separator übermittelt den State wo er gedropped wird, nicht wo er danach einsortiert wird (selbst wenn an der Stelle keine Polygone sind)
+    - Zeichenreihenfolge der Polygone geändert
 ### v5.2.3
 - VAM:
   - distributive:

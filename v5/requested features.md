@@ -3,7 +3,7 @@
 
 # strapwork
 ## 29.01.2026
-- Marker behält seine nicht eingerastete Position, wenn ich auf neue Folie gehe
+- **02.02.2026, erledigt** Marker behält seine nicht eingerastete Position, wenn ich auf neue Folie gehe
 - **NEIN** Skalierung: Kann ich in Cinderella die Skalierung basierend auf der Größe des divomath Containers konfigurieren?
 - **30.01.2026, erledigt** Marker eigener Skalierungsparameter
     - **30.01.2026, erledigt** Button skaliert mit gleichem Skalierungsparameter

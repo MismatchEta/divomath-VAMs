@@ -1269,7 +1269,7 @@ if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debugl
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-vam = "strapwork"; // comment before production
+vam = "default"; // comment before production
 if(!isundefined('urlparams:"vam"), vam = 'urlparams:"vam");
 
 if('debuglevel > 3,
@@ -6109,7 +6109,7 @@ limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPoly
 sepstate = defaultstateto("sepstate", ""); // Separator positions (i.e. number of polys left of Separator)
 patternlimit = defaultstateto("patternlimit", 5); // Limit for PatternContainer
 patternstate = defaultstateto("patternstate", apply(1..rows, "")); // Configure predefined RegPoly per strip
-interactable = defaultstateto("cps", true); // Container is interactable (c=Container, p=Polys, s=Separators ... of Container)
+interactable = defaultstateto("interactable", "cps"); // Container is interactable (c=Container, p=Polys, s=Separators ... of Container)
 
 // Configure look and feel
 drawpolys = defaultstateto("drawpolys", true);// Draw base RegPolys
@@ -6132,12 +6132,16 @@ rcinteractable = defaultstateto("rcinteractable", false); // reference container
 // Overwrite divomath result updating function.
 divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
-	if('debuglevel>2, println("===updateResults()=================================================="));
-	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
+	if('debuglevel>6, println("===updateResults()=================================================="));
+	regional(todivomath, strips, stripcounter, stripasstcring, polycounter, separators, sepisnext);
 	stripcounter = 1;
 	polycounter = 1;
 	strips = reverse(container:"strips"); // all strips (top to bottom)
-	separators = separator:"copies"; // list of Separator copies
+	
+	separators = separator:"getstatestring"; // Get state string if Separator copies...
+	if(isundefined(separators), separators = QUOTE+QUOTE); // cant be nada, because that breaks replace() in CindyJS
+	separators = replace(separators,QUOTE,""); // ...strip leading quotes needed for divomath reporting...
+	separators = parse("["+separators+"]"); // ...and parse as list.
 
 	// Add divomath result for every Poly of every strip in the form
 	// "<stripno>.<runningno>:<regpolyname>"
@@ -6152,24 +6156,20 @@ divomathUpdateResults() := if(usedivomath,
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathPutResult(todivomath_1, todivomath_2);
-			polycounter = polycounter + 1;
-
-			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
-			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
-			sepisnext = length(sepisnext) > 0;
+			divomathAddResult(todivomath_1, todivomath_2);
 
 			// if Separator is next, push a 0 to divomath
-			if(sepisnext,
+			if(contains(separators, polycounter),
 				todivomath = [stripcounter + "." + polycounter, 0];
-				divomathPutResult(todivomath_1, todivomath_2);
+				divomathAddResult(todivomath_1, todivomath_2);
 				stripasstring = stripasstring + "0";
-				polycounter = polycounter + 1;
 			);
 
+			polycounter = polycounter + 1;
 		);
+
 		// Report entire strip as string and reset
-		divomathPutResult("row" + stripcounter, stripasstring);
+		divomathAddResult("row" + stripcounter, stripasstring);
 		stripasstring = "";
 		
 		// Set counters
@@ -6181,7 +6181,8 @@ divomathUpdateResults() := if(usedivomath,
 	regional(dmstate);
 	dmstate = divomathSetState();
 	forall(keys(dmstate), #,
-		divomathPutResult(#, dmstate:#);
+		divomathAddResult(#, dmstate:#); // breaks in divomath, when changed to PutResult(). Figure out or leave as is
+		if('debuglevel>3, println("Added key: " +#+ ", val: " +dmstate:#));
 	);
 
 	divomathSendResult();
