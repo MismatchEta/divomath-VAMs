@@ -5476,7 +5476,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		);
 
 		// Draw arches
-		if(my("drawarches") & alwaysdrawarches,
+		if(my("drawarches"),
 			regional(dy);
 			dy = getboundingbox(A, [0,0], size, family)_3_2; // height of textboxes for offset
 			eval(my("drawvaluearches"), yoffset->-dy-2*my("labelpadding"));
@@ -5707,8 +5707,8 @@ toggles = {
 	"percentages" : new Toggle(screen_4 + [togglepad,togglepad+.5], 1, false, "Prozentsätze", 14),
 	"parts"				:	new Toggle(screen_4 + [togglepad,togglepad+1.5], 1, false, "Prozentwerte", 14),
 	"basevalue"		: new Toggle(screen_4 + [togglepad,togglepad+2.5], 1, false, "Grundwert", 14),
-	"part"				: new Toggle(screen_4 + [togglepad,togglepad+4], 1, false, "Teil", 14),
-	"percentage"	:	new Toggle(screen_4 + [togglepad,togglepad+5], 1, false, "Anteil", 14),
+	"part"				: new Toggle(screen_4 + [togglepad,togglepad+4.5], 1, false, "Teil", 14),
+	"percentage"	:	new Toggle(screen_4 + [togglepad,togglepad+5.5], 1, false, "Anteil", 14),
 	"arch"				: new Toggle(screen_4 + [togglepad,togglepad+6.5], 1, false, "Bögen", 14),
 	"overflow"		: new Toggle(screen_4 + [togglepad,togglepad+7.5], 1, false, "Overflow", 14),
 	"showtf-base"	: new Toggle(screen_4 + [togglepad+5,togglepad+.5], 1, false, "Eingabe G", 14),
@@ -6016,7 +6016,7 @@ bar:"drawvaluelabels"				:= toggles:"parts":"state";
 bar:"drawbasevaluelabel"		:= toggles:"basevalue":"state";
 bar:"drawcurrentpercentage"	:= toggles:"percentage":"state";
 bar:"drawcurrentvalue"			:= toggles:"part":"state";
-bar:"drawarches"						:= toggles:"arch":"state";
+bar:"drawarches"						:= toggles:"arch":"state" % alwaysdrawarches;
 bar:"canoverflow"						:= toggles:"overflow":"state";
 bar:"standardTicks"	= 'standardTicks;
 
@@ -6034,7 +6034,7 @@ bar:"buttons" = buttons;
 
 if(snapbar, bar:"precision" := 1/bar:"divisions");
 
-obj = obj ++ values(toggles);
+obj = obj ++ values(toggles) --  if(alwaysdrawarches, [toggles:"arch"]);
 obj = obj ++ values(textfields) -- [
 	textfields:"basevalue", textfields:"value", textfields:"percentage", 
 	textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
@@ -6051,8 +6051,6 @@ obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj :> bar;
 
-obj = obj -- [toggles:"arch"];
-
 // Call toggle scripts for G,P,p toggle to put in textfields approriately
 toggles:"showtf-base":"script";
 toggles:"showtf-value":"script";
@@ -6060,7 +6058,7 @@ toggles:"showtf-perc":"script";
 toggles:"showtf-div":"script";
 toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
-
+println(bar:"drawarches");
 ); // end vam-if
 ;
 //VAM: strapwork
