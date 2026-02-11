@@ -1,4 +1,4 @@
-/* v11
+/* v12
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -9,6 +9,9 @@
 * - replaced divomathAddResult() with wrapper divomathPutResult()
 * - added call to divomathUpdateResults() when moving hbar
 * - fixed incorrect positioning of atoms when adding rows
+* - added picturemode to be able to create a non interactive quasi-image when set to true
+* - added Toggle and corresponding config for changing visibility of text/expression labels
+* - fixed expression/verbal not showing correctly on init
 */
 
 // Distributivfeld
@@ -26,7 +29,7 @@ configuration:
 
 // VAM global vars
 regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atomverticalpadding, 'atomhorizontalpadding, 'groupspacing,
-'cutwidth, 'gridmoveable, 'buttonsize, 'buttonpadding, 'lblpadding, 'animationspeed);
+'cutwidth, 'gridmoveable, 'buttonsize, 'buttonpadding, 'lblpadding, 'animationspeed, 'picturemode);
 
 'atomcolors = {
 	"blue" : (40,111,255)/255,
@@ -68,6 +71,9 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'expressionmoveable = defaultstateto("expressionmoveable", false);
 'verbalposition = defaultstateto("verbalposition", NADA);
 'verbalmoveable = defaultstateto("verbalmoveable", false);
+'picturemode = defaultstateto("picturemode", false); // Removes all interactivity if set to true
+'showexpressiontoggle = defaultstateto("showexpressiontoggle", false);
+'expressiontogglestate = defaultstateto("expressiontogglestate", true);
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -138,10 +144,10 @@ new Atom(c, parent) := (
 	atom:"color" = 'atomcolors:"blue";
 	atom:"radius" = 'atomradius;
 	atom:"parent" = parent;
-	atom:"left" = nada;
-	atom:"right" = nada;
-	atom:"up" = nada;
-	atom:"down" = nada;
+	atom:"left" = NADA;
+	atom:"right" = NADA;
+	atom:"up" = NADA;
+	atom:"down" = NADA;
 	atom:"neighbors" := {
 		"up": my("up"),
 		"down": my("down"),
@@ -152,7 +158,7 @@ new Atom(c, parent) := (
 	atom:"shape" := roundedrectangle(my("coord"),my("size"),my("size"),my("radius"));
 	atom:"hitbox" := atom:"shape";
 
-	atom:"ishot" := inroundedrectangle(my("coord"),my("size"),my("size"),my("radius"),mouse().xy);
+	atom:"ishot" := if('picturemode, false, inroundedrectangle(my("coord"),my("size"),my("size"),my("radius"),mouse().xy));
 
 	atom:"draw" := ( // can be evaled with 'atomalpha
 		if(isundefined('atomalpha), 'atomalpha = 1);
@@ -215,10 +221,12 @@ new Grid(c, rows, cols) := (
 	grid:"hitbox" := rectangle(my("coord"), my("width"), my("height")); // Rounded rectangle just fitting around all Atoms
 	grid:"shape" := roundedrectangle(my("coord"), my("width"), my("height"), 'atomradius); // Rounded rectangle just fitting around all Atoms
 	
-	grid:"ishot" := if(my("tool") == "hand",
-		inroundedrectangle(my("coord"), my("width"), my("height"), 'atomradius, mouse().xy);
-	,
-		true; // always true, so whole canvas can be drawn on
+	grid:"ishot" := if('picturemode, false,
+		if(my("tool") == "hand",
+			inroundedrectangle(my("coord"), my("width"), my("height"), 'atomradius, mouse().xy);
+		,
+			true; // always true, so whole canvas can be drawn on
+		);
 	);
 	grid:"draw" := (
 		regional(m, rowindex, colindex);
@@ -889,7 +897,7 @@ new Grid(c, rows, cols) := (
 		);
 
 		vbar:"hitbox" := my("shape"):"circle";
-		vbar:"ishot" := if(my("parent"):"tool" == "hand",
+		vbar:"ishot" := if(my("parent"):"tool" == "hand" & !'picturemode,
 			dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r",
 			false
 		);
@@ -979,7 +987,7 @@ new Grid(c, rows, cols) := (
 		);
 
 		hbar:"hitbox" := my("shape"):"circle";
-		hbar:"ishot" := if(my("parent"):"tool" == "hand", // Only hottable, when hand tool is selected
+		hbar:"ishot" := if(my("parent"):"tool" == "hand" & !'picturemode, // Only hottable, when hand tool is selected
 			dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r",
 			false
 		);
@@ -1040,6 +1048,7 @@ new Grid(c, rows, cols) := (
 		btn:"imgscale" = .3;
 		btn:"value" = {"hand":1,"bucket":2,"scissors":3}:'tool;
 		btn:"tool" := ["hand", "bucket", "scissors"]_(my("value"));
+		btn:"ishot" := if('picturemode, false, if(my("show"),inrectangle(my("hitbox"),mouse().xy))); 
 
 		btn:"drawafter" := (
 			drawimage(my("center"), ICONS:(my("tool")), scale->my("imgscale"));
@@ -1084,7 +1093,7 @@ new Grid(c, rows, cols) := (
 		expr:"padding" = .3;
 		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
 		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
-		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ishot" := if('picturemode, false, inrectangle(my("hitbox"), mouse().xy));
 		expr:"ismoveable" = 'expressionmoveable;
 		expr:"getaction" = "move";
 
@@ -1111,7 +1120,7 @@ new Grid(c, rows, cols) := (
 		regional(expr); expr = {};
 		expr:"type" = "Expression";
 		expr:"parent" = grid;
-		expr:"coord" := [3,2]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"coord" := [3,6]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
 		expr:"fontsize" = 'fontsize;
 		expr:"font" = NADA;
 		expr:"width" := (
@@ -1136,7 +1145,7 @@ new Grid(c, rows, cols) := (
 		expr:"padding" = .3;
 		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
 		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
-		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ishot" := if('picturemode, false, inrectangle(my("hitbox"), mouse().xy));
 		expr:"ismoveable" = 'verbalmoveable;
 		expr:"getaction" = "move";
 
@@ -1201,9 +1210,13 @@ if(!usedivomath,
 	'drawexpression = if(!isundefined('urlparams:"drawexpression"), parse('urlparams:"drawexpression"), true);
 	'expressionposition = if(!isundefined('urlparams:"expressionposition"), parse('urlparams:"expressionposition"), NADA);
 	'expressionmoveable = if(!isundefined('urlparams:"expressionmoveable"), parse('urlparams:"expressionmoveable"), false);
-	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), true);
+	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), false);
 	'verbalposition = if(!isundefined('urlparams:"verbalposition"), parse('urlparams:"verbalposition"), NADA);
 	'verbalmoveable = if(!isundefined('urlparams:"verbalmoveable"), parse('urlparams:"verbalmoveable"), true);
+
+	'picturemode = if(!isundefined('urlparams:"picturemode"), parse('urlparams:"picturemode"), false);
+	'showexpressiontoggle = if(!isundefined('urlparams:"showexpressiontoggle"), parse('urlparams:"showexpressiontoggle"), false);
+	'expressiontogglestate = if(!isundefined('urlparams:"expressiontogglestate"), parse('urlparams:"expressiontogglestate"), true);
 );
 
 // Build grid
@@ -1226,6 +1239,26 @@ if('groupby != "NONE",
 	grid:"groupatoms";
 );
 
+// Reevaluate Expressions
+grid:"updateexpression";
+
+// Set up Toggle for hiding/showing expressions
+regional(toggle, togglesize, togglepos);
+togglepadding = .3;
+togglesize = 1;
+togglepos = (screenbounds()_1).xy - [0,.5*togglesize];
+togglepos = togglepos + [togglepadding, -togglepadding];
+toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Text/Term anzeigen", 12*togglesize);
+toggle:"script" := (
+	if(my("state"),
+		if('drawexpression, obj = obj :> obj_1:"expression");
+		if('drawverbal, obj = obj :> obj_1:"verbal");
+	,
+		obj = obj -- [grid:"expression"];
+		obj = obj -- [grid:"verbal"];
+	);
+);
+
 // Set up expressions
 if(!isundefined('expressionposition), grid:"expression":"coord" = 'expressionposition);
 if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
@@ -1234,8 +1267,8 @@ if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
 obj = obj :> grid;
 obj = obj :> obj_1:"vbar";
 obj = obj :> obj_1:"hbar";
+if('showexpressiontoggle, obj = obj :> toggle);
 if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
-if('drawexpression, obj = obj :> obj_1:"expression");
-if('drawverbal, obj = obj :> obj_1:"verbal");
-
+if('expressiontogglestate & 'drawexpression, obj = obj :> obj_1:"expression");
+if('expressiontogglestate & 'drawverbal, obj = obj :> obj_1:"verbal");
 ); // End VAM if

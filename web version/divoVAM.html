@@ -285,13 +285,14 @@ preview=false;
 
 ;
 //FW: helper functions
-// v22
+// v24
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
 // - added convencience drawtextbox overwrite
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
+// - changed defaultstateto() ordering to look for divomath result before overwrites
 
 // Convenience functions
 // A | VAM object functions
@@ -519,7 +520,7 @@ inpoly(poly, point) := (
 			edgeStart = poly_#;
 			edgeDir = poly_1 - poly_#;
 		);
-	
+
 		// Check ray and edge for intersection
 		A = [[rayDir_1, -edgeDir_1], [rayDir_2, -edgeDir_2]];
 		solution = linearsolve(A, edgeStart - rayStart);
@@ -830,7 +831,9 @@ divomathGetVarState(dmcb) := (
 divomathPutResult(key, value) := (
 	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
 
-	divomathAddResult(key, value); // call divomath hook	
+	if(usedivomath,
+		divomathAddResult(key, value); // call divomath hook	
+	);
 
 	// Maybe debug
 	if('debuglevel > 2, 
@@ -862,11 +865,11 @@ defaultstateto(key, value) := (
 	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
 
 	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
-	if(!isundefined(resultvalue), 
-		value = resultvalue; // try overwrite value if any
+	if(!isundefined(prevansvalue), 
+		value = prevansvalue; // try prev ans if any
 	, 
-		if(!isundefined(prevansvalue),
-			value = prevansvalue; // else: try prev ans if any
+		if(!isundefined(resultvalue),
+			value = resultvalue; // else: try overwrite value if any
 		,
 			if(!isundefined(statevalue), 
 				value = statevalue; // else: try state if any
@@ -1717,6 +1720,14 @@ new ImageButton(coord,width,height,imgpath) := (
 // recent changes:
 // - draw border in darker highlightcolor (factor .7)
 
+/**
+* A simple toggle switch
+* @param coord - bottom left coordinate
+* @param width - width in world coords
+* @param stae - state (true/false) of Toggle
+* @param label - label to be printed next to toggle
+* @param fontsize - size of the label
+*/
 new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
@@ -2371,7 +2382,7 @@ obj = obj :> o;
 
 ;
 //VAM: distributive
-/* v11
+/* v12
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -2382,6 +2393,9 @@ obj = obj :> o;
 * - replaced divomathAddResult() with wrapper divomathPutResult()
 * - added call to divomathUpdateResults() when moving hbar
 * - fixed incorrect positioning of atoms when adding rows
+* - added picturemode to be able to create a non interactive quasi-image when set to true
+* - added Toggle and corresponding config for changing visibility of text/expression labels
+* - fixed expression/verbal not showing correctly on init
 */
 
 // Distributivfeld
@@ -2399,7 +2413,7 @@ configuration:
 
 // VAM global vars
 regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atomverticalpadding, 'atomhorizontalpadding, 'groupspacing,
-'cutwidth, 'gridmoveable, 'buttonsize, 'buttonpadding, 'lblpadding, 'animationspeed);
+'cutwidth, 'gridmoveable, 'buttonsize, 'buttonpadding, 'lblpadding, 'animationspeed, 'picturemode);
 
 'atomcolors = {
 	"blue" : (40,111,255)/255,
@@ -2441,6 +2455,9 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'expressionmoveable = defaultstateto("expressionmoveable", false);
 'verbalposition = defaultstateto("verbalposition", NADA);
 'verbalmoveable = defaultstateto("verbalmoveable", false);
+'picturemode = defaultstateto("picturemode", false); // Removes all interactivity if set to true
+'showexpressiontoggle = defaultstateto("showexpressiontoggle", false);
+'expressiontogglestate = defaultstateto("expressiontogglestate", true);
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -2511,10 +2528,10 @@ new Atom(c, parent) := (
 	atom:"color" = 'atomcolors:"blue";
 	atom:"radius" = 'atomradius;
 	atom:"parent" = parent;
-	atom:"left" = nada;
-	atom:"right" = nada;
-	atom:"up" = nada;
-	atom:"down" = nada;
+	atom:"left" = NADA;
+	atom:"right" = NADA;
+	atom:"up" = NADA;
+	atom:"down" = NADA;
 	atom:"neighbors" := {
 		"up": my("up"),
 		"down": my("down"),
@@ -2525,7 +2542,7 @@ new Atom(c, parent) := (
 	atom:"shape" := roundedrectangle(my("coord"),my("size"),my("size"),my("radius"));
 	atom:"hitbox" := atom:"shape";
 
-	atom:"ishot" := inroundedrectangle(my("coord"),my("size"),my("size"),my("radius"),mouse().xy);
+	atom:"ishot" := if('picturemode, false, inroundedrectangle(my("coord"),my("size"),my("size"),my("radius"),mouse().xy));
 
 	atom:"draw" := ( // can be evaled with 'atomalpha
 		if(isundefined('atomalpha), 'atomalpha = 1);
@@ -2588,10 +2605,12 @@ new Grid(c, rows, cols) := (
 	grid:"hitbox" := rectangle(my("coord"), my("width"), my("height")); // Rounded rectangle just fitting around all Atoms
 	grid:"shape" := roundedrectangle(my("coord"), my("width"), my("height"), 'atomradius); // Rounded rectangle just fitting around all Atoms
 	
-	grid:"ishot" := if(my("tool") == "hand",
-		inroundedrectangle(my("coord"), my("width"), my("height"), 'atomradius, mouse().xy);
-	,
-		true; // always true, so whole canvas can be drawn on
+	grid:"ishot" := if('picturemode, false,
+		if(my("tool") == "hand",
+			inroundedrectangle(my("coord"), my("width"), my("height"), 'atomradius, mouse().xy);
+		,
+			true; // always true, so whole canvas can be drawn on
+		);
 	);
 	grid:"draw" := (
 		regional(m, rowindex, colindex);
@@ -3262,7 +3281,7 @@ new Grid(c, rows, cols) := (
 		);
 
 		vbar:"hitbox" := my("shape"):"circle";
-		vbar:"ishot" := if(my("parent"):"tool" == "hand",
+		vbar:"ishot" := if(my("parent"):"tool" == "hand" & !'picturemode,
 			dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r",
 			false
 		);
@@ -3352,7 +3371,7 @@ new Grid(c, rows, cols) := (
 		);
 
 		hbar:"hitbox" := my("shape"):"circle";
-		hbar:"ishot" := if(my("parent"):"tool" == "hand", // Only hottable, when hand tool is selected
+		hbar:"ishot" := if(my("parent"):"tool" == "hand" & !'picturemode, // Only hottable, when hand tool is selected
 			dist(my("hitbox"):"M",mouse().xy) < my("hitbox"):"r",
 			false
 		);
@@ -3413,6 +3432,7 @@ new Grid(c, rows, cols) := (
 		btn:"imgscale" = .3;
 		btn:"value" = {"hand":1,"bucket":2,"scissors":3}:'tool;
 		btn:"tool" := ["hand", "bucket", "scissors"]_(my("value"));
+		btn:"ishot" := if('picturemode, false, if(my("show"),inrectangle(my("hitbox"),mouse().xy))); 
 
 		btn:"drawafter" := (
 			drawimage(my("center"), ICONS:(my("tool")), scale->my("imgscale"));
@@ -3457,7 +3477,7 @@ new Grid(c, rows, cols) := (
 		expr:"padding" = .3;
 		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
 		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
-		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ishot" := if('picturemode, false, inrectangle(my("hitbox"), mouse().xy));
 		expr:"ismoveable" = 'expressionmoveable;
 		expr:"getaction" = "move";
 
@@ -3484,7 +3504,7 @@ new Grid(c, rows, cols) := (
 		regional(expr); expr = {};
 		expr:"type" = "Expression";
 		expr:"parent" = grid;
-		expr:"coord" := [3,2]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
+		expr:"coord" := [3,6]; //(screenbounds()_1).xy - [0,my("height")] + ['lblpadding, -'lblpadding];
 		expr:"fontsize" = 'fontsize;
 		expr:"font" = NADA;
 		expr:"width" := (
@@ -3509,7 +3529,7 @@ new Grid(c, rows, cols) := (
 		expr:"padding" = .3;
 		expr:"hitbox" := getboundingbox(my("value"), my("coord")-[0,my("baseline")/2], my("fontsize"), my("font"));
 		expr:"shape" := roundedrectangle(my("coord")-[0,my("baseline")/2]-my("padding")*[1,1], my("width")+2*my("padding"), my("height")+2*my("padding"), my("padding"));
-		expr:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+		expr:"ishot" := if('picturemode, false, inrectangle(my("hitbox"), mouse().xy));
 		expr:"ismoveable" = 'verbalmoveable;
 		expr:"getaction" = "move";
 
@@ -3574,9 +3594,13 @@ if(!usedivomath,
 	'drawexpression = if(!isundefined('urlparams:"drawexpression"), parse('urlparams:"drawexpression"), true);
 	'expressionposition = if(!isundefined('urlparams:"expressionposition"), parse('urlparams:"expressionposition"), NADA);
 	'expressionmoveable = if(!isundefined('urlparams:"expressionmoveable"), parse('urlparams:"expressionmoveable"), false);
-	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), true);
+	'drawverbal = if(!isundefined('urlparams:"drawverbal"), parse('urlparams:"drawverbal"), false);
 	'verbalposition = if(!isundefined('urlparams:"verbalposition"), parse('urlparams:"verbalposition"), NADA);
 	'verbalmoveable = if(!isundefined('urlparams:"verbalmoveable"), parse('urlparams:"verbalmoveable"), true);
+
+	'picturemode = if(!isundefined('urlparams:"picturemode"), parse('urlparams:"picturemode"), false);
+	'showexpressiontoggle = if(!isundefined('urlparams:"showexpressiontoggle"), parse('urlparams:"showexpressiontoggle"), false);
+	'expressiontogglestate = if(!isundefined('urlparams:"expressiontogglestate"), parse('urlparams:"expressiontogglestate"), true);
 );
 
 // Build grid
@@ -3599,6 +3623,26 @@ if('groupby != "NONE",
 	grid:"groupatoms";
 );
 
+// Reevaluate Expressions
+grid:"updateexpression";
+
+// Set up Toggle for hiding/showing expressions
+regional(toggle, togglesize, togglepos);
+togglepadding = .3;
+togglesize = 1;
+togglepos = (screenbounds()_1).xy - [0,.5*togglesize];
+togglepos = togglepos + [togglepadding, -togglepadding];
+toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Text/Term anzeigen", 12*togglesize);
+toggle:"script" := (
+	if(my("state"),
+		if('drawexpression, obj = obj :> obj_1:"expression");
+		if('drawverbal, obj = obj :> obj_1:"verbal");
+	,
+		obj = obj -- [grid:"expression"];
+		obj = obj -- [grid:"verbal"];
+	);
+);
+
 // Set up expressions
 if(!isundefined('expressionposition), grid:"expression":"coord" = 'expressionposition);
 if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
@@ -3607,10 +3651,10 @@ if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
 obj = obj :> grid;
 obj = obj :> obj_1:"vbar";
 obj = obj :> obj_1:"hbar";
+if('showexpressiontoggle, obj = obj :> toggle);
 if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
-if('drawexpression, obj = obj :> obj_1:"expression");
-if('drawverbal, obj = obj :> obj_1:"verbal");
-
+if('expressiontogglestate & 'drawexpression, obj = obj :> obj_1:"expression");
+if('expressiontogglestate & 'drawverbal, obj = obj :> obj_1:"verbal");
 ); // End VAM if
 ;
 //VAM: divisors
@@ -5250,12 +5294,14 @@ forall(cards, card,
 ); // End VAM-if
 
 ;
-// v4
+//VAM: percentagebar
+// v5
 // recent changes:
 // - fixed toggle button label not showing supplied unit
 // - fixed "Eingabe P" textfield not displaying correct number
 // - fixed different wrong calculations and interaction between the different text inputs
 // - added position of bar as configurable
+// - fixed arches not drawing properly
 
 // Prozentstreifen
 if(vam == "percentagebar",
@@ -6056,7 +6102,7 @@ println(bar:"drawarches");
 ); // end vam-if
 ;
 //VAM: strapwork
-// v37
+// v40
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6066,6 +6112,13 @@ println(bar:"drawarches");
 // - added interactable as handle
 // - changed Reset button not resizing with size attribute
 // - fixed and refactored getting separator position with regards to parent container (and getting state string)
+// - change separator hitbox/shape to scale with size attribute
+// - added resetting to referenced state in reset button
+// - Added configurable size attribute for Separators and Reset Button (sepsize)
+// - Removed some debug output
+// - Added bigger circle to (only) the hitbox of Separator for easier grabbing
+// - Fix sepstate reporting position where initially dropped (even if there are no polys in this position)
+// - Reorder drawing for RegPolys
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -6107,6 +6160,7 @@ COLORMAP = { // Maps color names
 regional(size, vertices, colors, rows, state, limit, drawpatterncontainer, drawseparator, drawborders);
 
 size = defaultstateto("size", 1); // Configure general size of Polys and Container
+sepsize = defaultstateto("sepsize", 1); // Configure general size of Separators and Reset Button
 vertices = defaultstateto("polys", [0,3,6]); // Configure number of RegPolys or list of number of vertices
 colors = defaultstateto("polycolors", 1..100); // Configure colors of the RegPolys
 rows = defaultstateto("rows", 1); // Configure number of rows/strips in Container
@@ -6115,7 +6169,7 @@ limit = defaultstateto("limit", apply(1..100, 10));// Configure limit of RegPoly
 sepstate = defaultstateto("sepstate", ""); // Separator positions (i.e. number of polys left of Separator)
 patternlimit = defaultstateto("patternlimit", 5); // Limit for PatternContainer
 patternstate = defaultstateto("patternstate", apply(1..rows, "")); // Configure predefined RegPoly per strip
-interactable = defaultstateto("interactable", true); // Container is interactable
+interactable = defaultstateto("interactable", "cps"); // Container is interactable (c=Container, p=Polys, s=Separators ... of Container)
 
 // Configure look and feel
 drawpolys = defaultstateto("drawpolys", true);// Draw base RegPolys
@@ -6138,12 +6192,16 @@ rcinteractable = defaultstateto("rcinteractable", false); // reference container
 // Overwrite divomath result updating function.
 divomathUpdateResults() := if(usedivomath,
 	divomathClearResult();
-	if('debuglevel>2, println("===updateResults()=================================================="));
-	regional(todivomath, strips, stripcounter, stripasstring, polycounter, separators, sepisnext);
+	if('debuglevel>6, println("===updateResults()=================================================="));
+	regional(todivomath, strips, stripcounter, stripasstcring, polycounter, separators, sepisnext);
 	stripcounter = 1;
 	polycounter = 1;
 	strips = reverse(container:"strips"); // all strips (top to bottom)
-	separators = separator:"copies"; // list of Separator copies
+	
+	separators = separator:"getstatestring"; // Get state string if Separator copies...
+	if(isundefined(separators), separators = QUOTE+QUOTE); // cant be nada, because that breaks replace() in CindyJS
+	separators = replace(separators,QUOTE,""); // ...strip leading quotes needed for divomath reporting...
+	separators = parse("["+separators+"]"); // ...and parse as list.
 
 	// Add divomath result for every Poly of every strip in the form
 	// "<stripno>.<runningno>:<regpolyname>"
@@ -6158,27 +6216,20 @@ divomathUpdateResults() := if(usedivomath,
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathPutResult(todivomath_1, todivomath_2);
-			if('debuglevel>2, println("Added key: " +todivomath_1+ ", val: " + todivomath_2));
-			polycounter = polycounter + 1;
-
-			// Check if Separator is next (x > poly_x AND x < poly_x of next poly)
-			sepisnext = select(separators, sep, sep:"coord"_1 > poly:"coord"_1 & sep:"coord"_1 < poly:"coord"_1 + 2*poly:"radius");
-			sepisnext = length(sepisnext) > 0;
+			divomathAddResult(todivomath_1, todivomath_2);
 
 			// if Separator is next, push a 0 to divomath
-			if(sepisnext,
+			if(contains(separators, polycounter),
 				todivomath = [stripcounter + "." + polycounter, 0];
 				divomathAddResult(todivomath_1, todivomath_2);
-				if('debuglevel>2, println("Added key: " +todivomath_1+ ", val: " + todivomath_2));
 				stripasstring = stripasstring + "0";
-				polycounter = polycounter + 1;
 			);
 
+			polycounter = polycounter + 1;
 		);
+
 		// Report entire strip as string and reset
 		divomathAddResult("row" + stripcounter, stripasstring);
-		if('debuglevel>2, println("Added key: " +"row" + stripcounter+ ", val: " + stripasstring));
 		stripasstring = "";
 		
 		// Set counters
@@ -6190,7 +6241,7 @@ divomathUpdateResults() := if(usedivomath,
 	regional(dmstate);
 	dmstate = divomathSetState();
 	forall(keys(dmstate), #,
-		divomathAddResult(#, dmstate:#);
+		divomathAddResult(#, dmstate:#); // breaks in divomath, when changed to PutResult(). Figure out or leave as is
 		if('debuglevel>3, println("Added key: " +#+ ", val: " +dmstate:#));
 	);
 
@@ -6218,7 +6269,7 @@ divomathSetState() := (
 		"drawrcseparator" : drawrcseparator,
 		"rcinteractable" : rcinteractable
 	};
-println(state:"sepstate");
+
 	// Configure vertices to handle image-strings correctly
 	regional(polys);
 	polys = apply(vertices, # = if(isstring(#), QUOTE + # + QUOTE, #));
@@ -6349,17 +6400,17 @@ new RegPoly(center,radius,vertices,rotation,palettecolor):= (
 		fillpoly(my("shape"),color->if(isundefined(my("image")),my("color"),grey(1)));
 		if(drawborders,drawpoly(my("shape"),color->grey(0),size->bordersize));
 
-		// Debug
-		if('debuglevel > 0, 
-			draw(my("center"));
-			drawtext(my("center")+[.2,0], my("id"),color->grey(1));
-			draw(my("coord"), color->grey(.9));
-		);
-
 		// Draw image
 		if(!isundefined(my("image")),
 			drawimage(my("coord"),ICONS:(my("image")), scale->.28*my("radius"));
 		);
+		
+		// Debug
+		if('debuglevel > 0, 
+			draw(my("center"));
+			drawtext(my("center")+[.2,0], my("id"),color->apply(my("color"), abs(1-#)), bold->true);
+			draw(my("coord"), color->grey(.9));
+		);		
 	);
 
 	regpoly:"ishot" := inpoly(my("shape"),mouse().xy);
@@ -6417,22 +6468,35 @@ new Separator(coord, height, parent) := (
 	sep:"width" = .4;
 	sep:"copies" = [];
 
-	sep:"hitbox" := ( // mutliple polys
-		regional(hitbox, offset, barscale, blobscale);
+	sep:"shape" := ( // mutliple polys
+		regional(shape, blobscale, barscale);
 		blobscale = .6;
-		hitbox = [];
+		shape = [];
 
 		//hitbox = hitbox :> regularpolygon(my("coord")-[0,2*blobscale*my("width")], blobscale *2* my("width"), 100, PI/4); // bottom square
-		hitbox = hitbox :> ellipse(my("coord")-[0,1.5*blobscale*my("width")], .6, .3);
-		barscale = .2;
-		hitbox = hitbox :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
+		shape = shape :> ellipse(my("coord")-[0,1.5*sepsize*blobscale*my("width")], sepsize*.6, sepsize*.3);
+		barscale = sepsize*.2;
+		shape = shape :> rectangle(my("coord") - barscale*[my("width"),2*my("width")], 2*barscale*my("width"), my("parent"):"height" + 2*barscale*my("width"));
+	);
+	sep:"hitbox" := (
+		regional(hitbox, blobscale, barscale);
+		hitbox = my("shape");
+
+		// Add larger box to the bottom to make it easier to grab
+		barscale = sepsize*.2;
+		blobscale = .6;
+		hitbox = hitbox :> ellipse(my("coord")-[0,3*sepsize*blobscale*my("width")], sepsize*.6, sepsize*.6);
 	);
 	sep:"ishot" := contains(apply(my("hitbox"), inpoly(#,mouse().xy)), true); // mouse in one the parts of the hitbox
-
-	sep:"shape" := my("hitbox");
-	sep:"draw" := // draw all Polys
+	
+	sep:"draw" := (
+		// Draw all Polys
 		forall(my("shape"), fillpoly(#, color->my("color")));
 
+		// Debug draw
+		forall(my("hitbox"), drawpoly(#, color->[1,0,0]));
+	);
+	
 	sep:"move" := if(my("ismoveable"),
 		self():"coord" = my("coord") + [mousedelta_1, 0]; // move only along x-axis
 		self():"coord"_1 = max(my("parent"):"coord"_1,my("coord")_1); // limit to the left
@@ -6536,34 +6600,18 @@ new Separator(coord, height, parent) := (
 		position = my("coord")_1;
 		distance = polypadding + 2*size; // should be distance between to separators
 		round((position - refposition) / distance);
-/* old version (doesnt really work that well)
-		regional(refstrip, position, maxlength);
-		position = NADA;
-
-		// Get strip with most polys
-		refstrip = apply(my("parent"):"strips", length(#)); // length of all strips
-		refstrip = select(my("parent"):"strips", length(#) == max(refstrip)); // select longest strip
-		refstrip = refstrip_1; // Select first element of list (should be only one, but select returns list)
-		
-		// Get number of polys left of Separator
-		refstrip = select(refstrip, contains(obj,#));
-		position = apply(refstrip, if(#:"coord"_1 < my("coord")_1,1,0)); // Store a 1 for every poly left of Separator
-		position = sum(position); // count all Polys to the left
-
-		// Alter by position of the scrollbar (basically a lazy workaround to not have to implement proper moving and displaying of Separators)
-		//position = position - my("original"):"parent":"scrollbar":"adjustedvalue";
-
-		position; // Return
-		*/
 	);
 
 	sep:"getstatestring" := (
-		regional(statestring);
-		statestring = QUOTE; // add leading quotation mark
+		regional(statestring, position, maxpolycount);
+		statestring = QUOTE; // Add leading quotation mark
 
 		// Add positions separated by comma
 		forall(my("copies"),
-			statestring = statestring + #:"getcontainerposition" + ",";
+			position = #:"getcontainerposition";
+			maxpolycount = max(apply(my("parent"):"strips", length(#)));
+			position = min(position, maxpolycount);
+			statestring = statestring + position + ",";
 		);
 
 		// Replace last comma with trailing quotation mark
@@ -6596,7 +6644,18 @@ new Container(coord, numofstrips, limits) := (
 		strips = [];
 		repeat(cont:"#strips", strips = strips :> []);
 	);
-
+	cont:"longeststripindex" := ( // Returns first stripindex with max number of Polys in it
+		regional(maxlength, index);
+		maxlength = apply(my("strips"), length(#));
+		maxlength = max(maxlength);
+		
+		// Find first occurence of maxlength
+		forall(1..length(my("strips")),
+			if(isundefined(index) & length(my("strips")_#) == maxlength, index = #);
+		);
+		index; // Return
+	);
+	
 	cont:"limits" = limits; // [] int: size limits of strips
 	cont:"hardpolylimit" = ( // Calc how many Polys can at most be drawn in a line on screen
 		regional(hasinfinite, hardpolylimit);
@@ -6714,7 +6773,7 @@ new Container(coord, numofstrips, limits) := (
 		regional(stripindex);
 		stripindex = 1+length(select(apply(apply(1..my("#strips"),my("coord")_2 + #*my("height")/my("#strips")),#<mouse().xy_2),#));
 
-		// Put poly in makeshift container to call "cropcontainer" with
+		// Put poly in makeshift container to call "dropcontainer" with
 		regional(cont);
 		cont = {};
 		cont:"strips" = apply(1..my("#strips"), if(#==stripindex, [dropobject], []));
@@ -6806,14 +6865,11 @@ new Container(coord, numofstrips, limits) := (
 			);
 		);
 
+		// Reposition Separators too
+		my("childseparator"):"realignchildren";
+
 		// Update divomath states/results
 		divomathUpdateResults();
-	);
-
-	cont:"moveseparatorsintoplace" := ( // Move Separators to appropriate positions in *all* strips
-		println("cont:movespearatorsintoplace >> TODO");
-		//apply(my("childseparator"):"copies", println(">>" + #:"getcontainerposition"));
-		//println(my("childseparator"):"getstatestring");
 	);
 
 	cont:"popall" := ( // Removes all contents from all strips (and obj) and returns as one list
@@ -6891,10 +6947,9 @@ new Container(coord, numofstrips, limits) := (
 				self():"adjustedvalue" = round(currval);
 			);
 
-divomathSetState();
+			divomathSetState();
 
 			my("parent"):"movepolysintoplace";
-			my("parent"):"moveseparatorsintoplace"; // @NOT IMPLEMENTED YET
 		);
 		
 		// Display bar at the start
@@ -6986,7 +7041,7 @@ if(!usedivomath,
 	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
 	sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
-	interactable = true;
+	interactable = "cps";
 	drawpatterncontainer = false;
 	drawseparator = true;
 	drawresetbutton = true;
@@ -7107,9 +7162,18 @@ container:"childseparator" = separator;
 
 // ...=============================================================
 // Make Container and corresponding Polys/Separators non-interactable if required
-if(!interactable,
+// ...Container itself
+if(indexOf(interactable, "c") + indexOf(interactable, "C") == 0,
 	container:"ishot" = false; // Container
+);
+
+// ...Polys in Container
+if(indexOf(interactable, "p") + indexOf(interactable, "P") == 0,
 	apply(container:"strips",strip,apply(strip,poly, poly:"ishot"=false)); // Polys
+);
+
+// ...Separators of Container
+if(indexOf(interactable, "s") + indexOf(interactable, "S") == 0,
 	separator:"ishot" = false; // Separator
 	apply(container:"childseparator":"copies",sep,sep:"ishot"=false); // child Separators
 );
@@ -7120,7 +7184,7 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new ImageButton(NADA, 2, 1, ICONS:"reset");
+btn = new ImageButton(NADA, sepsize*2, sepsize*1, ICONS:"reset");
 btn:"coord" := (container:"shape"_3).xy - [2,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
 btn:"imgscale" = .9;
 btn:"cornerradius" = size;
@@ -7130,12 +7194,21 @@ btn:"fontcolor" = grey(1);
 btn:"fontsize" = btn:"fontsize" * size;
 btn:"polysref" = polys; // reference for polys, since CindyJS does not access polys var properly
 btn:"script" := ( // Resets state to editor default setting if used in divomath
-	// Reassign relevant vars with divomath default state, if applicable
+	// Reassign relevant vars with appropriate values
 	if(usedivomath,
-		state = defaultto('dmdefaultstate:"state", apply(1..rows, ""));
+		// default to divomath reference is exists or elsedefault state
+		state = divomathConfig:"__state";
+		if(isundefined(state),
+			state = defaultto('dmdefaultstate:"state", apply(1..rows, ""));
+		);
 		state = apply(state, tokenize(#,","));
-		sepstate = defaultto('dmdefaultstate:"sepstate", "");
+
+		sepstate = divomathConfig:"__sepstate";
+		if(isundefined(sepstate),
+			sepstate = defaultto('dmdefaultstate:"sepstate", "");
+		);
 	,
+		// non divomath reset
 		sepstate = separator:"getstatestring";
 		sepstate = replace(sepstate,QUOTE,""); // Remove QUOTEs for normal use of string
 	);
