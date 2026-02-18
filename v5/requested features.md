@@ -2,6 +2,12 @@
 - **erledigt** in VAM überführen
 
 # strapwork
+## 12.02.2026
+- Referenzierung doof. Wenn ich von einer Folie vorher komme möchte ich zuerst Referenzierung nehmen, wenn ich von einer Folie später zurückkomme möchte ich die letzte Submission nehmen.
+    - wie umsetzen? Submissions jeweils einen Zeitstempel mitgeben?
+- Balken ist auf der rechten Seite wieder größer, nochmal abschneiden
+- Scrollbar Hitbox vergrößern, ist schwer zu greifen
+
 ## 29.01.2026
 - **02.02.2026, erledigt** Marker behält seine nicht eingerastete Position, wenn ich auf neue Folie gehe
 - **NEIN** Skalierung: Kann ich in Cinderella die Skalierung basierend auf der Größe des divomath Containers konfigurieren?

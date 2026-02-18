@@ -3632,7 +3632,7 @@ togglepadding = .3;
 togglesize = 1;
 togglepos = (screenbounds()_1).xy - [0,.5*togglesize];
 togglepos = togglepos + [togglepadding, -togglepadding];
-toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Text/Term anzeigen", 12*togglesize);
+toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Sprache/Term anzeigen", 12*togglesize);
 toggle:"script" := (
 	if(my("state"),
 		if('drawexpression, obj = obj :> obj_1:"expression");
