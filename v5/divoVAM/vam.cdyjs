@@ -1,4 +1,4 @@
-() => ({ // ***build 197 | 2026-02-18T08:29:20.726Z***
+() => ({ // ***build 200 | 2026-02-18T09:23:55.839Z***
 scripts: {
     draw: 
 `// v4
@@ -2362,7 +2362,7 @@ obj = obj :> o;
 'debuglevel = 10;
 );
 
-/* v14
+/* v15
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -2377,6 +2377,7 @@ obj = obj :> o;
 * - added Toggle and corresponding config for changing visibility of text/expression labels
 * - fixed expression/verbal not showing correctly on init
 * - added divomathUpdateResults() call to grid:"moveend" and grid:"click"
+* - fixed wrong toolbutton position state saving in divomath
 */
 
 // Distributivfeld
@@ -2425,10 +2426,14 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'drawtoolbutton = defaultstateto("drawtoolbutton", true); // Draw button for changing tool
 'tool = defaultstateto("tool", "hand"); // Preset tool (one of "hand", "bucket" or "scissors")
 'toolbuttonx = defaultstateto("toolbuttonx", NADA); // Custom x coord for toolbutton (right edge if NADA)
+if(isstring('toolbuttonx), 'toolbuttonx = NADA);
 'toolbuttony = defaultstateto("toolbuttony", NADA); // Custom y coord for toolbutton (top edge if NADA)
+if(isstring('toolbuttony), 'toolbuttony = NADA);
 'groupingtype = defaultstateto("groupingtype", "ROWCOL"); // One of "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
 'coloredrowindex = defaultstateto("coloredrowindex", NADA);
+if(isstring('coloredrowindex), 'coloredrowindex = NADA);
 'coloredcolindex = defaultstateto("coloredcolindex", NADA);
+if(isstring('coloredcolindex), 'coloredcolindex = NADA);
 'cuthorizontally = defaultstateto("cuthorizontally", false);
 'cutvertically = defaultstateto("cutvertically", false);
 'groupby = defaultstateto("groupby", "NONE");
@@ -2439,6 +2444,11 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'picturemode = defaultstateto("picturemode", false); // Removes all interactivity if set to true
 'showexpressiontoggle = defaultstateto("showexpressiontoggle", false);
 'expressiontogglestate = defaultstateto("expressiontogglestate", true);
+
+println(">>>> x: " + 'toolbuttonx);
+println(">>>> x: " + isstring('toolbuttonx));
+println(">>>> y: " + 'toolbuttony);
+println(">>>> y: " + isstring('toolbuttony));
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -2482,8 +2492,8 @@ divomathSetState() := (
 		"drawverbal" : 'drawverbal,
 		"drawtoolbutton" : 'drawtoolbutton,
 		"tool" : QUOTE + grid:"tool" + QUOTE,
-		"toolbuttonx" : grid:"toolbutton":"coord"_1,
-		"toolbuttony" : grid:"toolbutton":"coord"_2,
+		"toolbuttonx" : if(!isundefined('toolbuttonx), grid:"toolbutton":"coord"_1, QUOTE+NADA+QUOTE),
+		"toolbuttony" : if(!isundefined('toolbuttony), grid:"toolbutton":"coord"_2, QUOTE+NADA+QUOTE),
 		"groupingtype" : QUOTE + 'groupingtype + QUOTE,
 		"coloredrowindex" : if(!isundefined(grid:"flags":"color-row"), grid:"flags":"color-row",QUOTE+NADA+QUOTE),
 		"coloredcolindex" : if(!isundefined(grid:"flags":"color-col"), grid:"flags":"color-col",QUOTE+NADA+QUOTE),
