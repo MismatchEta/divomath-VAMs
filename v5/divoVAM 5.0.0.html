@@ -2382,7 +2382,7 @@ obj = obj :> o;
 
 ;
 //VAM: distributive
-/* v12
+/* v13
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -2500,15 +2500,15 @@ divomathSetState() := (
 		"drawexpression" : 'drawexpression,
 		"drawverbal" : 'drawverbal,
 		"drawtoolbutton" : 'drawtoolbutton,
-		"tool" : grid:"tool",
+		"tool" : QUOTE + grid:"tool" + QUOTE,
 		"toolbuttonx" : grid:"toolbutton":"coord"_1,
 		"toolbuttony" : grid:"toolbutton":"coord"_2,
-		"groupingtype" : 'groupingtype,
-		"coloredrowindex" : grid:"flags":"color-row",
-		"coloredcolindex" : grid:"flags":"color-col",
+		"groupingtype" : QUOTE + 'groupingtype + QUOTE,
+		"coloredrowindex" : if(!isundefined(grid:"flags":"color-row"), grid:"flags":"color-row",QUOTE+NADA+QUOTE),
+		"coloredcolindex" : if(!isundefined(grid:"flags":"color-col"), grid:"flags":"color-col",QUOTE+NADA+QUOTE),
 		"cuthorizontally" : grid:"flags":"cut-row",
 		"cutvertically" : grid:"flags":"cut-col",
-		"groupby" : grid:"flags":"group-by",
+		"groupby" : QUOTE + grid:"flags":"group-by" + QUOTE,
 		"expressionposition" : grid:"expression":"coord",
 		"expressionmoveable" : grid:"expression":"ismoveable",
 		"verbalposition" :  grid:"verbal":"coord",
@@ -3656,6 +3656,7 @@ if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
 if('expressiontogglestate & 'drawexpression, obj = obj :> obj_1:"expression");
 if('expressiontogglestate & 'drawverbal, obj = obj :> obj_1:"verbal");
 ); // End VAM if
+
 ;
 //VAM: divisors
 // v14

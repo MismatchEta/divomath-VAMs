@@ -1,4 +1,4 @@
-() => ({ // ***build 196 | 2026-02-11T14:23:32.896Z***
+() => ({ // ***build 197 | 2026-02-18T08:29:20.726Z***
 scripts: {
     draw: 
 `// v4
@@ -2362,7 +2362,7 @@ obj = obj :> o;
 'debuglevel = 10;
 );
 
-/* v12
+/* v14
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -2376,6 +2376,7 @@ obj = obj :> o;
 * - added picturemode to be able to create a non interactive quasi-image when set to true
 * - added Toggle and corresponding config for changing visibility of text/expression labels
 * - fixed expression/verbal not showing correctly on init
+* - added divomathUpdateResults() call to grid:"moveend" and grid:"click"
 */
 
 // Distributivfeld
@@ -2480,15 +2481,15 @@ divomathSetState() := (
 		"drawexpression" : 'drawexpression,
 		"drawverbal" : 'drawverbal,
 		"drawtoolbutton" : 'drawtoolbutton,
-		"tool" : grid:"tool",
+		"tool" : QUOTE + grid:"tool" + QUOTE,
 		"toolbuttonx" : grid:"toolbutton":"coord"_1,
 		"toolbuttony" : grid:"toolbutton":"coord"_2,
-		"groupingtype" : 'groupingtype,
-		"coloredrowindex" : grid:"flags":"color-row",
-		"coloredcolindex" : grid:"flags":"color-col",
+		"groupingtype" : QUOTE + 'groupingtype + QUOTE,
+		"coloredrowindex" : if(!isundefined(grid:"flags":"color-row"), grid:"flags":"color-row",QUOTE+NADA+QUOTE),
+		"coloredcolindex" : if(!isundefined(grid:"flags":"color-col"), grid:"flags":"color-col",QUOTE+NADA+QUOTE),
 		"cuthorizontally" : grid:"flags":"cut-row",
 		"cutvertically" : grid:"flags":"cut-col",
-		"groupby" : grid:"flags":"group-by",
+		"groupby" : QUOTE + grid:"flags":"group-by" + QUOTE,
 		"expressionposition" : grid:"expression":"coord",
 		"expressionmoveable" : grid:"expression":"ismoveable",
 		"verbalposition" :  grid:"verbal":"coord",
@@ -2716,6 +2717,8 @@ new Grid(c, rows, cols) := (
 
 		// Update expression text
 		my("updateexpression");
+
+		divomathUpdateResults();
 	);
 
 	grid:"click" := if(my("tool") == "hand", // handles grouping of rows or cols
@@ -2744,6 +2747,8 @@ new Grid(c, rows, cols) := (
 
 		// Update expression text
 		my("updateexpression");
+
+		divomathUpdateResults();
 	);
 
 // === Add/remove a column/row
@@ -3636,6 +3641,7 @@ if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
 if('expressiontogglestate & 'drawexpression, obj = obj :> obj_1:"expression");
 if('expressiontogglestate & 'drawverbal, obj = obj :> obj_1:"verbal");
 ); // End VAM if
+
 // v14
 // last changes:
 // - added web/SL controls

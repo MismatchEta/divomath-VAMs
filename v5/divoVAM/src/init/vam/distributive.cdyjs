@@ -1,4 +1,4 @@
-/* v13
+/* v14
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -12,7 +12,7 @@
 * - added picturemode to be able to create a non interactive quasi-image when set to true
 * - added Toggle and corresponding config for changing visibility of text/expression labels
 * - fixed expression/verbal not showing correctly on init
-* - fixed divomath state reporting
+* - added divomathUpdateResults() call to grid:"moveend" and grid:"click"
 */
 
 // Distributivfeld
@@ -353,6 +353,8 @@ new Grid(c, rows, cols) := (
 
 		// Update expression text
 		my("updateexpression");
+
+		divomathUpdateResults();
 	);
 
 	grid:"click" := if(my("tool") == "hand", // handles grouping of rows or cols
@@ -381,6 +383,8 @@ new Grid(c, rows, cols) := (
 
 		// Update expression text
 		my("updateexpression");
+
+		divomathUpdateResults();
 	);
 
 // === Add/remove a column/row
