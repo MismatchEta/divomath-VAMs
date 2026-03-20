@@ -285,7 +285,7 @@ preview=false;
 
 ;
 //FW: helper functions
-// v24
+// v25
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
@@ -293,6 +293,7 @@ preview=false;
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
 // - changed defaultstateto() ordering to look for divomath result before overwrites
+// - added divomath reporting function wrappers for sending, clearing and putting a result (especially for adding a timestamp
 
 // Convenience functions
 // A | VAM object functions
@@ -819,6 +820,8 @@ commands:"reset" := reset VAM();
 divomathGetVarState(dmcb) := (
 	regional(state);
 	state = divomathSetState();
+	state:"timestamp" = timestamp();
+	state:"datestamp" = date() ++ time();
 	
 	// Send last answer to DM and (maybe) overwrite state
 	if(!isundefined(state),
@@ -829,7 +832,11 @@ divomathGetVarState(dmcb) := (
 );
 
 divomathPutResult(key, value) := (
-	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
+	if(forcestringify != true, forcestringify = false);
+
+	if(forcestringify,
+		value = QUOTE + value + QUOTE; // only give string to DM with explicitly set quotations
+	); 
 
 	if(usedivomath,
 		divomathAddResult(key, value); // call divomath hook	
@@ -841,6 +848,13 @@ divomathPutResult(key, value) := (
 	);
 
 	[key, value]; // Return something
+);
+
+divomathPostResult() := (
+	divomathPutResult("timestamp", timestamp());
+	divomathPutResult("datetime", date() ++ time());
+	
+	divomathSendResult();
 );
 
 // Checks 'dmstate and 'dmprevans for "key" and returns value,
@@ -1298,7 +1312,7 @@ if(ISCINDYJS,	'urlparams = getURLparams());
 
 // A | Common flags
 'isdebugging=isdebugging = false;	// Toggle debugging. (legacy)
-'debuglevel = 1; // local overwrite for debuglevel set by divomath
+'debuglevel = 3; // local overwrite for debuglevel set by divomath
 if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debuglevel"));
 
 'mousepressedtime=mousepressedtime=false;
@@ -1311,7 +1325,7 @@ if(!isundefined('urlparams:"debuglevel"), 'debuglevel = parse('urlparams:"debugl
 'doctextpos = (screenbounds()_1).xy+[1,-0.5];
 
 // C | Overwrite VAM choice locally
-vam = "distributive"; // comment before production
+vam = "strapwork"; // comment before production
 if(!isundefined('urlparams:"vam"), vam = 'urlparams:"vam");
 
 if('debuglevel > 3,
@@ -2118,11 +2132,12 @@ new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
 
 ;
 //C: ScrollBar
-// v3
+// v5
 // Recent Changes:
 // - dont call "script" on "moveend", becaus gets called with old value.
 // - call on "click" instead
 // - code documentation
+// - highlight hitboxes when debugging
 
 new HorizontalScrollbar(coord, width) := (
 	regional(obj);
@@ -2242,6 +2257,8 @@ new HorizontalScrollbar(coord, width) := (
 		if('debuglevel > 0, draw(my("coord")));
 		if('debuglevel > 0, drawtext(my("bar"):"coord"+[.1,.1],my("value")));
 		if('debuglevel > 1, draw(my("bar"):"coord",color->[0,0,1]));
+		if('debuglevel > 1, drawpoly(my("bar"):"hitbox",color->[1,0,0]));
+		if('debuglevel > 1, drawpoly(my("hitbox"),color->[0,0,0]));
 	);
 
 	obj:"ishot" := inrectangle(my("hitbox"),mouse().xy);
@@ -2382,7 +2399,7 @@ obj = obj :> o;
 
 ;
 //VAM: distributive
-/* v13
+/* v15
 * recent changes:
 * - added handles for fontsize of expression, drawing expression, drawing verbal description, drawing tool button, selecting initial tool, setting the toolbuttons x and y, grouping type
 * - fixed grid not properly displaying cutting when first cut and then regrouped
@@ -2396,6 +2413,8 @@ obj = obj :> o;
 * - added picturemode to be able to create a non interactive quasi-image when set to true
 * - added Toggle and corresponding config for changing visibility of text/expression labels
 * - fixed expression/verbal not showing correctly on init
+* - added divomathUpdateResults() call to grid:"moveend" and grid:"click"
+* - fixed wrong toolbutton position state saving in divomath
 */
 
 // Distributivfeld
@@ -2444,10 +2463,14 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'drawtoolbutton = defaultstateto("drawtoolbutton", true); // Draw button for changing tool
 'tool = defaultstateto("tool", "hand"); // Preset tool (one of "hand", "bucket" or "scissors")
 'toolbuttonx = defaultstateto("toolbuttonx", NADA); // Custom x coord for toolbutton (right edge if NADA)
+if(isstring('toolbuttonx), 'toolbuttonx = NADA);
 'toolbuttony = defaultstateto("toolbuttony", NADA); // Custom y coord for toolbutton (top edge if NADA)
+if(isstring('toolbuttony), 'toolbuttony = NADA);
 'groupingtype = defaultstateto("groupingtype", "ROWCOL"); // One of "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
 'coloredrowindex = defaultstateto("coloredrowindex", NADA);
+if(isstring('coloredrowindex), 'coloredrowindex = NADA);
 'coloredcolindex = defaultstateto("coloredcolindex", NADA);
+if(isstring('coloredcolindex), 'coloredcolindex = NADA);
 'cuthorizontally = defaultstateto("cuthorizontally", false);
 'cutvertically = defaultstateto("cutvertically", false);
 'groupby = defaultstateto("groupby", "NONE");
@@ -2458,6 +2481,11 @@ regional('gridposition, 'rows, 'cols, 'atomsize, 'atomradius, 'atomcolors, 'atom
 'picturemode = defaultstateto("picturemode", false); // Removes all interactivity if set to true
 'showexpressiontoggle = defaultstateto("showexpressiontoggle", false);
 'expressiontogglestate = defaultstateto("expressiontogglestate", true);
+
+println(">>>> x: " + 'toolbuttonx);
+println(">>>> x: " + isstring('toolbuttonx));
+println(">>>> y: " + 'toolbuttony);
+println(">>>> y: " + isstring('toolbuttony));
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -2501,8 +2529,8 @@ divomathSetState() := (
 		"drawverbal" : 'drawverbal,
 		"drawtoolbutton" : 'drawtoolbutton,
 		"tool" : QUOTE + grid:"tool" + QUOTE,
-		"toolbuttonx" : grid:"toolbutton":"coord"_1,
-		"toolbuttony" : grid:"toolbutton":"coord"_2,
+		"toolbuttonx" : if(!isundefined('toolbuttonx), grid:"toolbutton":"coord"_1, QUOTE+NADA+QUOTE),
+		"toolbuttony" : if(!isundefined('toolbuttony), grid:"toolbutton":"coord"_2, QUOTE+NADA+QUOTE),
 		"groupingtype" : QUOTE + 'groupingtype + QUOTE,
 		"coloredrowindex" : if(!isundefined(grid:"flags":"color-row"), grid:"flags":"color-row",QUOTE+NADA+QUOTE),
 		"coloredcolindex" : if(!isundefined(grid:"flags":"color-col"), grid:"flags":"color-col",QUOTE+NADA+QUOTE),
@@ -2736,6 +2764,8 @@ new Grid(c, rows, cols) := (
 
 		// Update expression text
 		my("updateexpression");
+
+		divomathUpdateResults();
 	);
 
 	grid:"click" := if(my("tool") == "hand", // handles grouping of rows or cols
@@ -2764,6 +2794,8 @@ new Grid(c, rows, cols) := (
 
 		// Update expression text
 		my("updateexpression");
+
+		divomathUpdateResults();
 	);
 
 // === Add/remove a column/row
@@ -3632,7 +3664,7 @@ togglepadding = .3;
 togglesize = 1;
 togglepos = (screenbounds()_1).xy - [0,.5*togglesize];
 togglepos = togglepos + [togglepadding, -togglepadding];
-toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Text/Term anzeigen", 12*togglesize);
+toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Sprache/Term anzeigen", 12*togglesize);
 toggle:"script" := (
 	if(my("state"),
 		if('drawexpression, obj = obj :> obj_1:"expression");
@@ -6103,7 +6135,7 @@ println(bar:"drawarches");
 ); // end vam-if
 ;
 //VAM: strapwork
-// v40
+// v41
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6120,6 +6152,9 @@ println(bar:"drawarches");
 // - Added bigger circle to (only) the hitbox of Separator for easier grabbing
 // - Fix sepstate reporting position where initially dropped (even if there are no polys in this position)
 // - Reorder drawing for RegPolys
+// - Changed Reset Buttons Image to scale with sepsize
+// - Fixed alignment to the right of container for Reset Button
+// - Adjusted length of fixed size containers
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -6176,7 +6211,7 @@ interactable = defaultstateto("interactable", "cps"); // Container is interactab
 drawpolys = defaultstateto("drawpolys", true);// Draw base RegPolys
 drawpatterncontainer = defaultstateto("drawpatterncontainer", true); // draw Pattern Container
 drawseparator = defaultstateto("drawseparator", true); // Draw Separator
-drawborders = defaultstateto("drawborders", true);// Draw borders of RegPolys
+drawborders = defaultstateto("drawborders", true); // Draw borders of RegPolys
 drawresetbutton = defaultstateto("drawresetbutton", true);// Draw reset button
 polypadding = defaultstateto("polypadding", .5); // Draw padding between RegPolys
 
@@ -6217,12 +6252,12 @@ divomathUpdateResults() := if(usedivomath,
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathAddResult(todivomath_1, todivomath_2);
+			divomathPutResult(todivomath_1, todivomath_2);
 
 			// if Separator is next, push a 0 to divomath
 			if(contains(separators, polycounter),
 				todivomath = [stripcounter + "." + polycounter, 0];
-				divomathAddResult(todivomath_1, todivomath_2);
+				divomathPutResult(todivomath_1, todivomath_2);
 				stripasstring = stripasstring + "0";
 			);
 
@@ -6230,7 +6265,7 @@ divomathUpdateResults() := if(usedivomath,
 		);
 
 		// Report entire strip as string and reset
-		divomathAddResult("row" + stripcounter, stripasstring);
+		divomathPutResult("row" + stripcounter, stripasstring);
 		stripasstring = "";
 		
 		// Set counters
@@ -6242,11 +6277,11 @@ divomathUpdateResults() := if(usedivomath,
 	regional(dmstate);
 	dmstate = divomathSetState();
 	forall(keys(dmstate), #,
-		divomathAddResult(#, dmstate:#); // breaks in divomath, when changed to PutResult(). Figure out or leave as is
+		divomathPutResult(#, dmstate:#); // breaks in divomath, when changed to PutResult(). Figure out or leave as is
 		if('debuglevel>3, println("Added key: " +#+ ", val: " +dmstate:#));
 	);
 
-	divomathSendResult();
+	divomathPostResult();
 );
 
 // Overwrite divomath setState()
@@ -6691,8 +6726,8 @@ new Container(coord, numofstrips, limits) := (
 		regional(width);
 
 		width = 2*cont:"stripmargin"; // margin to the left and right
-		width = width + size; // space for next Poly
-		width = width + (2*size + cont:"polypadding")*cont:"hardpolylimit"; // size for max Polys
+		width = width + 2*size * max(limits); // space for all polys
+		width = width + polypadding * (max(limits)-1); // space for paddings
 	);
 
 	cont:"ismoveable" = false;
@@ -6937,6 +6972,27 @@ new Container(coord, numofstrips, limits) := (
 			);
 		);
 
+		bar:"hitbox" := (
+			regional(offset, scalefactor);
+			offset = (my("shape")_4 - my("shape")_1)_2;
+			scalefactor = .25;			
+			[
+				my("shape")_1 + scalefactor * [-0,-offset],
+				my("shape")_2 + scalefactor * [0,-offset],
+				my("shape")_3 + scalefactor * [0,offset],
+				my("shape")_4 + scalefactor * [-0,offset]
+			];
+		);
+
+		bar:"bar":"hitbox" := (
+			[
+				[my("shape")_1_1, my("parent"):"hitbox"_1_2],
+				[my("shape")_2_1, my("parent"):"hitbox"_2_2],
+				[my("shape")_3_1, my("parent"):"hitbox"_3_2],
+				[my("shape")_4_1, my("parent"):"hitbox"_4_2],
+			];
+		);
+
 		// Create script to change position of all of parents polys and Separators
 		bar:"script" := (
 			regional(adjval, currval);
@@ -7040,21 +7096,22 @@ if(!usedivomath,
 	patternlimit = 4;
 	patternstate = ["2,2,2", "3,1"];
 	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
-	sepstate = "1,2,1";
+	//sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
 	interactable = "cps";
-	drawpatterncontainer = false;
+	drawpatterncontainer = true;
 	drawseparator = true;
 	drawresetbutton = true;
 	drawpolys = true;
 	polypadding = 1;
 	rcrows = 2;
-	rcstate = ["1,1,2", "2,1,3"];
-	rclimit = [-1,5];
-	rcsepstate = "1";
-	drawrccontainer = true;
+	//rcstate = ["1,1,2", "2,1,3"];
+	//rclimit = [-1,5];
+	//rcsepstate = "1";
+	drawrccontainer = false;
 	drawrcseparator = true;
 	rcinteractable = true;
+	sepsize = 1;
 );
 
 // Local vars
@@ -7186,8 +7243,8 @@ regional(btn);
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
 btn = new ImageButton(NADA, sepsize*2, sepsize*1, ICONS:"reset");
-btn:"coord" := (container:"shape"_3).xy - [2,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
-btn:"imgscale" = .9;
+btn:"coord" := (container:"shape"_3).xy - [2*sepsize,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
+btn:"imgscale" = min(.9,.9 * sepsize);
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;

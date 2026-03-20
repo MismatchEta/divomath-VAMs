@@ -1,8 +1,21 @@
-# Thales (Elise)
-- **erledigt** in VAM überführen
-
 # strapwork
+## 16.03.2026
+- [[PRIO]] Referenzierung doof. Wenn ich von einer Folie vorher komme möchte ich zuerst Referenzierung nehmen, wenn ich von einer Folie später zurückkomme möchte ich die letzte Submission nehmen.
+    - wie umsetzen? Submissions jeweils einen Zeitstempel mitgeben?
+- **16.03.2026, erledigt** Balken ist auf der rechten Seite wieder größer, nochmal abschneiden
+- **16.03.2026, erledigt** Scrollbar Hitbox vergrößern, ist schwer zu greifen
+- Animation am Anfang der Blobs wenn Folie startet ausschaltbar machen (default: keine Animation)
+    - muss kein Schalter sein, einfach ausmachen
+- Abstände und Positionierung nochmal checken, werden je nach angezeigten Komponenten uneinheitlich dargestellt (wenn nur Container angezeigt, auch teilweise abgeschnitten)
+    - was macht Skalierung des Browsers, was ist wirklich falsch positioniert?
+- **16.03.2026, erledigt** Bild vom Reset Knopf skaliert nicht schön.
+    - nicht mit 0.9 vom Knopf skalieren, sondern Bild mit fester Größe
+    - vielleicht auch als extra handle
+    - **KEINE feste Größe, skaliert jetzt stattdessen richtig mit sepsize mit und hat maximale Größe**
+- 
+
 ## 12.02.2026
+**alles in nächste Meeting verschoben**
 - Referenzierung doof. Wenn ich von einer Folie vorher komme möchte ich zuerst Referenzierung nehmen, wenn ich von einer Folie später zurückkomme möchte ich die letzte Submission nehmen.
     - wie umsetzen? Submissions jeweils einen Zeitstempel mitgeben?
 - Balken ist auf der rechten Seite wieder größer, nochmal abschneiden
@@ -112,6 +125,8 @@
 - Zerschneiden an beliebiger Stelle und ohne Färben, beliebig oft
 - --> Neues Tool zum Vereinfachen
 
+# Thales (Elise)
+- **erledigt** in VAM überführen
 
 # übergeordnet
 - **erledigt** VAM Zustand wird nicht in LK Ansicht angezeigt

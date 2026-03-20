@@ -1,8 +1,9 @@
-// v3
+// v5
 // Recent Changes:
 // - dont call "script" on "moveend", becaus gets called with old value.
 // - call on "click" instead
 // - code documentation
+// - highlight hitboxes when debugging
 
 new HorizontalScrollbar(coord, width) := (
 	regional(obj);
@@ -122,6 +123,8 @@ new HorizontalScrollbar(coord, width) := (
 		if('debuglevel > 0, draw(my("coord")));
 		if('debuglevel > 0, drawtext(my("bar"):"coord"+[.1,.1],my("value")));
 		if('debuglevel > 1, draw(my("bar"):"coord",color->[0,0,1]));
+		if('debuglevel > 1, drawpoly(my("bar"):"hitbox",color->[1,0,0]));
+		if('debuglevel > 1, drawpoly(my("hitbox"),color->[0,0,0]));
 	);
 
 	obj:"ishot" := inrectangle(my("hitbox"),mouse().xy);

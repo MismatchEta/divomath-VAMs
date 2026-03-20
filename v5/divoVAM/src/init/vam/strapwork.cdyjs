@@ -1,4 +1,4 @@
-// v40
+// v41
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -15,6 +15,9 @@
 // - Added bigger circle to (only) the hitbox of Separator for easier grabbing
 // - Fix sepstate reporting position where initially dropped (even if there are no polys in this position)
 // - Reorder drawing for RegPolys
+// - Changed Reset Buttons Image to scale with sepsize
+// - Fixed alignment to the right of container for Reset Button
+// - Adjusted length of fixed size containers
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -71,7 +74,7 @@ interactable = defaultstateto("interactable", "cps"); // Container is interactab
 drawpolys = defaultstateto("drawpolys", true);// Draw base RegPolys
 drawpatterncontainer = defaultstateto("drawpatterncontainer", true); // draw Pattern Container
 drawseparator = defaultstateto("drawseparator", true); // Draw Separator
-drawborders = defaultstateto("drawborders", true);// Draw borders of RegPolys
+drawborders = defaultstateto("drawborders", true); // Draw borders of RegPolys
 drawresetbutton = defaultstateto("drawresetbutton", true);// Draw reset button
 polypadding = defaultstateto("polypadding", .5); // Draw padding between RegPolys
 
@@ -112,12 +115,12 @@ divomathUpdateResults() := if(usedivomath,
 			todivomath = [stripcounter + "." + polycounter, poly:"original":"id"+1];
 
 			// Push Poly to divomath
-			divomathAddResult(todivomath_1, todivomath_2);
+			divomathPutResult(todivomath_1, todivomath_2);
 
 			// if Separator is next, push a 0 to divomath
 			if(contains(separators, polycounter),
 				todivomath = [stripcounter + "." + polycounter, 0];
-				divomathAddResult(todivomath_1, todivomath_2);
+				divomathPutResult(todivomath_1, todivomath_2);
 				stripasstring = stripasstring + "0";
 			);
 
@@ -125,7 +128,7 @@ divomathUpdateResults() := if(usedivomath,
 		);
 
 		// Report entire strip as string and reset
-		divomathAddResult("row" + stripcounter, stripasstring);
+		divomathPutResult("row" + stripcounter, stripasstring);
 		stripasstring = "";
 		
 		// Set counters
@@ -137,11 +140,11 @@ divomathUpdateResults() := if(usedivomath,
 	regional(dmstate);
 	dmstate = divomathSetState();
 	forall(keys(dmstate), #,
-		divomathAddResult(#, dmstate:#); // breaks in divomath, when changed to PutResult(). Figure out or leave as is
+		divomathPutResult(#, dmstate:#); // breaks in divomath, when changed to PutResult(). Figure out or leave as is
 		if('debuglevel>3, println("Added key: " +#+ ", val: " +dmstate:#));
 	);
 
-	divomathSendResult();
+	divomathPostResult();
 );
 
 // Overwrite divomath setState()
@@ -390,9 +393,7 @@ new Separator(coord, height, parent) := (
 		forall(my("shape"), fillpoly(#, color->my("color")));
 
 		// Debug draw
-		if('debuglevel > 0,
-			forall(my("hitbox"), drawpoly(#, color->[1,0,0]));
-		);
+		forall(my("hitbox"), drawpoly(#, color->[1,0,0]));
 	);
 	
 	sep:"move" := if(my("ismoveable"),
@@ -588,8 +589,8 @@ new Container(coord, numofstrips, limits) := (
 		regional(width);
 
 		width = 2*cont:"stripmargin"; // margin to the left and right
-		width = width + size; // space for next Poly
-		width = width + (2*size + cont:"polypadding")*cont:"hardpolylimit"; // size for max Polys
+		width = width + 2*size * max(limits); // space for all polys
+		width = width + polypadding * (max(limits)-1); // space for paddings
 	);
 
 	cont:"ismoveable" = false;
@@ -834,6 +835,27 @@ new Container(coord, numofstrips, limits) := (
 			);
 		);
 
+		bar:"hitbox" := (
+			regional(offset, scalefactor);
+			offset = (my("shape")_4 - my("shape")_1)_2;
+			scalefactor = .25;			
+			[
+				my("shape")_1 + scalefactor * [-0,-offset],
+				my("shape")_2 + scalefactor * [0,-offset],
+				my("shape")_3 + scalefactor * [0,offset],
+				my("shape")_4 + scalefactor * [-0,offset]
+			];
+		);
+
+		bar:"bar":"hitbox" := (
+			[
+				[my("shape")_1_1, my("parent"):"hitbox"_1_2],
+				[my("shape")_2_1, my("parent"):"hitbox"_2_2],
+				[my("shape")_3_1, my("parent"):"hitbox"_3_2],
+				[my("shape")_4_1, my("parent"):"hitbox"_4_2],
+			];
+		);
+
 		// Create script to change position of all of parents polys and Separators
 		bar:"script" := (
 			regional(adjval, currval);
@@ -937,21 +959,22 @@ if(!usedivomath,
 	patternlimit = 4;
 	patternstate = ["2,2,2", "3,1"];
 	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
-	sepstate = "1,2,1";
+	//sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
 	interactable = "cps";
-	drawpatterncontainer = false;
+	drawpatterncontainer = true;
 	drawseparator = true;
 	drawresetbutton = true;
 	drawpolys = true;
 	polypadding = 1;
 	rcrows = 2;
-	rcstate = ["1,1,2", "2,1,3"];
-	rclimit = [-1,5];
-	rcsepstate = "1";
-	drawrccontainer = true;
+	//rcstate = ["1,1,2", "2,1,3"];
+	//rclimit = [-1,5];
+	//rcsepstate = "1";
+	drawrccontainer = false;
 	drawrcseparator = true;
 	rcinteractable = true;
+	sepsize = 1;
 );
 
 // Local vars
@@ -1083,8 +1106,8 @@ regional(btn);
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
 btn = new ImageButton(NADA, sepsize*2, sepsize*1, ICONS:"reset");
-btn:"coord" := (container:"shape"_3).xy - [2,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
-btn:"imgscale" = .9;
+btn:"coord" := (container:"shape"_3).xy - [2*sepsize,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
+btn:"imgscale" = min(.9,.9 * sepsize);
 btn:"cornerradius" = size;
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;

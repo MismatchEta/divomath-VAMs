@@ -1,4 +1,4 @@
-// v24
+// v25
 // Recent changes:
 // - added functions to draw the arc of an angle (arc(), drawarc(), drawclosedarc(), drawangle())
 // - added other conveniecnce (vectorlength(), normalize(), todeg(), torad())
@@ -6,6 +6,7 @@
 // - updated numerals function to return the numeral of ANY number in style of the Duden
 // - added wrapper divomathPutResult() for divomathAddResult()
 // - changed defaultstateto() ordering to look for divomath result before overwrites
+// - added divomath reporting function wrappers for sending, clearing and putting a result (especially for adding a timestamp
 
 // Convenience functions
 // A | VAM object functions
@@ -532,6 +533,8 @@ commands:"reset" := reset VAM();
 divomathGetVarState(dmcb) := (
 	regional(state);
 	state = divomathSetState();
+	state:"timestamp" = timestamp();
+	state:"datestamp" = date() ++ time();
 	
 	// Send last answer to DM and (maybe) overwrite state
 	if(!isundefined(state),
@@ -542,7 +545,11 @@ divomathGetVarState(dmcb) := (
 );
 
 divomathPutResult(key, value) := (
-	if(isstring(value), value = QUOTE + value + QUOTE); // only give string to DM with explicitly set quotations
+	if(forcestringify != true, forcestringify = false);
+
+	if(forcestringify,
+		value = QUOTE + value + QUOTE; // only give string to DM with explicitly set quotations
+	); 
 
 	if(usedivomath,
 		divomathAddResult(key, value); // call divomath hook	
@@ -554,6 +561,13 @@ divomathPutResult(key, value) := (
 	);
 
 	[key, value]; // Return something
+);
+
+divomathPostResult() := (
+	divomathPutResult("timestamp", timestamp());
+	divomathPutResult("datetime", date() ++ time());
+	
+	divomathSendResult();
 );
 
 // Checks 'dmstate and 'dmprevans for "key" and returns value,
