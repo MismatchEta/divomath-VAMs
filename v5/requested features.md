@@ -1,18 +1,30 @@
 # strapwork
+## 07.04.2026
+- [[PRIO]] Referenzierung doof. Wenn ich von einer Folie vorher komme möchte ich zuerst Referenzierung nehmen, wenn ich von einer Folie später zurückkomme möchte ich die letzte Submission nehmen.
+    - wie umsetzen? Submissions jeweils einen Zeitstempel mitgeben?
+- Marker verschwinden auf zweiter Folie mit Markerreferenz, genau dann wenn ich auf Folie 2 Undo mache, dann zurückgehe und wieder vorwärts. Wenn ich aber nach Undo nochmal was ändere, dann passt es. Wahrscheinlich wird einfach der Zustand genommen, weil keine Submission gebaut wird, wenn Undo gedrückt wird?
+- **09.04.2026, erledigt** rcinteractable ist aktuell true/false, rcinteractable aber "s,p,c" für separator, polys und container. Das finden wir gut.
+- Wenn ich zweireihig einfügen will, wird nur die obere Zeile übernommen. siehe Mail von Sofia vom 20.03.2026
+- **09.04.2026, erledigt** Animation am Anfang der Blobs wenn Folie startet ausschaltbar machen (default: keine Animation)
+    - muss kein Schalter sein, einfach ausmachen
+- **09.04.2026, erledigt** Abstände und Positionierung nochmal checken, werden je nach angezeigten Komponenten uneinheitlich dargestellt (wenn nur Container angezeigt, auch teilweise abgeschnitten)
+    - was macht Skalierung des Browsers, was ist wirklich falsch positioniert?
+- **09.04.2026, erledigt "buttonsize"** Handle für Größe des Undo Buttons
+
+
 ## 16.03.2026
 - [[PRIO]] Referenzierung doof. Wenn ich von einer Folie vorher komme möchte ich zuerst Referenzierung nehmen, wenn ich von einer Folie später zurückkomme möchte ich die letzte Submission nehmen.
     - wie umsetzen? Submissions jeweils einen Zeitstempel mitgeben?
 - **16.03.2026, erledigt** Balken ist auf der rechten Seite wieder größer, nochmal abschneiden
 - **16.03.2026, erledigt** Scrollbar Hitbox vergrößern, ist schwer zu greifen
-- Animation am Anfang der Blobs wenn Folie startet ausschaltbar machen (default: keine Animation)
+- **09.04.2026, erledigt** nimation am Anfang der Blobs wenn Folie startet ausschaltbar machen (default: keine Animation)
     - muss kein Schalter sein, einfach ausmachen
-- Abstände und Positionierung nochmal checken, werden je nach angezeigten Komponenten uneinheitlich dargestellt (wenn nur Container angezeigt, auch teilweise abgeschnitten)
+- **09.04.2026, erledigt** Abstände und Positionierung nochmal checken, werden je nach angezeigten Komponenten uneinheitlich dargestellt (wenn nur Container angezeigt, auch teilweise abgeschnitten)
     - was macht Skalierung des Browsers, was ist wirklich falsch positioniert?
 - **16.03.2026, erledigt** Bild vom Reset Knopf skaliert nicht schön.
     - nicht mit 0.9 vom Knopf skalieren, sondern Bild mit fester Größe
     - vielleicht auch als extra handle
     - **KEINE feste Größe, skaliert jetzt stattdessen richtig mit sepsize mit und hat maximale Größe**
-- 
 
 ## 12.02.2026
 **alles in nächste Meeting verschoben**

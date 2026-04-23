@@ -1,4 +1,4 @@
-() => ({ // ***build 201 | 2026-03-16T19:59:30.562Z***
+() => ({ // ***build 202 | 2026-04-23T09:08:14.170Z***
 scripts: {
     draw: 
 `// v4
@@ -6108,7 +6108,7 @@ toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
 
 ); // end vam-if
-// v41
+// v42
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -6128,6 +6128,9 @@ toggles:"showtf-divvalue":"script";
 // - Changed Reset Buttons Image to scale with sepsize
 // - Fixed alignment to the right of container for Reset Button
 // - Adjusted length of fixed size containers
+// - changed layout of components in relation of what is drawn
+// - removed animation of RegPolys on startup
+// - added "buttonsize" as handle for the size of the reset button
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -6187,6 +6190,7 @@ drawseparator = defaultstateto("drawseparator", true); // Draw Separator
 drawborders = defaultstateto("drawborders", true); // Draw borders of RegPolys
 drawresetbutton = defaultstateto("drawresetbutton", true);// Draw reset button
 polypadding = defaultstateto("polypadding", .5); // Draw padding between RegPolys
+buttonsize = defaultstateto("buttonsize", 1); // Reset buttons size
 
 // Configure reference container (rc)
 rcrows = defaultstateto("rcrows", 1); // Configure number of rows/strips in reference ontainer
@@ -6696,11 +6700,18 @@ new Container(coord, numofstrips, limits) := (
 	cont:"height" = (2*size + cont:"stripmargin") * cont:"#strips";
 	cont:"stripheight" = cont:"height" / cont:"#strips";
 	cont:"width" = (
-		regional(width);
+		regional(width, isinfinite, spaces);
+		isinfinite = min(limits) < 0;
+
+		spaces = if(isinfinite,
+			cont:"hardpolylimit";
+		,
+			max(limits);
+		);
 
 		width = 2*cont:"stripmargin"; // margin to the left and right
-		width = width + 2*size * max(limits); // space for all polys
-		width = width + polypadding * (max(limits)-1); // space for paddings
+		width = width + 2*size * spaces; // space for all polys
+		width = width + polypadding * spaces; // space for paddings
 	);
 
 	cont:"ismoveable" = false;
@@ -7071,19 +7082,20 @@ if(!usedivomath,
 	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
 	//sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
-	interactable = "cps";
-	drawpatterncontainer = true;
+	interactable = "s";
+	drawpatterncontainer = false;
 	drawseparator = true;
 	drawresetbutton = true;
+	buttonsize = 1.5;
 	drawpolys = true;
 	polypadding = 1;
 	rcrows = 2;
 	//rcstate = ["1,1,2", "2,1,3"];
 	//rclimit = [-1,5];
 	//rcsepstate = "1";
-	drawrccontainer = false;
+	drawrccontainer = true;
 	drawrcseparator = true;
-	rcinteractable = true;
+	rcinteractable = "s";
 	sepsize = 1;
 );
 
@@ -7093,6 +7105,7 @@ regional('screenref, 'padding, 'marginleft, 'marginbottom);
 'marginleft = 1; // distance from left border
 'marginbottom = .5; // distance from bottom border
 'screenref = 'screenref + size * [1,1] + ['marginleft,'marginbottom];
+
 
 // D.1 | Create Polygons
 // =====================
@@ -7126,7 +7139,12 @@ if(drawpatterncontainer,
 	regional(patterncontainer);
 	patterncontainer = new PatternContainer([0,0], rows, patternlimit);
 );
-patterncontainer:"coord" = (bg:"shape"_4).xy + 2*[0,'marginbottom];
+patterncontainer:"coord" = if(drawpolys,
+	(bg:"shape"_4).xy;
+,
+	(bg:"shape"_1).xy;
+);
+patterncontainer:"coord" = patterncontainer:"coord" + ['marginleft,'marginbottom];
 
 // Fill Patterncontainer with predefined RegPolys
 counter = 1; // start at first strip
@@ -7144,22 +7162,27 @@ forall(patternstate, row, // iterate over config for every row
 	counter = counter + 1; // next cycle --> next strip
 );
 
+patterncontainer:"timing" = .000001;
 patterncontainer:"movepolysintoplace";
+patterncontainer:"timing" = .2;
 
 // D.3 | Create and config Container
 // =================================
 // Align with coord of bg
 regional(containercoord, coordoffset, container, polycopy, counter);
-coordoffset = [.6, .6+'marginbottom]; // .6 is axis length of Separators' ellipse
+coordoffset = [0, .6+'marginbottom]; // .6 is axis length of Separators' ellipse
+
 containercoord = if(drawpatterncontainer,
 	// Align with pattern container
 	patterncontainer:"coord" + coordoffset + [0,patterncontainer:"height"]
-, if(drawpolys,
-		(bg:"shape"_4).xy + 2*coordoffset
+, 
+	if(drawpolys,
+		(bg:"shape"_4).xy + 2*coordoffset;
 	,
-		(screenbounds()_4).xy + coordoffset
+		(screenbounds()_4).xy + coordoffset;
 	)
 );
+containercoord = containercoord + ['marginleft,0];
 
 container = new Container(containercoord,	rows,	limit); 
 
@@ -7168,6 +7191,7 @@ counter = 1; // start at first strip
 
 state = apply(state, tokenize(#,",")); // Create config from supplied strings from divomath
 
+container:"timing" = .000001;
 forall(state, row, // iterate over config for every row
 	forall(select(row, #!=""), polyid, // iterate over every polyid per row that is not an empty string
 		polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
@@ -7178,7 +7202,7 @@ forall(state, row, // iterate over config for every row
 	);
 	counter = counter + 1; // next cycle --> next strip
 );
-
+patterncontainer:"timing" = .2;
 
 // D.4 | Create Separator
 // ======================
@@ -7215,10 +7239,10 @@ regional(btn);
 'screenref = (screenbounds()_2).xy; // top right corner of the screen
 'screenref = 'screenref - ['marginleft, 'marginbottom]; // coord of Button
 
-btn = new ImageButton(NADA, sepsize*2, sepsize*1, ICONS:"reset");
-btn:"coord" := (container:"shape"_3).xy - [2*sepsize,-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
-btn:"imgscale" = min(.9,.9 * sepsize);
-btn:"cornerradius" = size;
+btn = new ImageButton(NADA, buttonsize*sepsize*2, buttonsize*sepsize*1, ICONS:"reset");
+btn:"coord" := (container:"shape"_3).xy - [my("width"),-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
+btn:"imgscale" = min(.9,.9 * buttonsize * sepsize);
+btn:"cornerradius" = max(my("width"),my("height"));
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
 btn:"fontcolor" = grey(1);
@@ -7310,12 +7334,32 @@ rccontainer:"childseparator" = rcseparator;
 
 // ...==================================================
 // Make Container and Polys non-interactable if required
-if(!rcinteractable,
-	rccontainer:"ishot" = false;
-	apply(rccontainer:"strips",strip,apply(strip,poly, poly:"ishot"=false));
-	rcseparator:"ishot" = false; // Separator
-	apply(rccontainer:"childseparator":"copies",sep,sep:"ishot"=false); // child Separators
+// rcinteractable is bool (for backwards compatibility)
+if(isbool(rcinteractable),
+	if(!rcinteractable,
+		rccontainer:"ishot" = false;
+		apply(rccontainer:"strips",strip,apply(strip,poly, poly:"ishot"=false));
+		rcseparator:"ishot" = false; // Separator
+		apply(rccontainer:"childseparator":"copies",sep,sep:"ishot"=false); // child Separators
+	);
+, // else: As string "cps" or subset
+	// ...Container itself
+	if(indexOf(rcinteractable, "c") + indexOf(rcinteractable, "C") == 0,
+		rccontainer:"ishot" = false; // Container
+	);
+	
+	// ...Polys in Container
+	if(indexOf(rcinteractable, "p") + indexOf(rcinteractable, "P") == 0,
+		apply(rccontainer:"strips",strip,apply(strip,poly, poly:"ishot"=false)); // Polys
+	);
+	
+	// ...Separators of Container
+	if(indexOf(rcinteractable, "s") + indexOf(rcinteractable, "S") == 0,
+		rcseparator:"ishot" = false; // Separator
+		apply(rccontainer:"childseparator":"copies",sep,sep:"ishot"=false); // child Separators
+	);
 );
+
 
 // E | Build obj
 // =============
