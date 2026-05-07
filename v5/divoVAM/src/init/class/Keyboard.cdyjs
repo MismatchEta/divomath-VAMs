@@ -1,116 +1,86 @@
-// v1
+// v3
+// Recent changes:
+// - added fields "fontfamily" and "labelpadding" for more control when drawing Text Entry Box
+// - added "keyboardbehavior" toggle, to control if current tf value gets appended to by keyboard or cleared on first typed key
 
-// Global config
-'fontsize = 16;
-'size = 1;
-
-// Key for Keyboard
-new Key(coord, width, height, label) := (
+new TextInput(coord, label, keyboardtype) := (
 	regional(o);
-	o = new Button(coord, width, height, label, 'fontsize); // @TOdo: scale fontsize based on size
-	o:"type" = "key";
-	o:"target" = target;
-	o:"bordercolor" = o:"color" * .8;
-	o:"cornerradius" = 0;
-	o:"hasshadow" = false;
-
-	o:"script" := my("label"); // Return label
-
-	o; // Return Key;
-);
-
-new Key(coord, size, label) := new Key(coord, size, size, label);
-
-// Keyboard
-new Keyboard(coord, subtype, keysize, target) := (
-	regional(o, subtypes);
-	o = new VAMobject("keyboard");
-	subtypes = ["full", "numeric"];
-	o:"subtype" = if(contains(subtypes,subtype),subtype,"full");
+	o = new VAMobject("textinput");
 	o:"coord" = coord;
-	o:"keysize" = keysize;
-	o:"keys" = [];
-	o:"margin" = .1;
-	o:"ismoveable" = false;
-
-	o:"target" = target;
+	o:"label" = label;
+	o:"width" = 2;
+	o:"height" = .6;
 	o:"value" = "";
 
-	o:"ishot" := length(select(my("keys"),#:"ishot")) > 0;
+	o:"keyboardcoord" = coord;
+	o:"keyboardbehavior" = "clear"; // ["clear"]
+	o:"keyboardtype" = keyboardtype; // see Keyboard class
+	o:"keyboard" = nada;
+	o:"keyboardoffset" = [5,0];
+	o:"fontsize" = 14;
+	o:"fontfamily" = nada;
+	o:"labelpadding" = .2;
 
-	o:"click" := (
-		regional(key, value);
-		value = my("value");
-		key = select(my("keys"),#:"ishot"); // Get all the hot keys (should be exactly one)
+	o:"isclickable" = true;
+	o:"ismoveable" = false;
+	
+	o:"hitbox" := rectangle(my("coord"), my("width"), my("height"));
+	o:"shape" := o:"hitbox";
 
-		// Get key label with out of bounds check (should not happen)
-		if(length(key) > 0, key = key_1:"label");
-			
-		// Add character if not clicked on an arrow key 
-		if(!contains([DOWNARROWTIPLEFT,LEFTARROW], key),
-			value = value + key;
-		);
-
-		// Execute targets onupdate script on Enter press
-		if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
-			eval(my("target"):"onupdate", value->my("value"));
-		);
-
-		// Remove last character if any on leftarrow press
-		if(key == LEFTARROW & length(value) > 0,
-			// Remove last char
-			value = value_(1..(length(value)-1)); // is list now :(
-
-			// Rebuild string from list
-			regional(temp);
-			temp = "";
-			forall(value, temp = temp + #);
-			value = temp;
-		);
-
-		// Reassign new value
-		self():"value" = value;
-		
-		// Execute targets onkeypress script
-		if(!isundefined(my("target")),
-			eval(my("target"):"onkeypress", key->key);
-		);
-		
-		key; // Return the key label
-	);
+	o:"ishot" := inrectangle(my("hitbox"),mouse().xy);
 
 	o:"draw" := (
-		forall(my("keys"), #:"draw");
-		
-		// debug
-		if('debuglevel > 0, draw(my("coord")));
+		// Draw TextInput box
+		fillpoly(my("shape"), color->(245,233,196)/255);
+		drawtext(
+			my("coord") + [0.15, 0.15],
+			my("value"),
+			color->grey(0),
+			size->my("fontsize")
+		);
+
+		// Draw label
+		regional(box, boxwidth, boxheight);
+		box = getboundingbox(my("label"), [0,0], my("fontsize"), my("fontfamily"));
+		boxwidth = box_2_1 - box_1_1;
+		boxheight = box_4_2 - box_1_2;
+
+		drawtextbox(
+			my("coord") - [boxwidth+my("labelpadding"), -.12],
+			my("label"),
+			my("fontsize"),
+			my("fontfamily"),
+			grey(1)
+		);
 	);
 
-	// Build keyboard
-	if(o:"subtype" == "numeric",
-		// row 4
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", o:"margin"], o:"keysize", "0");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", o:"margin"], o:"keysize", ".");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", o:"margin"], o:"keysize", LEFTARROW);
-		
-		// row 3
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", 2*o:"margin"+o:"keysize"], o:"keysize", "1");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", 2*o:"margin"+o:"keysize"], o:"keysize", "2");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", 2*o:"margin"+o:"keysize"], o:"keysize", "3");
+	o:"setValue":= self():"value" = my("keyboard"):"value";
 
-		// row 2
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", 3*o:"margin"+2*o:"keysize"], o:"keysize", "4");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", 3*o:"margin"+2*o:"keysize"], o:"keysize", "5");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", 3*o:"margin"+2*o:"keysize"], o:"keysize", "6");
-
-		// row 1
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", 4*o:"margin"+3*o:"keysize"], o:"keysize", "7");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", 4*o:"margin"+3*o:"keysize"], o:"keysize", "8");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", 4*o:"margin"+3*o:"keysize"], o:"keysize", "9");
-
-		// Return key
-		o:"keys" = o:"keys" :> new key(o:"coord" + [4*o:"margin"+3*o:"keysize", o:"margin"], o:"keysize", 2*o:"keysize" + o:"margin", DOWNARROWTIPLEFT);
+	o:"click" := if(my("isclickable"),
+		if(!isundefined(my("keyboard")),
+			obj = obj -- [my("keyboard")];
+			self():"keyboard" = nada;
+		,
+			self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), "numeric", 1, self());
+			my("keyboard"):"value" = 
+				if(my("keyboardbehavior") == "append", my("value"), 
+				if(my("keyboardbehavior") == "clear", "";
+				));
+				
+			obj = obj :> my("keyboard"); // Add keyboard
+		);
 	);
 
-	o; // Return Keyboard
+	// Hooks from Keyboard class
+	// gets evaled with "key"
+	o:"onkeypress" := ( // set own value
+		self():"value" = value;
+	);
+
+	// gets evaled with "value"
+	o:"onupdate" := (	// Destroy keyboard
+		self():"keyboard" = nada;
+	);
+
+	o;
 );

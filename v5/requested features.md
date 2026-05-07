@@ -1,23 +1,29 @@
 # percentagebar
 ## Mail vom 29.04.26
 - Derzeit ist es so, dass die Unterteilung geändert werden können über die Schaltflächen "Größe des Schritts". Das ist super, aber wenn man aber beide Größen gleichzeitig anpasst, wird nicht der Grundwert angepasst. Dies führt immer wieder zur Verwirrung. Könntest du das Tool so umändern, dass beim Verändern der Schrittgrößen (über die Schaltflächen Größe des Schritts in % und Größe des Schritts in x) der Grundwert passend angepasst wird automatisch? (Das betrifft nicht die Schaltflächen Eingabe Prozentsatz und Eingabe Prozentwert, da sollen die Abhängigkeiten so bleiben, wie sie sind)
-- Die Schaltflächen auf der Oberfläche (sowohl das Einschalten als auch das Ändern über plus und minus) lassen sich nur sehr schlecht bedienen, da diese am iPad nicht gut reagieren. Wir vermuten, dass es an der Größe liegt. Oder Empfindlichkeit? Mit dem Stift am iPad lassen sich diese noch schlechter bedienen. Das führt zu Verzögerungen, wenn die Lehrkraft im Unterrichtsgespräch was mal eben anpassen will und dazu, dass sie dann eher auf das Tool verzichten. Können wir die Handbarkeit hier noch irgendwie erhöhen, dass die zuverlässig bedienbar sind? 
-- Im Unterricht hat sich gezeigt, dass häufig zwei Streifen notwendig sind, um Unterschiede zu diskutieren. Unser Wunschszenario ist, zwei der Streifen nebeneinander zu haben. Ungünsitg ist dann, wenn die ganzen Schatlflächen unten doppelt auftauchen, könnte man das irgendwie über eine zusätzliche Schaltfläche regeln, dass man die Buttons immer nur für einen der beiden Streifen aktiviert?  
 
 - _abhängig von Browser, krieg ich nicht 100prozentig hin_ Das Plus und Minus ist nicht mittig in den Kreisen, könntest du die für uns zentrieren?
+- **05.05.2026, erledigt???** Die Schaltflächen auf der Oberfläche (sowohl das Einschalten als auch das Ändern über plus und minus) lassen sich nur sehr schlecht bedienen, da diese am iPad nicht gut reagieren. Wir vermuten, dass es an der Größe liegt. Oder Empfindlichkeit? Mit dem Stift am iPad lassen sich diese noch schlechter bedienen. Das führt zu Verzögerungen, wenn die Lehrkraft im Unterrichtsgespräch was mal eben anpassen will und dazu, dass sie dann eher auf das Tool verzichten. Können wir die Handbarkeit hier noch irgendwie erhöhen, dass die zuverlässig bedienbar sind? 
 
+- **05.05.2026, erledigt** Im Unterricht hat sich gezeigt, dass häufig zwei Streifen notwendig sind, um Unterschiede zu diskutieren. Unser Wunschszenario ist, zwei der Streifen nebeneinander zu haben. Ungünsitg ist dann, wenn die ganzen Schatlflächen unten doppelt auftauchen, könnte man das irgendwie über eine zusätzliche Schaltfläche regeln, dass man die Buttons immer nur für einen der beiden Streifen aktiviert?  
 - **04.05.2026, erledigt** Wir haben das Tool optisch angepasst sowie die Position der Schaltflächen, könntest du das direkt übernehmen? Wir schicken im Anhang die Version mit den korrekten Einstellungen mit. 
 - **04.05.2026, erledigt** Beschriftung der beiden Skalen sind zu hell. Kannst du die Schritt dunkler machen, aber nicht ganz schwarz, um den Unterschied zu Teil und Anteil noch zu sehen?
 - **04.05.2026, erledigt** Wenn man ein Numpad öffnet zum Ändern bestimmter Werte im Tool, ist es nicht leer, sondern zeigt die zuvor eingegebenen Zahlen an. Diese müssen aktuell zunächst gelöscht werden, da neu eingegebene Zahlen sonst einfach angehängt werden. Könnte es von vornherein leerstehen? Oder die Werte verschwinden, sobald man etwas Neues eingibt?
 - **04.05.2026, erledigt** Könntest du folgende Buttons umbenennen? Grundwert in "Ganzes"; Prozentwerte in "Werte unten", Prozentsätze in "Prozente oben"; Eingabe p in "Eingabe Anteil"; Eingabe P in "Eingabe Teil"; Eingabe G in "Eingabe Ganzes"
 
 # strapwork
+## 07.05.2026
+- **07.05.2026, erledigt** beim 2 reihigen Einfügen (und NUR dann) bleiben die oberen Polygone hängen.
+- **07.05.2026, erledigt** Button wird nicht richtig angezeigt
+
 ## 07.04.2026
 - [[PRIO]] Referenzierung doof. Wenn ich von einer Folie vorher komme möchte ich zuerst Referenzierung nehmen, wenn ich von einer Folie später zurückkomme möchte ich die letzte Submission nehmen.
     - wie umsetzen? Submissions jeweils einen Zeitstempel mitgeben?
 - Marker verschwinden auf zweiter Folie mit Markerreferenz, genau dann wenn ich auf Folie 2 Undo mache, dann zurückgehe und wieder vorwärts. Wenn ich aber nach Undo nochmal was ändere, dann passt es. Wahrscheinlich wird einfach der Zustand genommen, weil keine Submission gebaut wird, wenn Undo gedrückt wird?
+
+- **06.05.2026, tritt scheinbar nur auf, wenn "interactable" nicht richtig** Wenn ich zweireihig einfügen will, wird nur die obere Zeile übernommen. siehe Mail von Sofia vom 20.03.2026
+
 - **09.04.2026, erledigt** rcinteractable ist aktuell true/false, rcinteractable aber "s,p,c" für separator, polys und container. Das finden wir gut.
-- Wenn ich zweireihig einfügen will, wird nur die obere Zeile übernommen. siehe Mail von Sofia vom 20.03.2026
 - **09.04.2026, erledigt** Animation am Anfang der Blobs wenn Folie startet ausschaltbar machen (default: keine Animation)
     - muss kein Schalter sein, einfach ausmachen
 - **09.04.2026, erledigt** Abstände und Positionierung nochmal checken, werden je nach angezeigten Komponenten uneinheitlich dargestellt (wenn nur Container angezeigt, auch teilweise abgeschnitten)

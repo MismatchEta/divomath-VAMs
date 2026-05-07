@@ -1,4 +1,4 @@
-// v42
+// v44
 // Recent changes:
 // - fixed Scrollbar overlaying Reset Button
 // - fixed Scrollbar not showing on start
@@ -21,6 +21,8 @@
 // - changed layout of components in relation of what is drawn
 // - removed animation of RegPolys on startup
 // - added "buttonsize" as handle for the size of the reset button
+// - fixed Button cornerradius wrongly using dynamic width and size attributes
+// - fixed stray Polys remaining when dropping multi-row pattern container
 // - @TODO: implement new handles as web controls
 
 // Parkettierung / Bandornamente
@@ -89,7 +91,7 @@ rclimit = defaultstateto("rclimit", apply(1..100, 10));// Configure limit of Reg
 rcsepstate = defaultstateto("rcsepstate", ""); // Separator positions (i.e. number of polys left of Separator)
 drawrccontainer = defaultstateto("drawrccontainer", false); // Draw reference container
 drawrcseparator = defaultstateto("drawrcseparator", false); // Draw reference containers Separator
-rcinteractable = defaultstateto("rcinteractable", false); // reference containers can be used like a normal Container
+rcinteractable = defaultstateto("rcinteractable", ""); // reference containers can be used like a normal Container
 
 // Configure result handling and setState.
 // Overwrite divomath result updating function.
@@ -169,8 +171,7 @@ divomathSetState() := (
 		"rclimit" : rclimit,
 		"rcsepstate" : if(!isundefined(rcseparator), rcseparator:"getstatestring", QUOTE+rcsepstate+QUOTE),
 		"drawrccontainer" : drawrccontainer,
-		"drawrcseparator" : drawrcseparator,
-		"rcinteractable" : rcinteractable
+		"drawrcseparator" : drawrcseparator
 	};
 
 	// Configure vertices to handle image-strings correctly
@@ -397,7 +398,9 @@ new Separator(coord, height, parent) := (
 		forall(my("shape"), fillpoly(#, color->my("color")));
 
 		// Debug draw
-		forall(my("hitbox"), drawpoly(#, color->[1,0,0]));
+		if('debuglevel>3,
+			forall(my("hitbox"), drawpoly(#, color->[1,0,0]));
+		);
 	);
 	
 	sep:"move" := if(my("ismoveable"),
@@ -749,6 +752,7 @@ new Container(coord, numofstrips, limits) := (
 
 // CONVENIENCE METHODS
 // =====================
+
 	cont:"movepolysintoplace" := ( // Animate Polygons to appropriate position for *all* strips
 		regional(offset, strip, refpoint, poly);
 		
@@ -936,7 +940,9 @@ new PatternContainer(coord, rows, limit) := (
 		obj = obj -- [self()];
 
 		// Remove contents from obj too, if no droptarget was found
-		if(isundefined(droptarget), obj = obj -- my("strips")_1);
+		if(isundefined(droptarget), 
+			apply(my("strips"), strip, obj = obj -- strip);
+		);
 	);
 
 	cont:"copy" := (
@@ -972,19 +978,19 @@ if(!usedivomath,
 	state = ["3,6,1,1,1,1,1,1,1,1,2,3,3,2,1,2", "3,1,3"];
 	//sepstate = "1,2,1";
 	vertices = [2,3,"snap",5,6,7];
-	interactable = "s";
-	drawpatterncontainer = false;
+	interactable = "spc";
+	drawpatterncontainer = true;
 	drawseparator = true;
 	drawresetbutton = true;
 	buttonsize = 1.5;
-	drawpolys = true;
+	drawpolys = false;
 	polypadding = 1;
 	rcrows = 2;
 	//rcstate = ["1,1,2", "2,1,3"];
 	//rclimit = [-1,5];
 	//rcsepstate = "1";
-	drawrccontainer = true;
-	drawrcseparator = true;
+	drawrccontainer = false;
+	drawrcseparator = false;
 	rcinteractable = "s";
 	sepsize = 1;
 );
@@ -1092,7 +1098,7 @@ forall(state, row, // iterate over config for every row
 	);
 	counter = counter + 1; // next cycle --> next strip
 );
-patterncontainer:"timing" = .2;
+container:"timing" = .2;
 
 // D.4 | Create Separator
 // ======================
@@ -1132,16 +1138,14 @@ regional(btn);
 btn = new ImageButton(NADA, buttonsize*sepsize*2, buttonsize*sepsize*1, ICONS:"reset");
 btn:"coord" := (container:"shape"_3).xy - [my("width"),-'marginbottom] + if(container:"showscrollbar", [0,container:"scrollbar":"height"], [0,0]);
 btn:"imgscale" = min(.9,.9 * buttonsize * sepsize);
-btn:"cornerradius" = max(my("width"),my("height"));
+btn:"cornerradius" = max(btn:"width", btn:"height");
 btn:"color" = DIVODARKBLUE;
 btn:"bordercolor" = DIVODARKBLUE;
-btn:"fontcolor" = grey(1);
-btn:"fontsize" = btn:"fontsize" * size;
 btn:"polysref" = polys; // reference for polys, since CindyJS does not access polys var properly
 btn:"script" := ( // Resets state to editor default setting if used in divomath
 	// Reassign relevant vars with appropriate values
 	if(usedivomath,
-		// default to divomath reference is exists or elsedefault state
+		// default to divomath reference is exists or else default state
 		state = divomathConfig:"__state";
 		if(isundefined(state),
 			state = defaultto('dmdefaultstate:"state", apply(1..rows, ""));
@@ -1160,7 +1164,9 @@ btn:"script" := ( // Resets state to editor default setting if used in divomath
 
 	// Remove all RegPolys
 	forall(select(obj, #:"type" == "Container" & isundefined(#:"subtype")), #:"popall");
-	'polyid = polys_(-1):"id" + 1; // Reset global polyid
+	if(length(polys) > 0,
+		'polyid = polys_(-1):"id" + 1; // Reset global polyid
+	);
 	
 	// Remove all Separators
 	forall(select(obj, #:"type" == "Separator" & isundefined(#:"original") & isundefined(#:"parent":"subtype")), #:"popall");
@@ -1197,6 +1203,7 @@ rccontainer:"coord" = [container:"coord"_1, container:"coord"_2 + container:"hei
 counter = 1; // start at first strip
 rcstate = apply(rcstate, tokenize(#,",")); // Create config from supplied strings from divomath
 
+rccontainer:"timing" = .000001;
 forall(rcstate, row, // iterate over config for every row
 	forall(select(row, #!=""), polyid, // iterate over every polyid per row that is not an empty string
 		polycopy = polys_polyid:"copy"; // Copy poly from poly list (from RegPoly init) according to index (polyid)
@@ -1207,6 +1214,7 @@ forall(rcstate, row, // iterate over config for every row
 	);
 	counter = counter + 1; // next cycle --> next strip
 );
+rccontainer:"timing" = .2;
 
 rccontainer:"movepolysintoplace"; // align polys
 
