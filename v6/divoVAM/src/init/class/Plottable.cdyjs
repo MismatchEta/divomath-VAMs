@@ -1,0 +1,16 @@
+/* v1 ******************************************************************************************
+* Class for Plottable things.
+*
+* Recent changes:
+************************************************************************************************/
+
+new Plottable() := (
+	regional(plottable);
+	plottable:"definition" := NADA;
+	plottable:"color" = DZLMCOLORBLUE;
+	plottable:"size" = 1;
+	plottable:"connect" = false;
+
+
+	plottable; // Return
+);

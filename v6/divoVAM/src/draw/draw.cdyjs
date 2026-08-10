@@ -1,0 +1,45 @@
+/** v3 ******************************************************************************************
+* Draws all the things in obj according to typeorder
+*
+* Recent Changes:
+* - 2027-07-27: Add drawing of VISIBLERECT for debugging
+************************************************************************************************/
+
+// Color background.
+fill(screen(), color->BGCOLOR);
+
+// First: Draw all objects from OBJ according to TYPEORDER.
+forall(typeorder,to,
+		forall(obj,o, if(o:"type"==to, o:"draw"))
+);
+
+// Second: Draw all the objects with types not in TYPEORDER.
+forall(obj,o,
+		if(not(contains(typeorder,o:"type")),o:"draw");
+);
+
+
+// ========= //
+// DEBUGGING //
+// ========= //
+
+// Draw visible rectangle for CindyJS ([0,17,24,0] by convention)
+if(LOGLEVEL >= LOGDEBUG,
+	drawpoly(VISIBLERECT, size->2, color->grey(.35));
+);
+
+// Draw power of 2 circles around origin.
+if(LOGLEVEL >= LOGDEBUG,
+	repeat(5, drawcircle([0,0],2^#, color->grey(.65)));
+);
+
+// Draw DOCTEXT of VAM.
+if(LOGLEVEL >= LOGDEBUG, 
+	drawtextbox(DOCTEXTPOS, DOCTEXT, NADA, NADA, grey(.35));
+);
+
+// Send divomath results first time the scene is drawn.
+if(ISDIVOMATH & FIRSTDRAW, divomathUpdateResults());
+
+// Set flag to remember first call to draw script is done.
+FIRSTDRAW = false;

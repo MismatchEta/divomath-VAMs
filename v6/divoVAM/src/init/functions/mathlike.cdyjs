@@ -1,0 +1,36 @@
+/** v1 ******************************************************************************************
+* Functions concerning math-like behavior
+*
+* Recent changes:
+************************************************************************************************/
+
+gt zero(x) := x > 0;
+lt zero(x) := x < 0;
+is zero(x) := x == 0;
+
+hex(int) := hexadecimal(int);
+hexadecimal(int) := "0123456789ABCDEF"_(1+floor(int/16)) + "0123456789ABCDEF"_(1+mod(int,16));
+
+int(hex) := integer(hex);
+integer(hex) := (
+	regional(len, key, result);
+	
+	len = length(hex);
+	result = 0;
+
+	repeat(len,
+		key = hex_(len+1-#);
+		result = result + 16^(#-1) * HEXMAP:key;
+		println(# + " : " +result)
+	);
+);
+
+sign(x):= if(x < 0,
+	-1
+,
+	if(x > 0,
+		1
+	,
+		0
+	)
+);

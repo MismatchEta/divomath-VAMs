@@ -1,0 +1,1052 @@
+/** v14 *****************************************************************************************
+* Recent changes:
+* - 2026-06-20: Fix breaking ifs from CindyJS 0.8.45 update.
+* - 2026-07-24: Fix "100 %" label not showing when arches are ative.
+* - 2026-07-24: Change "fix buttons" icon to a lock.
+* - 2026-07-25: Change drawing behavior of ticks and arches. Now depends on (one of the) step toggles being active.
+* - 2026-07-25: Introduce barpadding as a parameter instead of fixed value of 1.5
+* - 2026-07-25: Change default barwidth to 25.
+* - 2026-07-25: Change wording of some toggle labels.
+* - 2026-07-25: Add parameter "showbuttons" for showing/hiding UI toggles (default: true)
+* - 2026-07-25: Fix snapbar only acting on last bar
+* - 2026-07-25: Fix overflow inconsistency for pluspercentage button script
+* - 2026-07-27: Unify web controls for configuration
+* - 2026-07-27: Change barposition and barwidth to autoadjust if not otherwise specified
+************************************************************************************************/
+
+if(VAM == "percentagebar",
+
+
+// ================= //
+// A | Documentation //
+// ================= //
+//DOCTEXTPOS = [9,15.5];
+DOCTEXT = "...";
+
+
+// ================= //
+// B | Configuration //
+// ================= //
+
+MSGTOKEN = "sl_cjs_v1"; // security feature for "post value(3)"
+
+barprecision					= default to(ENVIRONMENTALPARAMS:"barprecision", .01, true); 
+barposition 					= default to(ENVIRONMENTALPARAMS:"barposition", NADA, true); 
+barwidth 							= default to(ENVIRONMENTALPARAMS:"barwidth", NADA, true); 
+barheight 						= default to(ENVIRONMENTALPARAMS:"barheight", 1.5, true); 
+barpadding 						= default to(ENVIRONMENTALPARAMS:"barpadding", 2.5, true); 
+barvalue 							= default to(ENVIRONMENTALPARAMS:"barvalue", 0, true); 
+basevalue 						= default to(ENVIRONMENTALPARAMS:"basevalue", 1000, true);
+
+subdivisions 					= default to(ENVIRONMENTALPARAMS:"subdivisions", 1, true);
+unit 									= default to(ENVIRONMENTALPARAMS:"unit", "MB", false);
+barcolor 							= default to(ENVIRONMENTALPARAMS:"barcolor", DZLMCOLORGOLD, true);
+fontfamily 						= default to(ENVIRONMENTALPARAMS:"fontfamily", NADA, true);
+leftoutpercentages		= default to(ENVIRONMENTALPARAMS:"leftoutpercentages", [], true);
+
+leftoutvalues					= default to(ENVIRONMENTALPARAMS:"leftoutvalues", [], true);
+custompercentages			= default to(ENVIRONMENTALPARAMS:"custompercentages", [0.2], true);
+customvalues					= default to(ENVIRONMENTALPARAMS:"customvalues", [.5], true);
+scaffoldbasevalue			= default to(ENVIRONMENTALPARAMS:"scaffoldbasevalue", false, true);
+scaffoldvalue					= default to(ENVIRONMENTALPARAMS:"scaffoldvalue", false, true);
+scaffoldpercentage		= default to(ENVIRONMENTALPARAMS:"scaffoldpercentage", false, true);
+isbardraggable				= default to(ENVIRONMENTALPARAMS:"isbardraggable", true, true);
+alwaysdrawarches			= default to(ENVIRONMENTALPARAMS:"alwaysdrawarches", false, true);
+snapbar								= default to(ENVIRONMENTALPARAMS:"snapbar", false, true);
+decimalspercentage		= default to(ENVIRONMENTALPARAMS:"decimalspercentage", 2, true);
+decimalsvalue					= default to(ENVIRONMENTALPARAMS:"decimalsvalue", 2, true);
+numberofbars					= default to(ENVIRONMENTALPARAMS:"numberofbars", 1, true);
+keepstable						= default to(ENVIRONMENTALPARAMS:"keepstable", "basevalue", false);
+showbuttons						= default to(ENVIRONMENTALPARAMS:"showbuttons", true, true);
+
+if(isundefined(barposition),
+	barposition = screenbounds()_1;
+	barposition = barposition.xy;
+	barposition_1 = barposition_1 + barpadding / 2;
+	barposition_2 = barposition_2 - 1/3 * (VISIBLERECT_3_2 - VISIBLERECT_1_2) - .5 * barheight;
+);
+
+if(isundefined(barwidth),
+	barwidth = VISIBLERECT_2_1 - VISIBLERECT_1_1;
+	barwidth = barwidth - barpadding;
+);
+
+if(!contains(["basevalue", "value", "percentage"], keepstable),
+	keepstable = "basevalue";
+	error at("VAM percentagebar", "keepstable has to be one of 'basevalue', 'value' or 'percentage. Set to 'basevalue'.");
+);
+
+
+// ===================== //
+// C | Class Definitions //
+// ===================== //
+
+/**
+* C.1 | Percentagebar
+* Main functionality of a bar, that is draggable in a certain area. Provides labels for different values
+**/
+new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit) := (
+	regional(o);
+	o = new VAMobject("Percentagebar");
+	
+	// Look and feel
+	o:"coord" = coord;
+	o:"color" = barcolor;
+	o:"width" = width;
+	o:"height" = height;
+	o:"margin" = .07; // margin of bar shape to surrounding box
+	o:"precision" = precision; // precision of movement of bar (in [0,1])
+	o:"fontsize" = 14;
+	o:"fontfamily" = fontfamily; // set globally
+	o:"labelpadding" = .2;
+	o:"isclickable" = isbardraggable;
+	o:"ismoveable" = isbardraggable;
+
+	// Booleans for showing/hiding stuff, set manually after init
+	o:"drawpercentagelabels" = NADA;
+	o:"drawvaluelabels" = NADA;
+	o:"drawbasevaluelabel" = NADA;
+	o:"drawcurrentpercentage" = NADA;
+	o:"drawcurrentvalue" = NADA;
+	o:"drawarches" = NADA;
+	o:"canoverflow" = NADA;
+	o:"scaffoldvalue" = scaffoldvalue;
+	o:"scaffoldpercentage" = scaffoldpercentage;
+	o:"scaffoldbasevalue" = scaffoldbasevalue;
+	o:"drawsteps" = NADA;
+
+	// Handles for interface (textfields, buttons, toggles)
+	o:"toggles" = NADA; // set at init
+	o:"textfields" = NADA; // set at init
+	o:"buttons" = NADA; // set at init
+
+	// Values for Percentagebar
+	o:"unit" = unit;
+	o:"value" = value; // between 0 and 1
+	o:"basevalue" = baseval;
+	o:"divisions" = divisions; // determines ticks, gets updated via Textfield
+	o:"ticks" := apply(1..my("divisions"), #/my("divisions"));
+	o:"standardticks" = [0,1];
+	
+	// Shape & hitbox
+	o:"box" = rectangle(coord-[o:"margin",o:"margin"], width+2*o:"margin", height+2*o:"margin");
+	o:"shape" := roundedrectangle(my("coord"), my("value")*my("width"), my("height"), .1);
+	o:"hitbox" := rectangle(my("coord"),my("width"),my("height"));
+
+	o:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+	o:"isactive" = false; // for use with multiple bars. Controls which bar is targetted by toggle switch state changes (see "toggleactive")
+
+	o:"draw" := (
+		// Draw background box	
+		fillpoly(my("box"), color->grey(.85));
+		drawpoly(my("box"), color->grey(.2), size->if(my("isactive"),1.5,.5));
+
+		// Draw actual draggable bar
+		fill(my("shape"), color->my("color"), alpha->if(my("isactive"),1,.7));
+
+		// Draw inbetween ticks
+		regional(p1); // anchor point for vertical lines
+		if(my("drawsteps"),
+			forall(my("ticks") -- [1],
+				p1 = my("coord") + [#,0]*my("width"); // Set bottom point for tick
+				draw( // draw vertical line segment
+					p1, p1 + [0,my("height")],
+					size->2,
+					color->DZLMCOLORBLUE
+				); 
+			);
+		);
+
+		// Draw standard ticks (left and right by default)
+		forall(my("standardticks"),
+			p1 = my("coord") + [#,0]*my("width"); // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 + [0,my("height")],
+				size->.1,
+				color->grey(.1)
+			); 
+		);
+
+		// Draw custompercentages & customvalues
+		forall(custompercentages ++ customvalues,
+			p1 = my("coord") + [#,0]*my("width"); // Set bottom point for tick
+			draw( // draw vertical line segment
+				p1, p1 + [0,my("height")],
+				size->2,
+				color->grey(.0)
+			); 
+		);
+
+		// Draw labels for percentages and corresponding values
+		regional(size, font, label, text, box, position, xoffset, yoffset);
+		size = my("fontsize");
+		family = my("fontfamily");
+		
+		// Draw percentage labels
+		if(my("drawpercentagelabels"),
+			yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
+			forall(my("ticks") ++ my("standardticks") -- leftoutpercentages,
+				if(my("drawarches"),
+					if((my("value") >= #) % ((# == 1) & my("drawbasevaluelabel")),
+						text = format(100*#, decimalspercentage) + " %"; // tick value in % rounded to given decimals with "%" sign
+						box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+						xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+						position = my("coord") + [xoffset, yoffset]; // actual position
+			
+						// Draw arches
+						if(my("drawarches"), eval(my("drawpercentagearches"), yoffset->yoffset+box_4_2-box_1_2));
+		
+						// Draw labels
+						drawtext(position, text, size->size, font->family, color->grey(.2));
+					);
+				,
+					text = format(100*#, decimalspercentage) + " %"; // tick value in % rounded to given decimals with "%" sign
+					box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+					xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+					position = my("coord") + [xoffset, yoffset]; // actual position
+	
+					// Draw arches
+					//if(my("drawarches"), eval(my("drawpercentagearches"), yoffset->yoffset+box_4_2-box_1_2));
+	
+					// Draw labels
+					drawtext(position, text, size->size, font->family, color->grey(.2));
+				);
+			);
+		);
+
+		// Draw value labels
+		if(my("drawvaluelabels"),
+			forall(my("ticks") ++ my("standardticks") -- leftoutvalues,
+				if(my("drawarches"),
+					if(my("value") >= # ,
+						text = format(#*my("basevalue"),decimalsvalue) + " " + my("unit"); // altered tick value with unit
+						box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+						xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+						yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+						position = my("coord") + [xoffset, yoffset]; // actual position
+
+						// Draw arches
+						if(my("drawarches"), eval(my("drawvaluearches"), yoffset->yoffset-my("labelpadding")));
+
+						// Draw
+						if(# != 1, // exclude drawing of base value label
+							drawtext(position, text, size->size, font->family, color->grey(.2));
+						);
+					);
+				,
+					text = format(#*my("basevalue"),decimalsvalue) + " " + my("unit"); // altered tick value with unit
+					box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+					xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+					yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+					position = my("coord") + [xoffset, yoffset]; // actual position
+	
+					// Draw arches
+					//if(my("drawarches"), eval(my("drawvaluearches"), yoffset->yoffset-my("labelpadding")));
+	
+					// Draw
+					if(# != 1, // exclude drawing of base value label
+						drawtext(position, text, size->size, font->family, color->grey(.2));
+					);
+				);
+			);
+		);
+
+		// Draw arches
+		if(my("drawarches") & my("drawsteps"),
+			regional(dy);
+			dy = getboundingbox(A, [0,0], size, family)_3_2; // height of textboxes for offset
+			eval(my("drawvaluearches"), yoffset->-dy-2*my("labelpadding"));
+			eval(my("drawpercentagearches"), yoffset->my("height")+dy+my("labelpadding"));
+		);
+
+
+		// Draw basevalue label
+		if(my("drawbasevaluelabel"),
+			text = format(my("basevalue"),decimalsvalue) + " " + my("unit"); // altered tick value with unit
+			box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+			xoffset = my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+			yoffset = -(box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+			position = my("coord") + [xoffset, yoffset]; // actual position
+			
+			// Draw
+			drawtext(position, text, size->size, font->family, color->grey(.2));
+
+				// Draw scaffold overlay for base value
+				if(my("scaffoldbasevalue"),
+					regional(scaffoldbox);
+					scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+					draw(scaffoldbox, color -> grey(.5));
+					fill(scaffoldbox, color -> grey(.9));
+			);
+		);
+
+		// Draw labels for custom percenteges
+		yoffset = my("height")+my("labelpadding"); // move up by the height of the bar
+		forall(custompercentages,
+			text = format(100*#, decimalspercentage) + " %"; // tick value in % rounded to given decimals with "%" sign
+			box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+			xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+			position = my("coord") + [xoffset, yoffset]; // actual position
+		
+		// Draw labels
+			drawtext(position, text, size->size, font->family, color->grey(.0));
+		 
+		);
+
+		// Draw labels for custom values
+		forall(customvalues,
+			text = format(#*my("basevalue"),decimalsvalue) + " " + my("unit"); // altered tick value with unit
+			box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+			xoffset = #*my("width") - .5*(box_2_1-box_1_1); // move to vertical line and adjust by half the texts length
+			yoffset = - (box_3_2-box_2_2) - my("labelpadding"); // move down by the height of the text
+			position = my("coord") + [xoffset, yoffset]; // actual position
+
+			// Draw
+			drawtext(position, text, size->size, font->family, color->grey(.0));
+		
+		);
+
+		// Draw labels for current percentage
+		if(my("drawcurrentpercentage"),
+			text = format(100*my("value"), decimalspercentage) + " %"; // tick value in % rounded to given decimals with "%" sign
+			box = getboundingbox(text, [0,0], size, family); // only width is used not actual position
+			position = my("coord") + [ // actual position, start at bar coord
+				my("value")*my("width") - .5*(box_2_1-box_1_1), // move to vertical line and adjust by half the texts length
+				my("height")+my("labelpadding") // move up by the height of the bar
+			];
+
+			// Draw
+			drawtextbox(position, text, size, family, grey(1), bold->true);
+
+			// Draw scaffold overlay for percentage
+			if(my("scaffoldpercentage"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+				draw(scaffoldbox, color -> grey(.5));
+				fill(scaffoldbox, color -> grey(.9));
+			);
+		);
+
+		// Draw current value
+		if(my("drawcurrentvalue"),
+			text = format(my("value")*my("basevalue"),decimalsvalue) + " " + my("unit"); // altered tick value with unit
+			box = getboundingbox(text, [0,0], size, family); // only width and height are used not actual position
+			position = my("coord") + [ // actual position, start at bar coord
+				my("value")*my("width") - .5*(box_2_1-box_1_1), // move to vertical line and adjust by half the texts length
+				- (box_3_2-box_2_2) - my("labelpadding") // move down by the height of the text
+			];
+
+			// Draw
+			drawtextbox(position, text, size, family, grey(1), bold->true);
+
+			// Draw scaffold overlay for percentage
+			if(my("scaffoldvalue"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1-box_1_1, box_4_2-box_1_2, .05);
+				draw(scaffoldbox, color -> grey(.5));
+				fill(scaffoldbox, color -> grey(.9));
+			);
+
+		);
+
+		// Debug draw
+		if(LOGLEVEL > 0, drawtext(my("coord")+[0.3,0],my("value")));
+		if(LOGLEVEL > 0, draw(my("coord")));
+		if(LOGLEVEL > 1, drawpoly(my("hitbox"), color->[0,1,0]));
+	);
+
+	o:"drawpercentagearches" := ( // helper for drawing percentage arches (in "draw"), gets evaled with yoffset
+		regional(ticks, width, height, todraw);
+
+		if(isundefined(yoffset),yoffset=0);
+		ticks = 0 <: my("ticks") :> 1; // ticks with start (0) and end value (1) added
+		width = my("width") / my("divisions"); // ellipses width / major axis
+		height = width / PHI; // ellipses height / minor axis
+
+		// go through all ticks and draw arch if required
+		forall(2..length(ticks)-1,
+			todraw = my("value") >= ticks_#; //checks for current tick, if value is bigger
+			if(todraw,
+				connect(
+					ellipse(my("coord") + [(#-1.5)*width, yoffset],	width/2, height/2, 0, PI),
+					color->my("color")
+				);
+			);
+		);
+	);
+	
+	o:"drawvaluearches" := ( // helper for drawing value arches (in "draw"), gets evaled with yoffset
+		regional(ticks, width, height, todraw);
+
+		if(isundefined(yoffset),yoffset=0);
+		ticks = 0 <: my("ticks") :> 1; // ticks with start (0) and end value (1) added
+		width = my("width") / my("divisions"); // ellipses width / major axis
+		height = width / PHI; // ellipses height / minor axis
+
+		// go through all ticks and draw arch if required
+		forall(2..length(ticks)-1,
+			todraw = my("value") >= ticks_#; //checks for current tick, if value is bigger
+			if(todraw,
+				connect(
+					ellipse(my("coord") + [(#-1.5)*width, yoffset],	width/2, height/2, PI, 2*PI),
+					color->my("color")
+				);
+			);
+		);
+	);
+
+	o:"toggleactive" := (
+		// Deactivate all other bars
+		regional(otherbars);
+		otherbars = select(obj,#:"type"=="Percentagebar") -- [self()];
+		forall(otherbars, #:"setinactive");
+		
+		// Set self to active
+		my("setactive");
+	);
+
+	o:"setactive" := (
+		if(toggles:"percentage":"state" != self():"drawcurrentpercentage", toggles:"percentage":"click");
+		if(toggles:"part":"state" != self():"drawcurrentvalue", toggles:"part":"click");
+		if(toggles:"basevalue":"state" != self():"drawbasevaluelabel", toggles:"basevalue":"click");
+		if(toggles:"parts":"state" != self():"drawvaluelabels", toggles:"parts":"click");
+		if(toggles:"percentages":"state" != self():"drawpercentagelabels", toggles:"percentages":"click");
+		if(toggles:"arch":"state" != self():"drawarches", toggles:"arch":"click");
+		if(toggles:"overflow":"state" != self():"canoverflow", toggles:"overflow":"click");
+		
+		self():"drawcurrentpercentage"	:= toggles:"percentage":"state";
+		self():"drawcurrentvalue"				:= toggles:"part":"state";
+		self():"drawbasevaluelabel"			:= toggles:"basevalue":"state";
+		self():"drawvaluelabels"				:= toggles:"parts":"state";
+		self():"drawpercentagelabels"		:= toggles:"percentages":"state";
+		self():"drawarches"							:= toggles:"arch":"state" % alwaysdrawarches;
+		self():"canoverflow"						:= toggles:"overflow":"state";
+		self():"drawsteps" 							:= toggles:"showtf-div":"state"
+    	% toggles:"showtf-divpercentage":"state"
+    	% toggles:"showtf-divvalue":"state";
+
+		textfields:"divisions":"value" = my("divisions") + "";
+		textfields:"divisions-value":"value" =  my("basevalue")/my("divisions") + "";
+		textfields:"divisions-percentage":"value" =  100/my("divisions") + "";
+		textfields:"basevalue":"value" = my("basevalue") + "";
+		textfields:"value":"value" = my("value") * my("basevalue")+ "";
+		textfields:"percentage":"value" = 100 * my("value") + "";
+		'generictextfieldhandle = self();
+		
+		self():"isactive" = true;
+	);
+	o:"setinactive" := (
+		if(my("isactive"),
+			self():"drawcurrentpercentage"	= toggles:"percentage":"state";
+			self():"drawcurrentvalue"				= toggles:"part":"state";
+			self():"drawbasevaluelabel"			= toggles:"basevalue":"state";
+			self():"drawvaluelabels"				= toggles:"parts":"state";
+			self():"drawpercentagelabels"		= toggles:"percentages":"state";
+			self():"drawarches"							= toggles:"arch":"state" % alwaysdrawarches;
+			self():"canoverflow"						= toggles:"overflow":"state";
+			self():"drawsteps" 							= toggles:"showtf-div":"state"
+	    	% toggles:"showtf-divpercentage":"state"
+	    	% toggles:"showtf-divvalue":"state";
+		);
+		
+		self():"isactive" = false;
+	);
+
+	o:"move" := if(my("ismoveable"),
+		// Set current bar to active and deactivate all other bars
+		if(!my("isactive"), my("toggleactive"));
+
+		my("setvalue");
+
+		// Set percentage tf accordingly
+		my("textfields"):"percentage":"value" = 100 * my("value") + "";
+
+		// Set value tf accordingly
+		my("textfields"):"value":"value" = my("basevalue") * my("value") + "";
+	);
+
+	o:"moveend" := if(my("ismoveable"),		
+		// Set current bar to active and deactivate all other bars
+		my("toggleactive");
+
+		// Send updated value to SL
+		post value("percentagevalue", my("value"), MSGTOKEN);
+	);
+
+	o:"click" := if(my("isclickable"),
+		my("setvalue");
+	);
+	
+	o:"setvalue" := (
+		// Set value according to mouse coords
+		self():"value" = (mouse().xy - my("coord"))_1 / my("width");
+		
+		// Cut of properly
+		if(!my("canoverflow"), // cap at 100% and 0%
+			self():"value" = min(max(my("value"),0),1);
+		,	// else: cap only at 0%
+			self():"value" = max(my("value"),0);
+		);
+
+		// Round according to given precision
+		self():"value" = my("precision") * round(my("value")/my("precision"));
+	);
+
+	o:"setTicks" := if(false,
+		regional(newTicks);
+		newTicks=[];
+		repeat(my("divisions")-1,i,
+				newTicks = newTicks:>i/(my("divisions"));
+		);
+		self():"ticks" = newTicks;
+	);
+
+	o; // Return the object.
+);
+
+
+// ================== //
+// C | Initialization //
+// ================== //
+
+// D.1 | Init Toggle Switches
+// new Toggle(coord,width,state,label,fontsize)
+// ============================================
+regional(screen, togglepad, marginy, togglesize);
+screen = apply(screenbounds(), #.xy);
+togglepad = .5;
+togglesize = 1.5;
+marginy = 1;
+toggles = {
+	// COL 1
+	"percentage"	:	new Toggle(screen_4 + [togglepad,togglepad+marginy+4*togglesize*.8], togglesize, false, "Anteil", 14),
+	"part"				: new Toggle(screen_4 + [togglepad,togglepad+marginy+3*togglesize*.8], togglesize, false, "Teil", 14),
+	"basevalue"		: new Toggle(screen_4 + [togglepad,togglepad+marginy+2*togglesize*.8], togglesize, false, "Ganzes", 14),
+	"parts"				:	new Toggle(screen_4 + [togglepad,togglepad+marginy+1*togglesize*.8], togglesize, false, "Werte unten", 14),
+	"percentages" : new Toggle(screen_4 + [togglepad,togglepad+marginy+0*togglesize*.8], togglesize, false, "Prozente oben", 14),
+	// COL 2
+	"arch"									: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+4*togglesize*.8], togglesize, false, "Bögen", 14),
+	"showtf-div"						: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+3*togglesize*.8], togglesize, false, "Anzahl der Schritte:", 14),
+	"showtf-divpercentage"	: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+2*togglesize*.8], togglesize, false, "Größe des Schritts in %:", 14),
+	"showtf-divvalue"				: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+1*togglesize*.8], togglesize, false, "Größe des Schritts", 14),
+	// COL 3
+	"showtf-perc"	: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+3*togglesize*.8], togglesize, false, "Eingabe Anteil", 14),
+	"showtf-value": new Toggle(screen_4 + [togglepad+21,togglepad+marginy+2*togglesize*.8], togglesize, false, "Eingabe Teil", 14),
+	"showtf-base"	: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+1*togglesize*.8], togglesize, false, "Eingabe Ganzes", 14),
+	"overflow"		: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+0*togglesize*.8], togglesize, false, "Overflow", 14)
+};
+
+toggles:"showtf-divvalue":"label" = toggles:"showtf-divvalue":"label" + if(unit=="",":", " in " + unit + ":");
+
+// D.2 | Init Text Inputs for (sub)divisions and base value
+// =======================================================
+regional(textfieldoffset);
+textfieldoffset = [9.5,0];
+
+textfields = {
+	// COL 1
+	"divisions"							:	new TextInput(toggles:"showtf-div":"coord" + textfieldoffset, "", "numeric"),
+	"divisions-percentage" 	: new TextInput(toggles:"showtf-divpercentage":"coord" + textfieldoffset, "", "numeric"),
+	"divisions-value" 			: new TextInput(toggles:"showtf-divvalue":"coord" + textfieldoffset, "", "numeric"),
+	// COL 2
+	"percentage" 						: new TextInput(toggles:"showtf-perc":"coord" + .85*textfieldoffset, "", "numeric"),
+	"value" 								: new TextInput(toggles:"showtf-value":"coord" + .85*textfieldoffset, "", "numeric"),
+	"basevalue" 						: new TextInput(toggles:"showtf-base":"coord" + .85*textfieldoffset, "", "numeric")
+};
+
+'generictextfieldhandle = bar;
+'generickeyboardcoord = (screenbounds()_3).xy - [7, -12];
+'generickeyboardoffset = [0,0];
+'genericcleanupfunction := (
+	regional(othertextfields);
+	othertextfields = list(textfields) -- [self()];
+
+	self():"drawborder" = if(isundefined(my("keyboard")), false, true);
+
+	forall(othertextfields, tf,
+		obj = obj -- [tf:"keyboard"];
+		tf:"keyboard" = NADA;
+		tf:"drawborder" = false;
+	);	
+);
+
+apply(textfields,
+	#:"handle" := 'generictextfieldhandle; // Pointer to the bar to alter
+	#:"keyboardcoord" = 'generickeyboardcoord;
+	#:"keyboardoffset" = 'generickeyboardoffset;
+	#:"customclickscript" := 'genericcleanupfunction; // setup so only exactly one keyboard is shown
+);
+
+// Config subdivisions tf -- COL 2.1
+textfields:"divisions":"value" =  subdivisions + ""; // Textinput value needs to be string
+textfields:"divisions":"onupdate" := (
+	my("handle"):"divisions" = parse(my("value"));
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = NADA;
+	// Update other relevant tfs
+	textfields:"divisions-value":"value" = if(parse(my("value")) != 0,
+		my("handle"):"basevalue"/parse(my("value")) + "";
+	,
+		"error"
+	);
+	textfields:"divisions-percentage":"value" = if(parse(my("value")) != 0,
+		100/parse(my("value")) + "";
+	,
+		"error";
+	);
+);
+
+// Config percentage related subdivisions tf -- COL 2.2
+textfields:"divisions-percentage":"value" =  100/subdivisions + ""; // Textinput value needs to be string
+textfields:"divisions-percentage":"onupdate" := (
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = NADA;
+	// Update other relevant tfs
+	textfields:"divisions-value":"value" = if(parse(my("value")) != 0,
+		my("handle"):"basevalue" * parse(my("value"))/100 + "";
+	,
+		"error";
+	);
+	textfields:"divisions":"value" = if(parse(my("value")) != 0,
+		100/parse(my("value")) + "";
+	,
+		"error";
+	);
+	self():"handle":"divisions" = parse(textfields:"divisions":"value");
+);
+
+// Config value related subdivisions tf -- COL 2.3
+textfields:"divisions-value":"value" =  basevalue/subdivisions + ""; // Textinput value needs to be string
+textfields:"divisions-value":"onupdate" := (
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = NADA;
+	
+	// Update other relevant tfs
+	textfields:"divisions-percentage":"value" = if(my("handle"):"basevalue" != 0,
+		100*parse(my("value"))/my("handle"):"basevalue" + "";
+	,
+		"error";
+	);
+	textfields:"divisions":"value" = if(parse(my("value")) != 0,
+		my("handle"):"basevalue"/parse(my("value")) + "";
+	,
+		"error";
+	);
+
+	self():"handle":"divisions" = parse(textfields:"divisions":"value");
+);
+
+// Config percentage tf -- COL 3.1
+textfields:"percentage":"value" =  barvalue * 100 + ""; // Textinput value needs to be string
+textfields:"percentage":"onupdate" := (
+	// Destroy keyboard
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = NADA;
+
+	// Update other corresponding textfield
+	if(keepstable == "basevalue" % parse(textfields:"value":"value") == 0,
+		textfields:"value":"value" = parse(self():"value") / 100 * my("handle"):"basevalue" + "";
+	,
+		textfields:"basevalue":"value" = if(parse(my("value")) != 0,
+			parse(textfields:"value":"value") / parse(my("value")) * 100 + "";
+		,
+			"error";
+		);
+		my("handle"):"basevalue" = parse(textfields:"basevalue":"value");
+	);
+
+	// Update bar
+	my("handle"):"value" = parse(my("value")) / 100;
+);
+
+// Config value tf -- COL 3.2
+textfields:"value":"value" =  basevalue * barvalue + ""; // Textinput value needs to be string
+textfields:"value":"onupdate" := (
+	// Destroy keyboard
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = NADA;
+
+	// Update other corresponding textfield
+	if(keepstable == "basevalue" % parse(textfields:"percentage":"value") == 0,
+		textfields:"percentage":"value" = 100 * parse(self():"value") / parse(textfields:"basevalue":"value") + "";
+	,
+		textfields:"basevalue":"value" = parse(self():"value") / parse(textfields:"percentage":"value") * 100 + "";
+		my("handle"):"basevalue" = parse(textfields:"basevalue":"value");
+	);
+
+	// Update bar
+	my("handle"):"value" = parse(my("value")) / my("handle"):"basevalue";
+);
+
+// Config base value tf -- COL 3.3
+textfields:"basevalue":"value" =  basevalue + ""; // Textinput value needs to be string
+textfields:"basevalue":"onupdate" := (
+	// Destroy keyboard
+	obj = obj -- [my("keyboard")];
+	self():"keyboard" = NADA;
+
+	// Update other corresponding textfields
+	if(keepstable == "value", // Update percentage only
+		textfields:"percentage":"value" = if(parse(my("value")) != 0,
+			100 * parse(textfields:"value":"value") / parse(my("value")) + "";
+		,
+			"error";
+		);
+	, 
+		textfields:"value":"value" = if(parse(my("value")) != 0,
+			parse(textfields:"percentage":"value") / 100 * parse(my("value")) + "";
+		,
+			"error";
+		);
+	);
+
+	// Update field that displays the value per division
+	textfields:"divisions-value":"value" = parse(textfields:"divisions-value":"value") * parse(textfields:"basevalue":"value") / my("handle"):"basevalue" + "";
+
+	// Update bar
+	my("handle"):"value" = parse(textfields:"percentage":"value") / 100;
+	my("handle"):"basevalue" = parse(my("value"));
+
+	// Update the other two division fields with new bar value (although they should not change)
+	textfields:"divisions-value":"onupdate";
+);
+
+// D.3 | Init +/- Buttons 
+// ======================
+// new Button(coord,width,height,label,fontsize)
+buttons = {};
+buttons:"minusbase" = new Button(textfields:"basevalue":"coord" + [textfields:"basevalue":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusbase" = new Button(buttons:"minusbase":"coord" + [buttons:"minusbase":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"fixbase" = new Button(buttons:"plusbase":"coord" + [buttons:"plusbase":"width" + .6, 0], .7, .7, "🔒", 24);
+
+buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"fixvalue" = new Button(buttons:"plusvalue":"coord" + [buttons:"plusvalue":"width" + .6, 0], .7, .7, "🔓", 24);
+
+buttons:"minuspercentage" = new Button(textfields:"percentage":"coord" + [textfields:"percentage":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"pluspercentage" = new Button(buttons:"minuspercentage":"coord" + [buttons:"minuspercentage":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"fixpercentage" = new Button(buttons:"pluspercentage":"coord" + [buttons:"pluspercentage":"width" + .6, 0], .7, .7, "🔓", 24);
+
+buttons:"minusdiv" = new Button(textfields:"divisions":"coord" + [textfields:"divisions":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusdiv" = new Button(buttons:"minusdiv":"coord" + [buttons:"minusdiv":"width" + .2, 0], .7, .7, "+", 20);
+
+buttons:"minusdiv-percentage" = new Button(textfields:"divisions-percentage":"coord" + [textfields:"divisions-percentage":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusdiv-percentage" = new Button(buttons:"minusdiv-percentage":"coord" + [buttons:"minusdiv-percentage":"width" + .2, 0], .7, .7, "+", 20);
+
+buttons:"minusdiv-value" = new Button(textfields:"divisions-value":"coord" + [textfields:"divisions-value":"width" + .1, 0], .7, .7, "-", 20);
+buttons:"plusdiv-value" = new Button(buttons:"minusdiv-value":"coord" + [buttons:"minusdiv-value":"width" + .2, 0], .7, .7, "+", 20);
+
+// Config buttons for subdividing
+buttons:"minusdiv":"handle" = textfields:"divisions";
+buttons:"minusdiv":"cornerradius" = .35;
+buttons:"minusdiv":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(1,val-1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusdiv":"handle" = textfields:"divisions";
+buttons:"plusdiv":"cornerradius" = .35;
+buttons:"plusdiv":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = min(100,val+1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+// Config buttons for subdividing by percentage
+buttons:"minusdiv-percentage":"handle" = textfields:"divisions-percentage";
+buttons:"minusdiv-percentage":"cornerradius" = .35;
+buttons:"minusdiv-percentage":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(0,val-1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusdiv-percentage":"handle" = textfields:"divisions-percentage";
+buttons:"plusdiv-percentage":"cornerradius" = .35;
+buttons:"plusdiv-percentage":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = min(100,val+1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+// Config buttons for subdividing by value
+buttons:"minusdiv-value":"handle" = textfields:"divisions-value";
+buttons:"minusdiv-value":"cornerradius" = .35;
+buttons:"minusdiv-value":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(0,val-1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusdiv-value":"handle" = textfields:"divisions-value";
+buttons:"plusdiv-value":"cornerradius" = .35;
+buttons:"plusdiv-value":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = min(bar:"basevalue",val+1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+// Config buttons for base value
+buttons:"minusbase":"handle" = textfields:"basevalue";
+buttons:"minusbase":"cornerradius" = .35;
+buttons:"minusbase":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(1,val-1);
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusbase":"handle" = textfields:"basevalue";
+buttons:"plusbase":"cornerradius" = .35;
+buttons:"plusbase":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = val + 1;
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"fixbase":"handle" = textfields:"basevalue";
+buttons:"fixbase":"hasbody" = false;
+buttons:"fixbase":"hasborder" = false;
+buttons:"fixbase":"cornerradius" = 0;
+buttons:"fixbase":"color" := DZLMCOLORLIGHT * if(tobool(keepstable == "basevalue"), .8, 1);
+buttons:"fixbase":"script" := (
+	keepstable = "basevalue";
+	set my("label", "🔒");
+	buttons:"fixlabel":"label" = "🔓";
+	buttons:"fixpercentage":"label" = "🔓";
+);
+
+// Config buttons for (current) value
+buttons:"minusvalue":"handle" = textfields:"value";
+buttons:"minusvalue":"cornerradius" = .35;
+buttons:"minusvalue":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(0,val - my("handle"):"handle":"basevalue" * my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"plusvalue":"handle" = textfields:"value";
+buttons:"plusvalue":"cornerradius" = .35;
+buttons:"plusvalue":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = min(my("handle"):"handle":"basevalue",val + my("handle"):"handle":"basevalue" * my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"fixvalue":"handle" = textfields:"value";
+buttons:"fixvalue":"hasbody" = false;
+buttons:"fixvalue":"hasborder" = false;
+buttons:"fixvalue":"cornerradius" = 0;
+buttons:"fixvalue":"color" := DZLMCOLORLIGHT * if(tobool(keepstable == "value"), .8, 1);
+buttons:"fixvalue":"script" := (
+	keepstable = "value";
+	set my("label", "🔒");
+	buttons:"fixbase":"label" = "🔓";
+	buttons:"fixpercentage":"label" = "🔓";
+);
+
+// Config buttons for percentage
+buttons:"minuspercentage":"handle" = textfields:"percentage";
+buttons:"minuspercentage":"cornerradius" = .35;
+buttons:"minuspercentage":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = max(0,val - 100 * my("handle"):"handle":"precision");
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"pluspercentage":"handle" = textfields:"percentage";
+buttons:"pluspercentage":"cornerradius" = .35;
+buttons:"pluspercentage":"script" := (
+	regional(val);
+	val = parse(my("handle"):"value");
+	val = val + 100 * my("handle"):"handle":"precision";
+	if(!my("handle"):"handle":"canoverflow", val = min(100, val));
+	my("handle"):"value" = val + "";
+	my("handle"):"onupdate";
+);
+
+buttons:"fixpercentage":"handle" = textfields:"percentage";
+buttons:"fixpercentage":"hasbody" = false;
+buttons:"fixpercentage":"hasborder" = false;
+buttons:"fixpercentage":"cornerradius" = 0;
+buttons:"fixpercentage":"color" := DZLMCOLORLIGHT * if(tobool(keepstable == "percentage"), .8, 1);
+buttons:"fixpercentage":"script" := (
+	keepstable = "percentage";
+	set my("label", "🔒");
+	buttons:"fixlabel":"label" = "🔓";
+	buttons:"fixvalue":"label" = "🔓";
+);
+
+// fix for iPad pen issue: debounce clicks on all percentagebar buttons
+penfixbutton(btn) := (
+	btn:"ipadpentimestampfix" = -1;
+	btn:"click" := if(timestamp() - my("ipadpentimestampfix") > 200,
+		self():"ipadpentimestampfix" = timestamp();
+		my("script");
+	);
+);
+
+forall(keys(buttons), key, penfixbutton(buttons:key));
+
+// D.4 | Configure Toggles corresponding to G,P,p textfields to toggle visibility
+// ==============================================================================
+toggles:"showtf-base":"script" := if(my("state"),
+	obj = obj ++ [textfields:"basevalue"];
+	obj = obj ++ [buttons:"plusbase"];
+	obj = obj ++ [buttons:"minusbase"];
+	obj = obj ++ [buttons:"fixbase"];
+,
+	obj = obj -- [textfields:"basevalue"];
+	obj = obj -- [buttons:"plusbase"];
+	obj = obj -- [buttons:"minusbase"];
+	obj = obj -- [buttons:"fixbase"];
+);
+
+toggles:"showtf-value":"script" := if(my("state"),
+	obj = obj ++ [textfields:"value"];
+	obj = obj ++ [buttons:"plusvalue"];
+	obj = obj ++ [buttons:"minusvalue"];
+	obj = obj ++ [buttons:"fixvalue"];
+,
+	obj = obj -- [textfields:"value"];
+	obj = obj -- [buttons:"plusvalue"];
+	obj = obj -- [buttons:"minusvalue"];
+	obj = obj -- [buttons:"fixvalue"];
+);
+
+toggles:"showtf-perc":"script" := if(my("state"),
+	obj = obj ++ [textfields:"percentage"];
+	obj = obj ++ [buttons:"pluspercentage"];
+	obj = obj ++ [buttons:"minuspercentage"];
+	obj = obj ++ [buttons:"fixpercentage"];
+,
+	obj = obj -- [textfields:"percentage"];
+	obj = obj -- [buttons:"pluspercentage"];
+	obj = obj -- [buttons:"minuspercentage"];
+	obj = obj -- [buttons:"fixpercentage"];
+);
+
+toggles:"showtf-div":"script" := if(my("state"),
+	obj = obj ++ [textfields:"divisions"];
+	obj = obj ++ [buttons:"plusdiv"];
+	obj = obj ++ [buttons:"minusdiv"];
+,
+	obj = obj -- [textfields:"divisions"];
+	obj = obj -- [buttons:"plusdiv"];
+	obj = obj -- [buttons:"minusdiv"];
+);
+
+toggles:"showtf-divpercentage":"script" := if(my("state"),
+	obj = obj ++ [textfields:"divisions-percentage"];
+	obj = obj ++ [buttons:"plusdiv-percentage"];
+	obj = obj ++ [buttons:"minusdiv-percentage"];
+,
+	obj = obj -- [textfields:"divisions-percentage"];
+	obj = obj -- [buttons:"plusdiv-percentage"];
+	obj = obj -- [buttons:"minusdiv-percentage"];
+);
+
+toggles:"showtf-divvalue":"script" := if(my("state"),
+	obj = obj ++ [textfields:"divisions-value"];
+	obj = obj ++ [buttons:"plusdiv-value"];
+	obj = obj ++ [buttons:"minusdiv-value"];
+,
+	obj = obj -- [textfields:"divisions-value"];
+	obj = obj -- [buttons:"plusdiv-value"];
+	obj = obj -- [buttons:"minusdiv-value"];
+);
+
+// D.5 | Init Percentagebar
+// new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
+// ===================================================================================
+bars = [];
+if(numberofbars <= 1, // build one bar
+	bar = new Percentagebar(barposition, barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+	bars = bars :> bar;
+, // ELSE: more than one bar
+	barwidth = barwidth - (numberofbars-1) * barpadding;
+	barwidth = barwidth / numberofbars;
+
+	repeat(numberofbars,
+		bar = new Percentagebar(barposition, barwidth, barheight, barvalue, barprecision, subdivisions, basevalue, unit);
+		barposition = barposition + [barwidth+barpadding, 0];
+		bars = bars :> bar;
+	);
+);
+
+forall(bars, bar,
+	bar:"drawpercentagelabels"	= toggles:"percentages":"state";
+	bar:"drawvaluelabels"				= toggles:"parts":"state";
+	bar:"drawbasevaluelabel"		= toggles:"basevalue":"state";
+	bar:"drawcurrentpercentage"	= toggles:"percentage":"state";
+	bar:"drawcurrentvalue"			= toggles:"part":"state";
+	bar:"drawarches"						= toggles:"arch":"state" % alwaysdrawarches;
+	bar:"canoverflow"						= toggles:"overflow":"state";
+	bar:"drawsteps" 						= toggles:"showtf-div":"state"
+    	% toggles:"showtf-divpercentage":"state"
+    	% toggles:"showtf-divvalue":"state";
+	bar:"standardTicks"	= 'standardTicks;
+	
+	// Add handles to bar for all the UI stuff
+	bar:"toggles" = toggles;
+	bar:"textfields" = textfields;
+	bar:"buttons" = buttons;
+
+	if(snapbar, bar:"precision" := 1/bar:"divisions");
+);
+
+// Update handles for textfields, since bar wasn't defined earlier
+'generictextfieldhandle = bars_1;
+
+obj = obj 
+	++ if(showbuttons, values(toggles))
+	--  if(alwaysdrawarches, [toggles:"arch"]);
+obj = obj ++ values(textfields) -- [
+	textfields:"basevalue", textfields:"value", textfields:"percentage", 
+	textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
+];
+obj = obj ++ values(buttons) -- [
+	buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
+	buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage",
+	buttons:"minusdiv", buttons:"plusdiv",
+	buttons:"minusdiv-percentage",	buttons:"plusdiv-percentage",
+	buttons:"minusdiv-value", buttons:"plusdiv-value"
+];
+obj = obj :> arch1;
+obj = obj :> arch2;
+obj = obj :> agg;
+obj = obj ++ bars;
+
+bars_1:"toggleactive";
+
+// Call toggle scripts for G,P,p toggle to put in textfields approriately
+toggles:"showtf-base":"script";
+toggles:"showtf-value":"script";
+toggles:"showtf-perc":"script";
+toggles:"showtf-div":"script";
+toggles:"showtf-divpercentage":"script";
+toggles:"showtf-divvalue":"script";
+
+); // end vam-if

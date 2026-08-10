@@ -1,0 +1,55 @@
+/** v1 ******************************************************************************************
+* Vars for configuring general VAM behavior. Most of them get overwritten by ENVIRONMENTALPARAMATERS at Init.
+*
+* Recent changes:
+************************************************************************************************/
+
+// ========== //
+// Vam choice //
+// ========== //
+
+VAM = "distributive";
+
+
+// ============ //
+// Screen stuff //
+// ============ //
+
+BORDERSIZE = .05; // default border size (equals 0.5 mm fineliner)
+PINCHSENSITIVITY = 1; // default pinch sensitivity
+BGCOLOR = grey(1);
+
+
+// ================ //
+// VAM doc defaults //
+// ================ //
+
+DOCTEXT = "No docstring for VAM.";
+DOCTEXTPOS = (screenbounds()_1).xy + [1,-0.5];
+
+
+// ========================================= //
+//             Debug Level					 				 //
+// - LOGNONE  (0)	= no debugging,			 			 //
+// - LOGERROR (1)	= Errors only,			 			 //
+// - LOGWARN  (2)	= Errors + Warnings,	 		 //
+// - LOGDEBUG (3)	= Errors + Warning + Debug //
+// ========================================= //
+
+LOGLEVEL = LOGNONE; 			// local overwrite for debuglevel set by environment
+MAXLOGMESSAGES = 50;			// Number of last messages stored in LOGMESSAGES
+
+
+// ============= //
+// Event logging //
+// ============= //
+
+LOGGINGENABLED = false;
+
+PROGRAMID = version() + "";
+SCENARIOID = NADA; 										// Gets set in var init with VAM choice. Overwrite in VAM if needed.
+USERID = "user-" + random(1000000);		// Gets overwritte by ENVIRONMENTALPARAMS
+
+// Local event log
+EVENTLOG = [];
+EVENTID = 0;		// Auto incrementing

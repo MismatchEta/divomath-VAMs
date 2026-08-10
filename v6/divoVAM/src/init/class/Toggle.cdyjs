@@ -1,0 +1,109 @@
+/** v5 ******************************************************************************************
+* Class for a Toggle switch.
+*
+* Recent changes:
+* 2027-07-27: Add idempotent setstate() method
+************************************************************************************************/
+
+/**
+* A simple toggle switch
+* @param coord - bottom left coordinate
+* @param width - width in world coords
+* @param stae - state (true/false) of Toggle
+* @param label - label to be printed next to toggle
+* @param fontsize - size of the label
+*/
+new Toggle(coord,width,state,label,fontsize) := (
+	regional(o);
+	o = new Button(coord,width,width/2,label,fontsize);
+	o:"type" = "Toggle";
+
+	o:"circleoffset" = if(state,.5*[o:"width",0], [0,0]);
+	o:"animationtiming" = .05;
+
+	o:"cornerradius" = width;
+	o:"state" = if(!isundefined(state),state,false);
+	o:"highlightcolor" = DARKBLUE;
+
+	o:"ipadpentimestampfix" = -1;
+
+	o:"draw" := (
+		// Draw box and border
+		fill(
+			my("shape"),
+			color->if(my("state"),my("highlightcolor"),grey(0.98)),
+			alpha->1
+		);
+		draw(
+			my("shape"),
+			color->.7*my("highlightcolor"),
+			alpha->1
+		);
+
+		// Draw circle
+		regional(center);
+		center = my("coord")+[my("height"),my("height")] / 2 + my("circleoffset"),
+
+		fillcircle(
+			center,
+			1.2 * my("height") / 2,
+			color->my("color");
+		);
+
+		// Draw label
+		drawtext(
+			my("coord")+[my("width")*1.2,.5*my("height")/3],
+			my("label"),
+			align->"left",
+			color->dzlmcolordark,
+			size->my("fontsize")
+		);
+
+		// Draw something after the button
+		my("drawafter");
+
+		// Debug stuff
+		if(LOGLEVEL > 2,
+			drawpoly(my("hitbox"), color->[1,0,0]);
+		);
+	);
+	
+	o:"click"	:= (
+		// Change state while fixing iPad Stylus triggering twice
+		if(timestamp() - my("ipadpentimestampfix") > 200,
+			self():"ipadpentimestampfix" = timestamp(); // fix for iPad pen issue
+			set my("state", !my("state"));
+		);
+
+		// Animate position to match state
+		new animationobject(
+			self(),
+			"circleoffset",
+			my("circleoffset"),
+			if(my("state"), .5*[my("width"),0],[0,0]), 
+			my("animationtiming"),
+			"accel"
+		);
+
+		// Execute custom script
+		my("script");
+	);
+
+	o:"setstate" := if(!isundefined('newstate) & my("state") != 'newstate, // eval mit 'newstate -> true/false
+		set my("state", 'newstate);
+		new animationobject(
+			self(), 
+			"circleoffset",
+			my("circleoffset"),
+			if(my("state"),
+			.5*[my("width"),0], [0,0]),
+			my("animationtiming"),
+			"accel"
+		);
+		my("script");
+	);
+
+	o:"script" := (); // Can have script in the same way as Button has
+
+	o; // Return the toggle.
+);

@@ -1,0 +1,16 @@
+/** v1 ******************************************************************************************
+* Finishing up init.
+*
+* Recent changes:
+************************************************************************************************/
+
+if(ISCINDYJS,
+	log debug("=== Init done === " + floor(random(100))); // Sanity check.
+	log debug("LOGLEVEL (0-3): " + LOGLEVEL);
+	log debug("using CindyJS: " + ISCINDYJS);
+	log debug("in divomath environment: " + ISDIVOMATH);
+	log debug("supplied environmental parameters: " + ENVIRONMENTALPARAMS);
+	log debug("loaded VAM: " + VAM);
+);
+
+INITDONE = true; // Indicate that Init process is done

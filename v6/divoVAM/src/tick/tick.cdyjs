@@ -1,0 +1,42 @@
+/** v1 ******************************************************************************************
+* Handle animation execution
+*
+* Recent changes:
+************************************************************************************************/
+
+animations = select(animations, a,
+	regional(λ,γ,value,now);
+  now=seconds();
+  if(isundefined(a:"exec"),
+
+  λ = min(1,(now-(a:"starttime"))/((a:"endtime")-(a:"starttime")));
+ if(λ>0,
+	if (a:"timeflow" == "linear",  
+				//default  
+	,
+	if (a:"timeflow" == "accel",
+			λ = 5/2*λ^3-3/2*λ^5;
+	,
+	if (a:"timeflow" == "jump",
+			if(λ<1, λ=0);
+	,
+	)));
+	if (a:"timeflow" == "set",
+		(a:"object"):(a:"property") = if(λ<1, a:"startvalue",a:"endvalue"),
+		if (isundefined(a:"movepath"), 
+			  (a:"object"):(a:"property") = a:"endvalue"* λ + a:"startvalue" * (1 - λ)
+				,
+				(a:"object"):(a:"property")=eval((a:"movepath"):"f",start->a:"startvalue",end->a:"endvalue",α->λ)
+		);
+	);
+);
+
+  );
+ 	// forall(ANI u,a, call(a,"recalc:"));
+	running = now < a:"endtime";
+	if (!running & !isundefined(a:"command"), a:"object":(a:"command"));
+	if (!running & a:"kill", obj = select(obj,# != a:"object"));
+	running
+);
+
+if(length(animations)==0, stopanimation());

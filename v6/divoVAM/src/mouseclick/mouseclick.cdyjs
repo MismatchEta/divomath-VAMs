@@ -1,0 +1,33 @@
+// v2
+if(false,
+
+if (LOGLEVEL > 5 & !isinteger(LOGLEVEL), println("> MOUSECLICK triggered at " + mouse().xy));
+
+// Der gesamte Code von Cklic wird jetzt bei release ausgeführt
+// solange die Sensitiviät auf Klicks in CindyJS nicht verbessert ist
+
+// Bei IPad und wird press, release UND cklick ausgelöst
+// Will man mausklick, muss man press/release abfangen
+
+// Teste alle Objekte, ob sie hot sind und sende ihnen gegebenfalls ein "click"
+forall(obj,o,
+		if(o:"ishot",
+		if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+			o:"click"; 
+			,
+			obj=obj--[o]; // Kopie wieder löschen
+			hot=o:"deletecopyifnotmovedandsubstitutebyoriginal"; //gemerktes Original wiederaktivieren
+			//hot:"click";
+			);
+		//err("click:"+o:"name");
+		);
+);
+
+if(!isundefined(oldaction),
+  act(oldaction,action+"end",startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+  oldaction=NADA;
+);
+
+// Alternative Formulierung (schöner?):
+//forall(select(obj,#:"ishot"),#:"click");
+);

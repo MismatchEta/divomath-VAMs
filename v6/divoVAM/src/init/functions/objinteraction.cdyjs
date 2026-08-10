@@ -1,0 +1,37 @@
+/** v1 ******************************************************************************************
+* Helper functions for interacting with "obj"
+*
+* Recent changes:
+************************************************************************************************/
+
+/**
+* Remove all objects of given type from obj.
+**/
+kill type(type) := (
+	regional(len);
+	len = length(obj);
+	obj = select(obj, #:"type" != type);
+	
+	debug at("kill type(1)", (len - length(obj)) + "of type " + type + " objects have been removed from obj.");
+);
+
+/** 
+* Remove specific item from obj.
+**/
+kill(item) := (
+	regional(iteminobj);
+	iteminobj = contains(obj,item);
+	
+	obj = obj -- [item];
+
+	if(iteminobj,
+		debug at("kill(1)", item:"name" + " has been removed from obj.");
+	,
+		debug at("kill(1)", item:"name" + " not in obj. Nothing to do.");
+	);
+);
+
+/**
+* Remove self() from obj.
+**/
+kill me() := kill(self());

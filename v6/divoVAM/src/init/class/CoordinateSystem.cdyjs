@@ -1,0 +1,192 @@
+/** v1 ******************************************************************************************
+* Class for Coordinate System.
+*
+* Recent changes:
+************************************************************************************************/
+
+new CoordinateSystem(coord) := (
+	regional(system);
+	system = new VAMobject("CoordinateSystem");
+
+	system:"coord" = if(isundefined(coord),
+		.5*(screenbounds()_1 + screenbounds()_3 - [0,0,1]).xy;
+	, // else
+		coord
+	);
+	
+	system:"leftborder" = ((screenbounds()_1).xy)_1;
+	system:"rightborder" = ((screenbounds()_2).xy)_1;
+	system:"upperborder" = ((screenbounds()_1).xy)_2;
+	system:"lowerborder" = ((screenbounds()_4).xy)_2;
+	system:"leftborder-point" := [my("leftborder"),my("coord")_2];
+	system:"rightborder-point" := [my("rightborder"),my("coord")_2];
+	system:"upperborder-point" := [my("coord")_1,my("upperborder")];
+	system:"lowerborder-point" := [my("coord")_1,my("lowerborder")];
+	system:"boundingbox" := [
+		[my("leftborder"), my("lowerborder")],
+		[my("rightborder"), my("lowerborder")],
+		[my("rightborder"), my("upperborder")],
+		[my("leftborder"), my("upperborder")]
+	];
+
+	system:"functions" = [];
+
+	// Look and feel fields
+	system:"color" = grey(.3);
+	system:"drawboundingbox" = true;
+	system:"drawxaxis" = true;
+	system:"drawyaxis" = true;
+	system:"drawxticks" = true;
+	system:"drawyticks" = true;
+	system:"ticklength" = .25;
+	system:"xtickdistance" = 1;
+	system:"ytickdistance" = 1;
+	system:"drawwhicharrows" = ["R", "U", "L", "D"]; // use to indicate arrow in directions *L*eft, *R*ight, *U*p or *D*down
+	system:"arrowsize" = 1;
+
+	system:"ishot" := inrectangle(my("boundingbox"), mouse().xy);
+	
+	system:"draw" := (
+		regional(xinframe, yinframe);
+		xinframe = my("upperborder") > my("coord")_2 & my("lowerborder") < my("coord")_2;
+		yinframe = my("rightborder") > my("coord")_1 & my("leftborder") < my("coord")_1;
+	
+		// Draw bounding box
+		if(my("drawboundingbox"), drawpoly(my("boundingbox"), color->my("color")));
+		
+		// Draw x- and y-axis
+		if(my("drawxaxis") & xinframe, connect([my("leftborder-point"),my("rightborder-point")], color->my("color")));
+		if(my("drawyaxis") & yinframe, connect([my("lowerborder-point"),my("upperborder-point")], color->my("color")));
+
+		// Draw ticks
+		if(my("drawxticks") & xinframe,
+			eval(my("__drawticks"), direction->"right");
+			eval(my("__drawticks"), direction->"left");
+		);
+		if(my("drawyticks") & yinframe,
+			eval(my("__drawticks"), direction->"up");
+			eval(my("__drawticks"), direction->"down");
+		);
+
+		// Draw arrow heads
+		if(contains(my("drawwhicharrows"), "L") & xinframe, eval(my("__drawarrowhead", direction->"left")));
+		if(contains(my("drawwhicharrows"), "R") & xinframe, eval(my("__drawarrowhead", direction->"right")));
+		if(contains(my("drawwhicharrows"), "U") & yinframe, eval(my("__drawarrowhead", direction->"up")));
+		if(contains(my("drawwhicharrows"), "D") & yinframe, eval(my("__drawarrowhead", direction->"down")));
+
+		// Plot any functions
+		my("drawplots");
+
+		// Sophisticated y-clipping
+		fillpoly([
+			[my("leftborder"), my("upperborder")],
+			[my("rightborder"), my("upperborder")],
+			[my("rightborder"), screenbounds()_1_2],
+			[my("leftborder"), screenbounds()_1_2],
+		], color->grey(1));
+		fillpoly([
+			[my("leftborder"), my("lowerborder")],
+			[my("rightborder"), my("lowerborder")],
+			[my("rightborder"), screenbounds()_4_2],
+			[my("leftborder"), screenbounds()_4_2],
+		], color->grey(1));
+	);
+	
+	system:"__drawticks" := ( // eval with "direction" from ["up", "down", "left", "right"]
+		regional(numberofticks, refpoint);
+		if(direction == "up",
+			numberofticks = floor(abs(my("upperborder")-my("coord")_2)/my("ytickdistance"));
+			refpoint = my("coord") - [my("ticklength")/2, 0];
+			repeat(numberofticks + 1,
+				connect([refpoint,refpoint + [my("ticklength"), 0]], color->my("color"));
+				refpoint = refpoint + [0, my("ytickdistance")];
+			);
+		, if(direction == "down",
+			numberofticks = floor(abs(my("lowerborder")-my("coord")_2)/my("ytickdistance"));
+			refpoint = my("coord") - [my("ticklength")/2, 0];
+			repeat(numberofticks + 1,
+				connect([refpoint,refpoint + [my("ticklength"), 0]], color->my("color"));
+				refpoint = refpoint - [0, my("ytickdistance")];
+			);
+		, if(direction == "left",
+			numberofticks = floor(abs(my("leftborder")-my("coord")_1)/my("xtickdistance"));
+			refpoint = my("coord") - [0, my("ticklength")/2];
+			repeat(numberofticks + 1,
+				connect([refpoint,refpoint + [0, my("ticklength")]], color->my("color"));
+				refpoint = refpoint - [my("xtickdistance"), 0];
+			);
+		, if(direction == "right",
+			numberofticks = floor(abs(my("rightborder")-my("coord")_1)/my("xtickdistance"));
+			refpoint = my("coord") - [0, my("ticklength")/2];
+			repeat(numberofticks + 1,
+				connect([refpoint,refpoint + [0, my("ticklength")]], color->my("color"));
+				refpoint = refpoint + [my("xtickdistance"), 0];
+			);
+		, // else:
+			err("__drawticks:: Eval with correct direction from [up, down, left, right], not " + QUOTE + direction + QUOTE);
+		))));
+	);
+
+	system:"__drawarrowhead" := ( // eval with "direction" from ["up", "down", "left", "right"]
+		regional(lengthscale, arrow);
+
+		//lengthscale = 1/(2*tan(7.5°)); // produces arrow heads with an opening angle of 15°
+		lengthscale = 2;
+		
+		if(direction == "up",
+			arrow = [
+				my("upperborder-point"),
+				my("upperborder-point") - my("arrowsize")*[my("ticklength")/2, lengthscale*my("ticklength")],
+				my("upperborder-point") - my("arrowsize")*[-my("ticklength")/2, lengthscale*my("ticklength")],
+			];
+		, if(direction == "down",
+			arrow = [
+				my("lowerborder-point"),
+				my("lowerborder-point") + my("arrowsize")*[my("ticklength")/2, lengthscale*my("ticklength")],
+				my("lowerborder-point") + my("arrowsize")*[-my("ticklength")/2, lengthscale*my("ticklength")],
+			];
+		, if(direction == "left",
+			arrow = [
+				my("leftborder-point"),
+				my("leftborder-point") + my("arrowsize")*[lengthscale*my("ticklength"), my("ticklength")/2],
+				my("leftborder-point") + my("arrowsize")*[lengthscale*my("ticklength"), -my("ticklength")/2],
+			];
+		, if(direction == "right",
+			arrow = [
+				my("rightborder-point"),
+				my("rightborder-point") - my("arrowsize")*[lengthscale*my("ticklength"), my("ticklength")/2],
+				my("rightborder-point") - my("arrowsize")*[lengthscale*my("ticklength"), -my("ticklength")/2],
+			];
+		, // else:
+			err("__drawarrowhead:: Eval with correct direction from [up, down, left, right], not " + QUOTE + direction + QUOTE);
+		))));
+
+		drawpoly(arrow, color->my("color"));
+		fillpoly(arrow, color->my("color"));
+	);
+
+	system:"move" := self():"coord" = my("coord") + mousedelta;
+
+	// Stuff for function plotting
+	system:"__T" := my("coord") + 1 * p; // eval with point "p", @todo: 1 should be scaling parameter, when scaling is implemented
+	system:"__T'" := (p - my("coord")) / 1; // eval with point "p"
+	system:"functionkeys" := select(keys(self()), substring(#,0,4) == "@fn:");
+	system:"drawplots" := (
+		forall(my("functionkeys"), key,
+			plot(
+				eval(my("__T"), p->[#,eval(my(key),x->#)]),
+				start -> eval(my("__T'"), p->[my("leftborder"),0])_1,
+				stop -> eval(my("__T'"), p->[my("rightborder"),0])_1,
+				color -> [1,0,0],
+				size -> 2,
+				connect -> false
+			);
+		);
+	);
+
+	system:"@fn:f" := sin(x); // Add new functions with keys starting with "@fn:" so they geht recognized by "functionskeys"
+	system:"@fn:g" := 1/(x+2);
+	system:"@fn:test" := x - floor(x);
+	
+	system; // Return
+);

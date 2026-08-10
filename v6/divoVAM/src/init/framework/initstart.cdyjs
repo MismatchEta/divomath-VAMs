@@ -1,0 +1,75 @@
+/** v4 ******************************************************************************************
+* Init of general variables for use in the framework.
+*
+* Recent changes:
+* 2026-06-11: Remove objpreview, history and preview flag (potentially breaks older VAMs).
+* 2026-07-25: Add divomath configuration items "vam", "debuglevel" and "bgcolor" to ENVIRONMENTALPARAMS
+* 2026-07-27: Fix parsing issues for LOGLEVEL and MAXLOGMESSAGES
+* 2026-07-29: Add access to LOGGINGENABLED via ENVIRONMENTALPARAMS
+************************************************************************************************/
+
+// =========================== //
+// Get Environmental Paramters //
+// =========================== //
+
+ENVIRONMENTALPARAMS = {};
+
+// Get parameters from URL get requests.
+if(ISCINDYJS, ENVIRONMENTALPARAMS = get url params());
+
+// Get/overwrite parameters for divomath environments.
+if(ISDIVOMATH, ENVIRONMENTALPARAMS = divomath get params());
+
+// Get/overwrite specific additional parameters from divomaths "configuration"
+if(ISDIVOMATH,
+	add property(ENVIRONMENTALPARAMS, "vam", DIVOMATH'CONFIG:"vam");
+	add property(ENVIRONMENTALPARAMS, "bgcolor", DIVOMATH'CONFIG:"bgcolor");
+	add property(ENVIRONMENTALPARAMS, "debuglevel", DIVOMATH'CONFIG:"debuglevel");
+);
+
+if(!isundefined(ENVIRONMENTALPARAMS:"vam"), VAM = ENVIRONMENTALPARAMS:"vam");
+if(!isundefined(ENVIRONMENTALPARAMS:"bgcolor"), BGCOLOR = parse(ENVIRONMENTALPARAMS:"bgcolor"+""));
+if(!isundefined(ENVIRONMENTALPARAMS:"loggingenabled"), LOGGINGENABLED = parse(ENVIRONMENTALPARAMS:"loggingenabled"+""));
+
+get screen params(); // Sets bordersize and pinchsensitivity
+
+
+// ===== //
+// Flags //
+// ===== //
+
+FIRSTDRAW					= true;		// For handling stuff that should only happen on first call of draw script
+MOUSEDOWN					= false;	// Toggles in relevant mouse scripts
+MOUSEPRESSEDTIME	= false;
+INITDONE					= false;	// Signal when init script is done
+
+
+// ========== //
+// Debug Logs //
+// ========== //
+
+LOGONCEKEYS = []; // Keys for stuff that should only be logged once (see "log once(2)" in [FUN] Logging)
+LOGMESSAGES = [];	// Storage for the last n logs (n configurable with MAXLOGMESSAGES)
+
+if(!isundefined(ENVIRONMENTALPARAMS:"debuglevel"), LOGLEVEL = parse(ENVIRONMENTALPARAMS:"debuglevel"+""));
+if(!isundefined(ENVIRONMENTALPARAMS:"maxlogmessages"), MAXLOGMESSAGES = parse(ENVIRONMENTALPARAMS:"maxlogmessages"+""));
+
+
+// ============= //
+// Event logging //
+// ============= //
+
+SCENARIOID = "Cindy VAM: " + VAM;
+
+if(!isundefined(ENVIRONMENTALPARAMS:"userid"), USERID = ENVIRONMENTALPARAMS:"userid");
+
+log started();
+
+
+// ========== //
+// Main lists //
+// ========== //
+
+obj = []; 				// All relevant VAM objects (sort of god object).
+typeorder = [];		// Order in which objects should be drawn by their "type" attribute.
+animations = [];	// Handles animation object.

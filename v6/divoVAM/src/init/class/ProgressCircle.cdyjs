@@ -1,0 +1,117 @@
+/** v1 ******************************************************************************************
+* Class for a circular progress bar.
+*
+* Recent changes:
+************************************************************************************************/
+
+new ProgressCircle(center, innersize, outersize, value, maxvalue) := (
+	regional(obj);
+	obj = new VAMobject("ProgressCircle");
+	
+	// Basic fields
+	obj:"coord" = center;
+	obj:"innerradius" = if(innersize==nada, 2, innersize)/2;
+	obj:"outerradius" = if(outersize==nada, 3, outersize)/2;
+	obj:"value" = if(value==nada, 42, value);
+	obj:"maxvalue" = if(maxvalue==nada, 100, maxvalue);
+	
+	// Text toggles for direct access
+	obj:"fontfamily" = nada;
+	obj:"fontsize" = 24;
+	obj:"textoffset" = 3.6;
+
+	// Shape of the outer circular sector
+	obj:"shape" := (
+		regional(center, radius, circle, boundingpoly, refpoint, angle);
+		
+		// Build base circle
+		center = my("coord");
+		radius = my("outerradius");
+		circle = circle(center, radius);
+
+		// Get point on the circle with respect to current value
+		angle = -2 * PI * my("value") / my("maxvalue");
+		refpoint = rotate(
+			center+[0,radius],
+			angle, 
+			center
+		);
+		
+		// Build bounding poly to subtract from circle
+		angle = abs(angle);
+		boundingpoly = [
+			center, // start at center of ProgressCircle
+			center + [0, radius], // go up to edge
+			center + [-radius, radius], // go to top left corner
+			if(angle < 3/2 * PI,
+				// also go to lower left corner if refpoint in Q3
+				center + [-radius, -radius]
+			),
+			if(angle < PI,
+				// also go to lower right corner if refpoint in Q4
+				center + [radius, -radius]
+			),
+			if(angle < 1/2 * PI,
+				// also go to top right corner if refpoint in Q1
+				center + [radius, radius]
+			),
+			refpoint // go to refpoint
+		];
+
+		// Fix for CindyJS not ignoring nada Points
+		boundingpoly = select(boundingpoly,!isundefined(#)); 
+
+		circle -- polygon(boundingpoly); // Return shape.
+	);
+
+	// Look of the outer circle
+	obj:"outercolor" := [
+		min(0.8, 1 - my("value") / my("maxvalue")),
+		min(0.9, my("value") / my("maxvalue")),
+		0
+	];
+	obj:"outerborder" := [0,0,0];
+	obj:"outerstroke" := 0;
+	// Look of the inner circle
+	obj:"innercolor" := [0.94,0.94,0.94];
+	obj:"innerborder" := [0,0,0];
+	obj:"innerstroke" := 0;
+
+	obj:"draw" := (
+		// Draw outer circluar sector
+		fill(
+			my("shape"),
+			color -> my("outercolor")
+		);
+		draw(
+			my("shape"),
+			color -> my("outerborder"),
+			size -> my("outerstroke")
+		);
+
+		// Draw inner circle
+		drawcircle(
+			my("coord"), 
+			my("innerradius"),
+			color -> my("innerborder"),
+			size -> my("innerstroke")
+		);
+		fillcircle(
+			my("coord"), 
+			my("innerradius"),
+			color -> my("innercolor")
+		
+		);
+		
+		// Draw text
+		drawtext(
+			my("coord") + [0,-my("innerradius")/my("textoffset")], 
+			my("value"),
+			size -> my("fontsize"),
+			family -> my("fontfamily"), 
+			align -> "center"
+		);
+	);
+
+	obj; // Return ProgressCircle
+);

@@ -1,0 +1,132 @@
+/** v6 ******************************************************************************************
+* Class for a TextInput UI element and a TextInputFactory for more convenient handling.
+*
+* Recent changes:
+* 2026-07-13 Apply iPad fix from Toggle
+************************************************************************************************/
+
+new TextInput(coord, label, keyboardtype) := (
+	regional(o);
+	o = new VAMobject("textinput");
+	o:"coord" = coord;
+	o:"label" = label;
+	o:"width" = 2;
+	o:"height" = .6;
+	o:"value" = "";
+
+	o:"fill-color" = DZLMCOLORGOLD;
+	o:"fill-alpha" = .5;
+	o:"border-color" = DZLMCOLORGOLD * .2;
+	o:"drawborder" = false;
+	o:"text-color" = DZLMCOLORGOLD * .2;
+
+	o:"keyboardcoord" = coord;
+	o:"keyboardbehavior" = "clear"; // ["clear"]
+	o:"keyboardtype" = keyboardtype; // see Keyboard class
+	o:"keyboard" = nada;
+	o:"keyboardoffset" = [5,0];
+	o:"keysize" = 1;
+	o:"fontsize" = 14;
+	o:"fontfamily" = nada;
+	o:"labelpadding" = .2;
+
+	o:"isclickable" = true;
+	o:"ismoveable" = false;
+	
+	o:"hitbox" := rectangle(my("coord"), my("width"), my("height"));
+	o:"shape" := o:"hitbox";
+
+	o:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+
+	o:"ipadpentimestampfix" = -1;
+
+	o:"draw" := (
+		// Draw TextInput box
+		fillpoly(my("shape"), alpha -> my("fill-alpha"), color->my("fill-color"));
+		drawtext(
+			my("coord") + [0.15, 0.07],
+			my("value"),
+			color->my("text-color"),
+			size->my("fontsize")
+		);
+
+		// Draw optional border
+		if(my("drawborder"), drawpoly(my("shape"), size-> 1, color->my("border-color")));
+
+		// Draw label
+		regional(box, boxwidth, boxheight);
+		box = getboundingbox(my("label"), [0,0], my("fontsize"), my("fontfamily"));
+		boxwidth = box_2_1 - box_1_1;
+		boxheight = box_4_2 - box_1_2;
+
+		drawtextbox(
+			my("coord") - [boxwidth+my("labelpadding"), -.12],
+			my("label"),
+			my("fontsize"),
+			my("fontfamily"),
+			grey(1)
+		);
+	);
+
+	o:"setValue":= self():"value" = my("keyboard"):"value";
+
+	o:"click" := if(my("isclickable"),
+    if(timestamp() - my("ipadpentimestampfix") > 200,  // fix for iPad pen issue
+        self():"ipadpentimestampfix" = timestamp();
+
+        if(!isundefined(my("keyboard")),
+            obj = obj -- [my("keyboard")];
+            self():"keyboard" = NADA;
+        ,
+            self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), "numeric", my("keysize"), self());
+            my("keyboard"):"value" = 
+                if(my("keyboardbehavior") == "append", my("value"), 
+                if(my("keyboardbehavior") == "clear", "";
+                ));
+            obj = obj :> my("keyboard");
+        );
+
+        my("customclickscript");
+    );
+	);
+
+	// Hooks from Keyboard class
+	// gets evaled with "key"
+	o:"onkeypress" := ( // set own value
+		self():"value" = value;
+	);
+
+	// gets evaled with "value"
+	o:"onupdate" := (	// Destroy keyboard
+		self():"keyboard" = nada;
+	);
+
+	o:"customclickscript" := (
+		// executed at the end of "click"
+	);
+
+	o;
+);
+
+new TextInputFactory() := (
+	regional(textinputfactory);
+	textinputfactory = {
+		"id" : 1,
+		"children" : []
+	};
+
+	textinputfactory:"__addchild" := (
+		// eval with coord, label, keyboardtype
+		regional(child);
+		if(isundefined(coord) % isundefined(label) % isundefined(keyboardtype),
+			err(">> __addchild: eval with 'coord', 'label' and 'keyboardtype' parameters");
+		,
+			child = new TextInput(coord, label, keyboardtype);
+			child:"id" = my("id");
+			self():"id" = my("id") + 1;
+			self():"children" = my("children") :> child;
+		);
+	);
+
+	textinputfactory; // Return
+);

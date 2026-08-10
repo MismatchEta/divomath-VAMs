@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    
+    <title>malen2.cdy</title>
+    <style type="text/css">
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+        
+        #CSConsole {
+            background-color: #FAFAFA;
+            border-top: 1px solid #333333;
+            bottom: 0px;
+            height: 200px;
+            overflow-y: scroll;
+            position: fixed;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cindyjs.org/dist/v0.8/CindyJS.css">
+    <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
+<script id="csinit" type="text/x-cindyscript">
+//App Init
+// ============ LAYOUT (responsiv, wird jeden Frame neu berechnet) ============
+layout() := (
+  sb = screenbounds();
+  SBxmin = sb_4_1; SBxmax = sb_2_1; SBymin = sb_3_2; SBymax = sb_1_2;
+  W = SBxmax-SBxmin; H = SBymax-SBymin;
+
+  tbx0 = SBxmin; tbx1 = SBxmin+0.09*W;
+  pnx0 = SBxmax-0.22*W; pnx1 = SBxmax;
+  cvx0 = tbx1; cvx1 = pnx0;
+  cvy0 = SBymin+0.04*H; cvy1 = SBymax-0.04*H;
+
+  // ---- Werkzeugleiste: Radius UND Abstand von derselben Einheit ableiten ----
+  tw = tbx1-tbx0;
+  tbunit = min(tw, H/9);
+  tbbtnr = 0.42*tbunit;
+  tbstep = 1.2*tbunit;
+  tbcx = (tbx0+tbx1)/2;
+  tbylist = [SBymax-tbstep, SBymax-2*tbstep, SBymax-3*tbstep, SBymax-4*tbstep,
+             SBymin+2*tbstep, SBymin+tbstep];
+
+  // ---- Panel: alles konsequent von palstep abgeleitet, zusätzlich an Höhe gekappt ----
+  palcols = 5;
+  mgx = 0.09*(pnx1-pnx0);
+  palstepW = (pnx1-pnx0-2*mgx)/palcols;
+  palstepH = (H-1.2)/10.5;
+  palstep = min(palstepW, palstepH);
+  palr = palstep*0.34;
+  palx0 = pnx0+mgx; paly0 = SBymax-1.6*palstep;
+
+  sizey = paly0-3*palstep-1.0*palstep;
+  sizex0 = pnx0+0.5*palstep; sizespace = (pnx1-pnx0-1.0*palstep)/2;
+
+  // mehr Abstand: Strichbreite-Label/Wert deutlich unterhalb der Größen-Kreise
+  sbLabelY = sizey - 1.35*palstep;
+  sbValueY = sizey - 1.85*palstep;
+  dashy = sizey-3.0*palstep;
+  dashx0 = pnx0+0.3*palstep; dashstep = (pnx1-pnx0-0.6*palstep)/5;
+
+  // Voreingestelltes Hintergrundbild (Parallelogramm), relativ zur Canvas positioniert
+  presetstroke = apply([[0.25,0.1],[0.7,0.5],[0.25,0.9]],
+    [cvx0+#_1*(cvx1-cvx0), cvy0+#_2*(cvy1-cvy0)]);
+);
+
+// ============ KONSTANTEN ============
+palette = [[1,1,1],[0.6,0.6,0.6],[0,0,0],[0.15,0.15,0.65],[1,0.85,0],
+           [0,0.8,0],[0,0.45,0.2],[0,0.75,0.8],[0.55,0.85,0.55],[1,0.55,0.1],
+           [0.9,0.15,0.15],[0.9,0.1,0.6],[0.45,0.1,0.75]];
+sizevals = [1.5, 3.5, 6];
+
+// ============ APP-ZUSTAND ============
+tool = "pen";
+drawcolor = [0,0,0];
+linewidth = 3.5;
+sizeidx = 2;
+dashtype = 0;
+
+strokes = [];
+redostack = [];
+
+drawing = false;
+currentpts = [];
+linestart = [0,0];
+
+textinput = false;
+textpos = [0,0];
+textbuffer = "";
+
+// ============ HILFSFUNKTIONEN (lesen Layout-Globals dynamisch aus) ============
+dist(P,Q) := sqrt((P_1-Q_1)^2+(P_2-Q_2)^2);
+incanvas(P) := P_1>cvx0 & P_1<cvx1 & P_2>cvy0 & P_2<cvy1;
+intoolbar(P) := P_1>tbx0 & P_1<tbx1;
+inpanel(P) := P_1>pnx0 & P_1<pnx1;
+
+swatchcenter(i) := (
+  row = floor((i-1)/palcols);
+  col = mod(i-1,palcols);
+  [palx0+col*palstep+palstep/2, paly0-row*palstep]
+);
+sizecenter(i) := [sizex0+(i-1)*sizespace, sizey];
+sizerad(i) := palstep*(0.11+0.075*i);
+dashcenter(i) := [dashx0+(i-1)*dashstep+dashstep/2, dashy];
+
+commitstroke(s) := (
+  strokes = strokes:>s;
+  redostack = [];
+);
+
+// Beendet eine offene Texteingabe (übernimmt sie, falls nicht leer)
+finishtext() := (
+  if(textinput,
+    if(length(textbuffer)>0, commitstroke(["text", textpos, textbuffer, drawcolor, sizeidx]));
+    textinput=false; textbuffer="";
+  );
+);
+
+strokehit(s,p) := (
+  if(s_1=="pen", min(apply(s_2, dist(#,p)))<0.3,
+  if(s_1=="line", (dist(p,s_2_1)<0.3)%(dist(p,s_2_2)<0.3)%(dist(p,(s_2_1+s_2_2)/2)<0.3),
+  dist(p,s_2)<0.5))
+);
+
+handletoolbarclick(p) := (
+  forall(1..6, i,
+    if(dist(p,[tbcx,tbylist_i])<tbbtnr,
+      if(i==1, tool="select");
+      if(i==2, tool="pen");
+      if(i==3, tool="line");
+      if(i==4, tool="text");
+      if(i==5,
+        if(length(strokes)>0,
+          redostack = redostack:>strokes_(length(strokes));
+          strokes = strokes_(1..length(strokes)-1);
+        );
+      );
+      if(i==6,
+        if(length(redostack)>0,
+          strokes = strokes:>redostack_(length(redostack));
+          redostack = redostack_(1..length(redostack)-1);
+        );
+      );
+    );
+  );
+);
+
+handlepanelclick(p) := (
+  idx = select(1..length(palette), dist(p,swatchcenter(#))<palr);
+  if(length(idx)>0, drawcolor=palette_(idx_1));
+  forall(1..3, i,
+    if(dist(p,sizecenter(i))<sizerad(i),
+      sizeidx=i; linewidth=sizevals_i;
+    );
+  );
+  if(tool=="line",
+    forall(1..5, i,
+      c=dashcenter(i);
+      if(p_1>c_1-dashstep*0.35 & p_1<c_1+dashstep*0.35 & p_2>c_2-0.15 & p_2<c_2+0.15,
+        dashtype=i-1;
+      );
+    );
+  );
+);
+
+layout();
+;
+
+</script>
+<script id="csmousedrag" type="text/x-cindyscript">
+//App Mouse drag
+p = mouse().xy;
+if(drawing & tool=="pen" & incanvas(p),
+  currentpts = currentpts:>p;
+);
+;
+
+</script>
+<script id="csmouseup" type="text/x-cindyscript">
+//App Mouse up
+p = mouse().xy;
+if(drawing,
+  if(tool=="pen" & length(currentpts)>1,
+    commitstroke(["pen", currentpts, drawcolor, linewidth]);
+  );
+  if(tool=="line",
+    commitstroke(["line", [linestart, p], drawcolor, linewidth, dashtype]);
+  );
+);
+drawing = false;
+currentpts = [];
+;
+
+</script>
+<script id="csdraw" type="text/x-cindyscript">
+//App Draw
+layout();
+
+// Hintergrund
+fillpoly([[SBxmin,SBymin],[SBxmax,SBymin],[SBxmax,SBymax],[SBxmin,SBymax]], color->[0.93,0.93,0.93]);
+
+// Werkzeugleiste
+fillpoly([[tbx0,SBymin],[tbx1,SBymin],[tbx1,SBymax],[tbx0,SBymax]], color->[0.15,0.15,0.17]);
+
+// Einstellungen-Panel
+fillpoly([[pnx0,SBymin],[pnx1,SBymin],[pnx1,SBymax],[pnx0,SBymax]], color->[0.93,0.93,0.93]);
+drawtext([pnx0+0.2,SBymax-0.55],"Einstellungen",size->15,bold->true,color->[0.2,0.2,0.2]);
+
+// Canvas
+fillpoly([[cvx0,cvy0],[cvx1,cvy0],[cvx1,cvy1],[cvx0,cvy1]], color->[1,1,1]);
+drawpoly([[cvx0,cvy0],[cvx1,cvy0],[cvx1,cvy1],[cvx0,cvy1]], color->[0.7,0.7,0.7]);
+
+// Voreingestelltes Bild (Parallelogramm)
+connect(presetstroke:>presetstroke_1, color->[0.35,0.1,0.1], size->2);
+
+// Gespeicherte Striche
+forall(strokes,
+  if(#_1=="pen", connect(#_2, color->#_3, size->#_4));
+  if(#_1=="line", draw(#_2_1,#_2_2, color->#_3, size->#_4, dashtype->#_5));
+  if(#_1=="text", drawtext(#_2, #_3, color->#_4, size->#_5*4));
+);
+
+// Strich in Entstehung
+if(drawing & tool=="pen" & length(currentpts)>1,
+  connect(currentpts, color->drawcolor, size->linewidth);
+);
+if(drawing & tool=="line",
+  draw(linestart, mouse().xy, color->drawcolor, size->linewidth, dashtype->dashtype);
+);
+if(textinput,
+  drawtext(textpos, textbuffer+"|", color->drawcolor, size->linewidth*4);
+);
+
+// ===== Werkzeugleiste (Icons) =====
+toolactive = [tool=="select",tool=="pen",tool=="line",tool=="text",false,false];
+toollabels = ["Z","S","L","T","U","R"];
+forall(1..6, i,
+  active = toolactive_i;
+  fillcircle([tbcx,tbylist_i], tbbtnr, color-> if(active,[0.15,0.6,0.9],[0.3,0.3,0.33]));
+  drawtext([tbcx,tbylist_i], toollabels_i, align->"mid", offset->[0,-5], color->[1,1,1], size->13, bold->true);
+);
+
+// ===== Panel: Farbe =====
+drawtext([palx0, paly0+palr+0.35], "Farbe", size->11, color->[0.35,0.35,0.35]);
+forall(1..length(palette), i,
+  c = swatchcenter(i);
+  fillcircle(c, palr, color->palette_i);
+  drawcircle(c, palr, color->[0.75,0.75,0.75], size->1);
+  if(dist(drawcolor,palette_i)<0.001,
+    drawcircle(c, palr+0.05, color->[0.1,0.5,0.9], size->2);
+  );
+);
+
+// ===== Panel: Größe =====
+drawtext([palx0, sizey+sizerad(3)+0.35*palstep], "Größe", size->11, color->[0.35,0.35,0.35]);
+forall(1..3, i,
+  c=sizecenter(i); r=sizerad(i);
+  fillcircle(c, r, color-> if(sizeidx==i,[0.85,0.85,0.9],[1,1,1]));
+  drawcircle(c, r, color->[0.6,0.6,0.6], size->1);
+);
+drawtext([palx0, sbLabelY], "Strichbreite", size->11, color->[0.35,0.35,0.35]);
+drawtext([palx0, sbValueY], text(linewidth), size->13, color->[0.15,0.4,0.9]);
+
+// ===== Panel: Strichart (nur Linienwerkzeug) =====
+if(tool=="line",
+  drawtext([palx0, dashy+0.5*palstep], "Strichart", size->11, color->[0.35,0.35,0.35]);
+  forall(1..5, i,
+    c=dashcenter(i);
+    fillpoly([[c_1-dashstep*0.4,c_2-0.2],[c_1+dashstep*0.4,c_2-0.2],[c_1+dashstep*0.4,c_2+0.2],[c_1-dashstep*0.4,c_2+0.2]],
+      color-> if(dashtype==i-1,[0.8,0.85,0.95],[0.98,0.98,0.98]));
+    draw([c_1-dashstep*0.3,c_2],[c_1+dashstep*0.3,c_2], color->[0,0,0], size->2, dashtype->i-1);
+  );
+);
+;
+
+</script>
+<script id="csmousedown" type="text/x-cindyscript">
+//App Mouse down
+p = mouse().xy;
+
+// Offene Texteingabe IMMER zuerst übernehmen, bevor irgendetwas anderes passiert
+finishtext();
+
+if(incanvas(p),
+  if(tool=="pen", drawing=true; currentpts=[p];);
+  if(tool=="line", drawing=true; linestart=p;);
+  if(tool=="text", textinput=true; textpos=p; textbuffer="";);
+  if(tool=="select",
+    hitidx = select(1..length(strokes), strokehit(strokes_#,p));
+    if(length(hitidx)>0,
+      lastidx = hitidx_(length(hitidx));
+      strokes = strokes_(concat(1..lastidx-1, lastidx+1..length(strokes)));
+    );
+  );
+,
+  if(intoolbar(p), handletoolbarclick(p));
+  if(inpanel(p), handlepanelclick(p));
+);
+;
+
+</script>
+<script id="cskeydown" type="text/x-cindyscript">
+//App Key typed
+if(textinput,
+  k = key();
+  if(iskeydown(13) % k=="\n" % k=="\r",
+    finishtext();
+  ,
+    if(iskeydown(8),
+      if(length(textbuffer)>0, textbuffer=substring(textbuffer,0,length(textbuffer)-1));
+    ,
+      if(length(k)>0, textbuffer = textbuffer+k);
+    );
+  );
+);
+;
+
+</script>
+    <script type="text/javascript">
+var cdy = CindyJS({
+  scripts: "cs*",
+  defaultAppearance: {
+    dimDependent: 0.7,
+    fontFamily: "sans-serif",
+    lineSize: 1,
+    pointSize: 5.0,
+    textsize: 12.0
+  },
+  angleUnit: "°",
+  ports: [{
+    width: 680,
+    height: 350,
+    id: "CSCanvas",
+    transform: [{visibleRect: [-9.06, 9.34, 18.14, -4.66]}],
+    background: "rgb(168,176,192)"
+  }],
+  csconsole: false,
+  cinderella: {build: 2131, version: [3, 0, 2131]}
+});
+    </script>
+</head>
+<body>
+    <div id="CSCanvas"></div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+/** v2 ******************************************************************************************
+* Functions that don't fall in a specific category (yet).
+*
+* Recent changes:
+* 2027-07-27: Added default parse to(2) and default to(3)
+************************************************************************************************/
+
+datetime() := date() ++ time();
+
+default to(var, defaultvalue) := if(!isundefined(var), var,	defaultvalue);
+default parse to(var, defaultvalue) := if(isstring(var),
+	if(!isundefined(var), parse(var),	defaultvalue);
+,
+	default to(var, defaultvalue);
+);
+default to(var, defaultvalue, parse) := if(parse,	default parse to(var, defaultvalue), default to(var, defaultvalue));
+
+getscreenparams():= (
+	bordersize = screenresolution()* BORDERSIZE; // equals 0.5 mm fineliner
+	pinchsensitivity = 10/screenresolution() * PINCHSENSITIVITY;
+);
+  
+hexcolor(c) := hex(255*(c_1)) + hex(255*(c_2)) + hex(255*(c_3)); 
+
+isbool(expression) := expression == true % expression == false;
+
+is defined(thing) := !isundefined(thing);
+
+/**
+* Creates a list from a given thing.
+**/
+list(thing) := (
+	regional(list);
+	list = NADA;
+	
+	if(!islist(thing),
+	
+		// Undefined
+		if(isundefined(thing),
+			list = [];
+		);
+
+		// String
+		if(isstring(thing),
+			list = [];
+			repeat(length(thing), list = list :> thing_#);
+		);
+
+		// Object
+		if(!isundefined(keys(thing)),
+			list = [];
+			forall(keys(thing), key,
+				list = list :> thing:key;
+			);
+		);
+		
+		// default case
+		if(isundefined(list), list = [thing]);
+	);
+	list;
+);
+
+to bool(expression) := (
+	regional(result);
+	result = NADA;
+	if(isstring(expression), result = expression != ""); // empty string false, else true
+	if(isinteger(floor(expression)), result = floor(abs(expression)) != 0); // 0 => false, else true
+	if(expression == true, result = true); // keep true true
+	if(expression == false, result = false); // keep false false
+	if(isundefined(result), result = false); // default to false for everything else
+	result;
+);
+
+type(data) := (
+	regional(type);
+	
+	if(isundefined(type) & islist(data), type = "list");
+	if(isundefined(type) & !isundefined(keys(data)), type = "object");
+	if(isundefined(type) & isstring(data), type = "string");
+	if(isundefined(type) & isinteger(data), type = "integer");
+	if(isundefined(type) & isreal(data), type = "float");
+	if(isundefined(type) & iscomplex(data), type = "complex");
+	if(isundefined(type) & isbool(data), type = "boolean");
+
+	type;
+);
