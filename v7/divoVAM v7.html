@@ -2291,7 +2291,7 @@ LOGDEBUG = 3;
 // Vam choice //
 // ========== //
 
-VAM = "divisors";
+VAM = "percentagebar";
 
 
 // ============ //
@@ -7771,21 +7771,27 @@ forall(bars, bar,
 obj = obj 
 	++ if(showbuttons, values(toggles))
 	-- apply(select(hidetoggles, contains(keys(toggles), #)), toggles:#);
-obj = obj ++ values(textfields) -- [
-	textfields:"basevalue", textfields:"value", textfields:"percentage", 
-	textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
-];
-obj = obj ++ values(buttons) -- [
-	buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
-	buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage",
-	buttons:"minusdiv", buttons:"plusdiv",
-	buttons:"minusdiv-percentage",	buttons:"plusdiv-percentage",
-	buttons:"minusdiv-value", buttons:"plusdiv-value"
-];
+obj = obj 
+	++ values(textfields)
+	-- [
+		textfields:"basevalue", textfields:"value", textfields:"percentage", 
+		textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
+	];
+obj = obj ++ values(buttons) 
+	-- [
+		buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
+		buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage",
+		buttons:"minusdiv", buttons:"plusdiv",
+		buttons:"minusdiv-percentage",	buttons:"plusdiv-percentage",
+		buttons:"minusdiv-value", buttons:"plusdiv-value"
+	];
 obj = obj :> arch1;
 obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj ++ bars;
+
+
+
 
 bars_1:"toggleactive";
 
@@ -7796,6 +7802,11 @@ toggles:"showtf-perc":"script";
 toggles:"showtf-div":"script";
 toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
+
+// Remove divisions textfield and buttons if buttons are not showing.
+if(!showbuttons,
+	obj = obj -- [textfields:"divisions", buttons:"plusdiv", buttons:"minusdiv"];
+);
 
 ); // end vam-if
 ;

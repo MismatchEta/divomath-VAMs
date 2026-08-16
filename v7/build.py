@@ -51,6 +51,7 @@ OUT_CDYJS = "divoVAM.cdyjs"
 RECT_PRESETS = {
     "divomath"  : [-0.27428199274629916, 18.50596739294148, 24.217486536011474, -0.40335587168573406],
     "classic"   : [-1.7258704824220432, 22.351088099515103, 36.49896464677728, 0.23437747292151204],
+    "wide"      : [-6.285577682895096, 25.03577551661606, 31.42788841447548, 2.9190648900224683],
 }
 DEFAULT_PRESET = "divomath"
 
@@ -82,6 +83,11 @@ EVENT_MAP = {
 COPY_FIELDS = ["defaultAppearance", "angleUnit", "geometry", "animation",
                "autoplay", "animcontrols", "csconsole", "cinderella"]
 
+# Freehand drawing overlay, activated with ?draw
+# The tool is a self contained JS overlay: it puts a second canvas on top of
+# #CSCanvas and draws there. Deployed as a separate file next to the HTML.
+FREEHAND_SRC = "js/freehand-drawing.js"   # relative to this script
+FREEHAND_URL = "freehand-drawing.js"      # how the HTML references it
 
 # ==========================================================================
 # HTML patching
@@ -157,6 +163,54 @@ if (VAM_FULL) {{
 }}
 """.format(marker=MARKER, presets=presets, default=DEFAULT_PRESET)
 
+# --- 2b. Build the freehand drawing overlay, if requested. ---
+def freehand_block():
+    """Return the <script> block for the freehand drawing overlay.
+
+    The tool itself lives in a separate file that has to be uploaded next to
+    the HTML. Only its CONFIGURATION is generated here, so it can be steered
+    from the URL:
+
+        ?draw               switch it on
+        ?drawpen=4          pen width in px
+        ?drawpos=0.4,0.05   menu bar position, relative to the canvas
+        ?drawdir=right      direction the menu bar unfolds in
+        ?drawmoveable       let the user drag the menu bar around
+
+    The tool script is only fetched when ?draw is present, so the feature
+    costs nothing when it is not used.
+    """
+    return """
+<script>
+/* {marker}: freehand drawing overlay, active with ?draw */
+(function () {{
+    var q = new URLSearchParams(window.location.search);
+    if (!q.has("draw")) return;
+
+    var pos = (q.get("drawpos") || "0.4,0.05").split(",").map(Number);
+    if (pos.length !== 2 || pos.some(isNaN)) pos = [0.4, 0.05];
+
+    window.CONFIGURATION = {{
+        mode: "website",
+        elementID: "CSCanvas",
+        penSize: Number(q.get("drawpen")) || 2,
+        startLocation: {{
+            x_absolute: undefined, y_absolute: undefined,
+            x_relative: pos[0], y_relative: pos[1]
+        }},
+        menubar: {{
+            moveable: q.has("drawmoveable"),
+            direction: q.get("drawdir") || "right"
+        }}
+    }};
+
+    var s = document.createElement("script");
+    s.src = "{url}";
+    document.body.appendChild(s);
+}})();
+</script>
+""".format(marker=MARKER, url=FREEHAND_URL)
+
 # --- 3. Build html from above, change ports block to be adress visibleRect ---
 def patch_html(text, build_no):
     """Add pen-input CSS and make layout/viewport selectable via URL."""
@@ -177,6 +231,9 @@ def patch_html(text, build_no):
     # Append HEAD_PATCH to <head>.
     text = text.replace('<meta charset="UTF-8">',
                         '<meta charset="UTF-8">\n' + HEAD_PATCH.format(marker=MARKER), 1)
+
+    # Freehand drawing overlay, right before </body> so #CSCanvas exists
+    text = text.replace("</body>", freehand_block() + "</body>", 1)
 
     # No CindyJS --> exit.
     if "var cdy = CindyJS({" not in text:
@@ -499,6 +556,15 @@ def main():
 
         # Patch.
         patched, changed = patch_html(html_raw, build_number_from_html(target))
+
+        # Copy the freehand tool next to the HTML so it can be uploaded together
+        src = pathlib.Path(__file__).parent / FREEHAND_SRC
+        if src.is_file():
+            (out_dir / FREEHAND_URL).write_text(src.read_text(encoding="utf-8"),
+                                                encoding="utf-8")
+            print("  plus    : %s" % FREEHAND_URL)
+        else:
+            print("  note: %s not found, freehand drawing will not work" % FREEHAND_SRC)
 
         # Write to file.
         target.write_text(patched, encoding="utf-8")

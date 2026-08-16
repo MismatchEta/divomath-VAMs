@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>README.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<blockquote>
+<p>v7b398</p>
+</blockquote>
+<h1 id="divomath-vam-dokumentation">divomath VAM Dokumentation</h1>
+<p>JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das <a href="#komponentenverhalten">Komponentenverhalten</a> und den <a href="#konfiguration-des-zustands-eines-vams">Zustand</a> konfiguriert.</p>
+<p>Examplarische Einbindungen im Editor sind hier zu finden: <a href="https://editor.divomath-nrw.de/folien/634fa76ad6627092d00ffb24/6697a005040ef4466b6d5342/6697a02b69fcc16c3e49d692/0/6a79a78eae9dd79ab405da92">https://editor.divomath-nrw.de/folien/634fa76ad6627092d00ffb24/6697a005040ef4466b6d5342/6697a02b69fcc16c3e49d692/0/6a79a78eae9dd79ab405da92</a></p>
+<h2 id="komponentenverhalten">Komponentenverhalten</h2>
+<h3 id="generelles-verhalten">Generelles Verhalten</h3>
+<p>Über das Komponentenverhalten der Framework-Komponente wird deren generelles Verhalten gesteuert (insbesondere die Auswahl eines Widgets). Die Konfiguration des gewählten Widgets findet in <a href="#zustand">Zustand</a> statt. Die folgenden Einstellungen werden im Komponentenverhalten unter dem Schlüssel &quot;configuration&quot; vorgenommen:</p>
+<ul>
+<li>cindyJsPrefix: divomath
+<ul>
+<li>Genau so erforderlich. Wird Präfix der von divomath an CindyJS übergebenen Parameter (Komponentenverhalten und Zustand). Framework erwartet den Präfix &quot;divomath&quot;</li>
+</ul>
+</li>
+<li>vam: <em>&lt;string&gt;</em>
+<ul>
+<li>Switch für das gewünschte CindyJS Widget. Entsprechenden zulässigen <a href="#strings-f%C3%BCr-vam-schl%C3%BCssel">Namen</a> verwenden</li>
+<li>default &quot;default&quot;: Zeigt Hinweis zum korrekten Komponentenverhalten an.</li>
+</ul>
+</li>
+<li>debuglevel: <em>&lt;unsigned int&gt;</em>
+<ul>
+<li>Möglicherweise von einigen Widgets zum debugging verwendet. Normalerweise nicht nötig zu setzen. Sollte im Produktivbetrieb 0 sein.</li>
+<li>default 0: Kein Debugging.</li>
+</ul>
+</li>
+<li>bgcolor: <em>[&lt;float&gt;,&lt;float&gt;,&lt;float&gt;]</em>
+<ul>
+<li>Hintergrundfarbe. Liste von 3 floats aus [0,1]. Repräsentieren ROT, GRÜN, BLAU Anteil des Hintergrunds.</li>
+</ul>
+</li>
+</ul>
+<h3 id="strings-für-vam-schlüssel">Strings für <em>vam</em> Schlüssel</h3>
+<p>Folgende Strings sind für <em>vam</em> Schlüssel zulässig:</p>
+<ul>
+<li>divisors (seit: 2.0.0, letzte Änderung: 7)</li>
+<li>numbercards (seit: 1.0.0, letzte Änderung: 7)</li>
+<li>percentagebar (seit 3.0.0, letzte Änderung: 7)</li>
+<li>strapwork (seit: 1.0.0, letzte Änderung: 7)</li>
+<li>distributive (seit 4.0.0, letzte Änderung: 7)</li>
+<li>thales (seit: 7)</li>
+</ul>
+<h3 id="beispiel">Beispiel</h3>
+<p>Eine Minimalkonfiguration zur Darstellung der Zahlenkarten-Komponente (&quot;numbercards&quot;).</p>
+<pre class="hljs"><code><div><span class="hljs-attr">configuration:</span>
+  <span class="hljs-attr">cindyJsPrefix:</span> <span class="hljs-string">divomath</span>
+  <span class="hljs-attr">vam:</span> <span class="hljs-string">numbercards</span>
+</div></code></pre>
+<h2 id="konfiguration-des-zustands-eines-vams">Konfiguration des <em>Zustands</em> eines VAMs</h2>
+<p>Dieser Abschnitt stellt die möglichen Konfigurationen der verschiedenen VAMs dar. Diese werden grundsätzlich im <em>Zustand</em> einer Komponente vorgenommen. Die Konfigurationen sind widgetabhängig und finden unter dem Schlüssel &quot;cindyjs&quot; statt. Die Dokumentation hier spiegelt dabei nur den Stand der aktuellen wider. Unter Umständen wird eine Komponente in älteren Versionen anders konfiguriert.</p>
+<h3 id="beispiel-1">Beispiel</h3>
+<p>Das folgende Beispiel zeigt eine Konfiguration für das VAM <em>numbercards</em>. <a href="#zustand-numbercards">Siehe unten</a> für Details.</p>
+<pre class="hljs"><code><div><span class="hljs-attr">cindyjs:</span>
+  <span class="hljs-attr">color:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">colortoggle:</span> <span class="hljs-literal">false</span>
+  <span class="hljs-attr">alpha:</span> <span class="hljs-number">0.2</span>
+  <span class="hljs-attr">cards:</span> <span class="hljs-number">1</span>
+</div></code></pre>
+<h3 id="zustand-distributive">Zustand: distributive</h3>
+<ul>
+<li>gridposition: <em>[&lt;float&gt;, &lt;float&gt;]&gt;</em>
+<ul>
+<li>Startposition des Rechteckfelds (referenziert linke untere Ecke.)</li>
+<li>default [10,8]</li>
+</ul>
+</li>
+<li>rows: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der Zeilen des Rechteckfelds</li>
+<li>default 5</li>
+</ul>
+</li>
+<li>cols: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der Spalten des Rechteckfelds</li>
+<li>default 7</li>
+</ul>
+</li>
+<li>size: <em>&lt;float&gt;</em>
+<ul>
+<li>Die Größe der Blobs.</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>cornerradius: <em>&lt;float&gt;</em>
+<ul>
+<li>Der Eckradius der Blobs. 0 zeichnet Quadrate (beste Performance), sonst abgerundete Rechtecke. Sollte höchstens die Hälfte von <em>size</em> sein.</li>
+<li>default .5 (mit size=1 ein Kreis)</li>
+</ul>
+</li>
+<li>verticalpadding: <em>&lt;float&gt;</em>
+<ul>
+<li>Der vertikale Abstand zwischen Blobs.</li>
+<li>default .1</li>
+</ul>
+</li>
+<li>horizontalpadding: <em>&lt;float&gt;</em>
+<ul>
+<li>Der horizontale Abstand zwischen Blobs.</li>
+<li>default .1</li>
+</ul>
+</li>
+<li>groupspacing: <em>&lt;float&gt;</em>
+<ul>
+<li>Der Abstand zwischen Gruppen, wenn nach Zeilen oder Spalten gruppiert wird (zusätzlich zum padding).</li>
+<li>default .2</li>
+</ul>
+</li>
+<li>cutwidth: <em>&lt;float&gt;</em>
+<ul>
+<li>Der Abstand zwischen Teilen nach einem Schnitt (zusätzlich zum padding).</li>
+<li>default .3</li>
+</ul>
+</li>
+<li>gridmoveable: <em>&lt;bool&gt;</em>
+<ul>
+<li>Schalter, ob das gesamte Rechteckfeld verschoben werden kann.</li>
+<li>default <em>true</em></li>
+</ul>
+</li>
+<li>buttonsize: <em>&lt;float&gt;</em>
+<ul>
+<li>Die Größe der Werk18zeug-Buttons.</li>
+<li>default 2</li>
+</ul>
+</li>
+<li>buttonpadding: <em>&lt;float&gt;</em>
+<ul>
+<li>Abstand des Buttons zum oberen und rechten Rand.</li>
+<li>default .4</li>
+</ul>
+</li>
+<li>labelpadding: <em>&lt;float&gt;</em>
+<ul>
+<li>Abstand des Output-Texts zum oberen und linken Rand.</li>
+<li>default 10.3</li>
+</ul>
+</li>
+<li>animationspeed: <em>&lt;float&gt;</em>
+<ul>
+<li>Modifier für alle Animationen. Je größer, desto schneller laufen Animationen ab.</li>
+<li>default .15</li>
+</ul>
+</li>
+<li>fontsize: <em>&lt;int&gt;</em>
+<ul>
+<li>Schriftgröße für Term- und Beschreibungsdarstellung.</li>
+<li>default 18</li>
+</ul>
+</li>
+<li>drawexpression: <em>&lt;bool&gt;</em>
+<ul>
+<li>Term zeichen oder nicht</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawverbal: <em>&lt;bool&gt;</em>
+<ul>
+<li>Verbale Beschreibung zeichnen oder nicht</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawtoolbutton: <em>&lt;bool&gt;</em>
+<ul>
+<li>Tool Button zeichnen oder nicht</li>
+<li>default true</li>
+</ul>
+</li>
+<li>tool: <em>&lt;string&gt;</em>
+<ul>
+<li>Eingestelltes Tool beim Starten des VAMs. Muss eins von <strong>&quot;hand&quot;</strong>, <strong>&quot;bucket&quot;</strong> oder <strong>&quot;scissors&quot;</strong> sein.</li>
+<li>default &quot;hand&quot;</li>
+</ul>
+</li>
+<li>toolbuttonx: <em>&lt;float&gt;</em>
+<ul>
+<li>x-Koordinate des Tool Buttons. Wenn nicht definiert (NADA), dann am rechten Rand (mit padding).</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>toolbuttony: <em>&lt;float&gt;</em>
+<ul>
+<li>y-Koordinate des Tool Buttons. Wenn nicht definiert (NADA), dann am oberen Rand (mit padding).</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>groupingtype: <em>&lt;string&gt;</em>
+<ul>
+<li>Gibt an, welche Gruppierungen mit Klick auf das Rechteckfeld eingestellt werden können. Keine = <strong>&quot;NONE&quot;</strong> | nur Zeilen = <strong>&quot;ROW&quot;</strong> | nur Spalten = <strong>&quot;COL&quot;</strong> | Beides = <strong>&quot;ROWCOL&quot;</strong></li>
+<li>default &quot;ROWCOL&quot;</li>
+</ul>
+</li>
+<li>coloredrowindex <em>&lt;int&gt;</em>
+<ul>
+<li>Index, derjenigen Zeile, ab der die Zeilen nach unten gefärbt werden sollen</li>
+<li>default NADA (keine Färbung)</li>
+</ul>
+</li>
+<li>coloredcolindex <em>&lt;int&gt;</em>
+<ul>
+<li>Index, derjenigen Spalte, ab der die Spalten nach unten gefärbt werden sollen</li>
+<li>default NADA (keine Färbung)</li>
+</ul>
+</li>
+<li>cuthorizontally <em>&lt;bool&gt;</em>
+<ul>
+<li>Flag, ob das Feld horizontal (__) geschnitten sein soll</li>
+<li>default false</li>
+</ul>
+</li>
+<li>cutvertically <em>&lt;bool&gt;</em>
+<ul>
+<li>Flag, ob das Feld horizontal ( | ) geschnitten sein soll</li>
+<li>default false</li>
+</ul>
+</li>
+<li>groupby <em>&lt;string&gt;</em>
+<ul>
+<li>gibt an, wonach die Elemente des Felds gruppiert sein sollen (eins von <strong>&quot;ROW&quot;</strong>, <strong>&quot;COLUMN&quot;</strong> oder <strong>&quot;NONE&quot;</strong>)</li>
+<li>default &quot;NONE&quot;</li>
+</ul>
+</li>
+<li>expressionposition <em>[&lt;float&gt;, &lt;float&gt;]&gt;</em>
+<ul>
+<li>Position des Terms auf der Canvas als Punkt, e.g. <strong>[3,1]</strong></li>
+<li>default NADA (automatische Positionierung)</li>
+</ul>
+</li>
+<li>expressionmoveable <em>&lt;bool&gt;</em>
+<ul>
+<li>Term-Anzeige beweglich oder nicht</li>
+<li>default false</li>
+</ul>
+</li>
+<li>verbalposition <em>[&lt;float&gt;, &lt;float&gt;]&gt;</em>
+<ul>
+<li>Position der verbalen Beschreibung des Terms auf der Canvas als Punkt, e.g. <strong>[3,1]</strong></li>
+<li>default NADA (automatische Positionierung)</li>
+</ul>
+</li>
+<li>verbalmoveable <em>&lt;bool&gt;</em>
+<ul>
+<li>verbale Termbeschreibung beweglich oder nicht</li>
+<li>default false</li>
+</ul>
+</li>
+<li>requiregrouping <em>&lt;bool&gt;</em>
+<ul>
+<li>Wenn true, können Färben und Zerschneiden erst genutzt werden, nachdem eine Zeilen- oder Spaltenstruktur gewählt wurde. Der Werkzeug-Button wird bis dahin blass dargestellt und lässt sich nicht umschalten.</li>
+<li><strong>Achtung</strong>: Die Sperre gilt auch für das Zurücknehmen. Wer gruppiert, färbt, zerschneidet und dann auf &quot;nix&quot; zurückgeht, kann die Färbung von dort aus nicht mehr entfernen, ohne vorher wieder zu gruppieren.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>showexpressiontoggle <em>&lt;bool&gt;</em>
+<ul>
+<li>Schalter zum Ein- und Ausblenden von Term und verbaler Beschreibung anzeigen</li>
+<li>default false</li>
+</ul>
+</li>
+<li>expressiontogglestate <em>&lt;bool&gt;</em>
+<ul>
+<li>Zustand dieses Schalters beim Start</li>
+<li>default true</li>
+</ul>
+</li>
+<li>picturemode <em>&lt;bool&gt;</em>
+<ul>
+<li>Entfernt jede Interaktivität aus dem VAM. Das Feld wird gezeichnet wie konfiguriert, reagiert aber auf keinerlei Eingaben. Gedacht für Abbildungen in Aufgabentexten.</li>
+<li>Bedienelemente (Werkzeug-Button, Schalter) werden weiterhin gezeichnet, sind aber inaktiv.</li>
+<li>default false</li>
+</ul>
+</li>
+</ul>
+<h3 id="zustand-divisors">Zustand: divisors</h3>
+<ul>
+<li>color: <em>[&lt;string&gt;,&lt;string&gt;]</em>
+<ul>
+<li>Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Der erste Werte bestimmt die Farbe der Blobs in einem vollen Band, die zweite Farbe die der &quot;übrigen&quot; Blobs.</li>
+<li>Folgende Farbstrings sind u.a. möglich:
+<ul>
+<li>DARKRED=(228,26,28)/255;</li>
+<li>DARKGREEN=(77,175,74)/255;</li>
+<li>DARKBLUE=(55,126,184)/255;</li>
+<li>DZLMCOLORLIGHT = (207,221,225)/255;</li>
+<li>DZLMCOLORDARK = (70,120,132)/255;</li>
+<li>DZLMCOLORGOLD = (239,182,96)/255;</li>
+<li>DZLMCOLORBLUE = (127,127,247)/255;</li>
+<li>DZLMCOLORRED = (239,134,131)/255;</li>
+<li>PLACECOLORRED = (102,194,165)/255;</li>
+<li>PLACECOLORGREEN = (252,141,98)/255;</li>
+<li>PLACECOLORBLUE = (141,160,203)/255;</li>
+<li>DIVOGREEN = (129,239,104)/255;</li>
+<li>DIVOVIOLET = (150,59,216)/255;</li>
+<li>DIVOGREY = (130,149,192)/255;</li>
+<li>DIVOBLACK = grey(0);</li>
+<li>DIVORED = (235,85,78)/255;</li>
+<li>DIVOBLUE = (83,125,156)/255;</li>
+</ul>
+</li>
+<li>Statt einem String geht auch eine 3-elementige Liste (R,G,B)</li>
+<li>default [DIVOGREY, DIVORED]</li>
+</ul>
+</li>
+<li>size: <em>&lt;float&gt;</em>
+<ul>
+<li>Größe der Blobs</li>
+<li>default .7</li>
+</ul>
+</li>
+<li>blobmargin: <em>&lt;float&gt;</em>
+<ul>
+<li>Abstand der Blobs innerhalb eines Bandes</li>
+<li>default .2</li>
+</ul>
+</li>
+<li>stripmargin: <em>&lt;float&gt;</em>
+<ul>
+<li>Abstand der Bänder untereinander</li>
+<li>default .5</li>
+</ul>
+</li>
+<li>timing: <em>&lt;float&gt;</em>
+<ul>
+<li>Zeit für die Animation bei der Bewegung der Blobs</li>
+<li>default .5</li>
+</ul>
+</li>
+<li>blobs: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der Blobs zu Beginn</li>
+<li>default 0</li>
+</ul>
+</li>
+<li>maxblobs: <em>&lt;int&gt;</em>
+<ul>
+<li>Maximale Anzahl an erlaubten Blobs</li>
+<li>default 100</li>
+</ul>
+</li>
+<li>divisor: <em>&lt;int&gt;</em>
+<ul>
+<li>Gruppengröße zu Beginn</li>
+<li>default 1 (bzw. keine Gruppen)</li>
+</ul>
+</li>
+<li>maxcols: <em>&lt;int&gt;</em>
+<ul>
+<li>Maximale Anzahl an erlaubten Spalten (größter Teiler)</li>
+<li>default 10</li>
+</ul>
+</li>
+<li>sequentialorder: <em>&lt;bool&gt;</em>
+<ul>
+<li>Steuert Umordnungsverhalten der Blobs in den Bändern</li>
+<li>default false</li>
+</ul>
+</li>
+<li>drawblobbuttons: *&lt;bool&gt;
+<ul>
+<li>Zeichne Buttons zur Änderung der Anzahl der Blobs (true) oder auch nicht</li>
+<li>default: true</li>
+</ul>
+</li>
+<li>drawdivbuttons: *&lt;bool&gt;
+<ul>
+<li>Zeichne Buttons zur Änderung des Divisors (true) oder auch nicht</li>
+<li>default: true</li>
+</ul>
+</li>
+<li>drawbar: *&lt;bool&gt;
+<ul>
+<li>Zeichne vertikale Linie zur Änderung des Divisors (true) oder auch nicht</li>
+<li>default: true</li>
+</ul>
+</li>
+<li>displaycalc: <em>&lt;bool&gt;</em>
+<ul>
+<li>Anzeige der Berechnungsvorschrift &quot;a : b&quot;</li>
+<li>default true</li>
+</ul>
+</li>
+<li>displayresult: <em>&lt;bool&gt;</em>
+<ul>
+<li>Anzeige des Ergebnisses &quot;= c R d&quot;</li>
+<li>default true</li>
+</ul>
+</li>
+<li>displaydescription: <em>&lt;bool&gt;</em>
+<ul>
+<li>Anzeige der 2 beschreibenden Textzeilen</li>
+<li>default true</li>
+</ul>
+</li>
+<li>displayblobcount: <em>&lt;bool&gt;</em>
+<ul>
+<li>Anzeige der Anzahl der Blobs</li>
+<li>default true</li>
+</ul>
+</li>
+<li>displaydivisorcount: <em>&lt;bool&gt;</em>
+<ul>
+<li>Anzeige der Gruppengröße</li>
+<li>default true</li>
+</ul>
+</li>
+<li>fontsize: <em>&lt;int&gt;</em>
+<ul>
+<li>Schriftgröße der Texte unterhalb der Bänder</li>
+<li>default 16</li>
+</ul>
+</li>
+</ul>
+<h3 id="zustand-numbercards">Zustand: numbercards</h3>
+<ul>
+<li>cards: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der Zahlenkarten, Standardwerte entsprechen denen der folgenden Parameter.</li>
+<li>Werden mehrere Karten verwendet, müssen die folgenden Parameter als entsprechend lange Listen angelegt werden.</li>
+<li>default 1: eine Karte</li>
+</ul>
+</li>
+<li>x: <em>&lt;list of floats&gt;</em> oder <em>&lt;float&gt;</em>
+<ul>
+<li>x-Koordinate(n) der Zahlenkarte(n)</li>
+<li>default [10*#-7] (Länge bestimmt sich durch <em>cards</em>)</li>
+</ul>
+</li>
+<li>y: <em>&lt;list of floats&gt;</em> oder <em>&lt;float&gt;</em>
+<ul>
+<li>y-Koordinate(n) der Zahlenkarte(n)</li>
+<li>default [16] (Länge bestimmt sich durch <em>cards</em>)</li>
+</ul>
+</li>
+<li>value: <em>&lt;list of ints&gt;</em> oder <em>&lt;int&gt;</em>
+<ul>
+<li>Initiale(r) Wert(e) der Zahlenkarte(n). Größer oder gleich 0.</li>
+<li>default [1234] (Länge bestimmt sich durch <em>cards</em>)</li>
+</ul>
+</li>
+<li>edit: <em>&lt;list of strings&gt;</em> oder <em>&lt;string&gt;</em>
+<ul>
+<li>String(s) aus chars &quot;t&quot; (true) oder &quot;f&quot; (false), welcher zum einen die Länge der Karte repräsentiert und zum anderen, welche Stellen (links nach rechts von groß nach klein) geändert werden können (t) und welche nicht (f).</li>
+<li>Bsp: &quot;tft&quot; = Eine 3-stellige Karte bei der die Zehnerstelle nicht geändert werden kann, die Hunderter- und Einerstelle dagegen schon.</li>
+<li>default [&quot;t..t&quot;, ..] (Alles editierbar, Länge bestimmt sich durch <em>cards</em>, Anzahl der Stellen durch <em>values</em>)</li>
+</ul>
+</li>
+<li>unfold: <em>&lt;list of bools&gt;</em> oder <em>&lt;bool&gt;</em>
+<ul>
+<li>Gibt an, ob die Zahlenkarte(n) zu Beginn ausgeklappt sein sollen (true) oder nicht (false).</li>
+<li>default [true] (Länge bestimmt sich durch <em>cards</em>)</li>
+</ul>
+</li>
+<li>color: <em>&lt;bool&gt;</em>
+<ul>
+<li>Darstellung der Stellenkarten in Farbe oder Graustufen</li>
+<li>default true: Montessori Farben</li>
+</ul>
+</li>
+<li>colortoggle: <em>&lt;bool&gt;</em>
+<ul>
+<li>Anzeigen eines Schalters zur Einstellung der Farbe (&quot;color&quot;, s.o.)</li>
+<li>default true</li>
+</ul>
+</li>
+<li>alpha: <em>&lt;float&gt;</em>
+<ul>
+<li>Transparenz der Zahlenkarte im ausgeklappten Zustand. (aus [0,1])</li>
+<li>default 0.2</li>
+</ul>
+</li>
+<li>separator: <em>&lt;char&gt;</em>
+<ul>
+<li>Trennzeichen für 3er-Gruppen von Ziffern (Punkt, Leerzeichen oder sonstiges)</li>
+<li>default &quot;&quot; (kein Trennzeichen)</li>
+</ul>
+</li>
+</ul>
+<h3 id="zustand-percentagebar">Zustand: percentagebar</h3>
+<h4 id="streifen">Streifen</h4>
+<ul>
+<li>numberofbars: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der dargestellten Prozentstreifen. Bei mehr als einem teilen sich die Streifen die verfügbare Breite.</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>barvalue: <em>&lt;float&gt;</em>
+<ul>
+<li>Anteil des Streifens beim Start, als Wert aus [0,1]. 0.25 färbt also ein Viertel des Streifens.</li>
+<li>default 0</li>
+</ul>
+</li>
+<li>basevalue: <em>&lt;float&gt;</em>
+<ul>
+<li>Grundwert, also der Wert, der dem ganzen Streifen entspricht.</li>
+<li>default 1000</li>
+</ul>
+</li>
+<li>unit: <em>&lt;string&gt;</em>
+<ul>
+<li>Einheit, die hinter den Werten angezeigt wird.</li>
+<li>default &quot;MB&quot;</li>
+</ul>
+</li>
+<li>subdivisions: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der Schritte, in die der Streifen unterteilt ist.</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>barprecision: <em>&lt;float&gt;</em>
+<ul>
+<li>Schrittweite beim Ziehen des Streifens, als Anteil. .01 entspricht 1 %.</li>
+<li>default .01</li>
+</ul>
+</li>
+<li>snapbar: <em>&lt;bool&gt;</em>
+<ul>
+<li>Wenn true, rastet der Streifen beim Ziehen auf den eingestellten Schritten ein statt in <em>barprecision</em>-Schritten. Wirkt nur, solange die Schritte auch angezeigt werden.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>isbardraggable: <em>&lt;bool&gt;</em>
+<ul>
+<li>Streifen mit der Maus bzw. dem Finger veränderbar oder nicht.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>overflow: <em>&lt;bool&gt;</em>
+<ul>
+<li>Erlaubt Werte über 100 %. Wirkt auf Ziehen, Direkteingabe und die Plus-Taste gleichermaßen.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>keepstable: <em>&lt;string&gt;</em>
+<ul>
+<li>Bestimmt, welche Größe konstant bleibt, wenn eine der drei anderen geändert wird. Eins von <strong>&quot;basevalue&quot;</strong> (Ganzes), <strong>&quot;value&quot;</strong> (Teil) oder <strong>&quot;percentage&quot;</strong> (Anteil).</li>
+<li>default &quot;basevalue&quot;</li>
+</ul>
+</li>
+</ul>
+<h4 id="darstellung">Darstellung</h4>
+<ul>
+<li>barposition: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Position des Streifens (linke untere Ecke). NADA positioniert automatisch.</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>barwidth: <em>&lt;float&gt;</em>
+<ul>
+<li>Breite des Streifens. NADA passt die Breite automatisch an den sichtbaren Bereich an.</li>
+<li><strong>Hinweis</strong>: Bei Einbettung in Storyline sollte hier ein fester Wert stehen. Die automatische Anpassung führt sonst dazu, dass Schrift und Streifen je nach Einbettung unterschiedlich groß zueinander wirken.</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>barheight: <em>&lt;float&gt;</em>
+<ul>
+<li>Höhe des Streifens.</li>
+<li>default 1.5</li>
+</ul>
+</li>
+<li>barpadding: <em>&lt;float&gt;</em>
+<ul>
+<li>Abstand zwischen mehreren Streifen.</li>
+<li>default 2.5</li>
+</ul>
+</li>
+<li>barcolor: <em>&lt;string&gt;</em>
+<ul>
+<li>Farbe des Streifens. Farbnamen wie bei <a href="#zustand-divisors">divisors</a>.</li>
+<li>default DZLMCOLORGOLD</li>
+</ul>
+</li>
+<li>fontfamily: <em>&lt;string&gt;</em>
+<ul>
+<li>Schriftart der Beschriftungen. NADA verwendet die Standardschrift.</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>decimalspercentage: <em>&lt;int&gt;</em>
+<ul>
+<li>Nachkommastellen bei Prozentangaben.</li>
+<li>default 2</li>
+</ul>
+</li>
+<li>decimalsvalue: <em>&lt;int&gt;</em>
+<ul>
+<li>Nachkommastellen bei Werten.</li>
+<li>default 2</li>
+</ul>
+</li>
+</ul>
+<h4 id="bögen-und-beschriftungen">Bögen und Beschriftungen</h4>
+<ul>
+<li>alwaysdrawarches: <em>&lt;bool&gt;</em>
+<ul>
+<li>Bögen von Anfang an anzeigen. Der zugehörige Schalter ist dabei sichtbar und aktiviert, lässt sich also weiterhin umschalten.</li>
+<li><strong>Hinweis</strong>: Bögen werden nur gezeichnet, solange auch die Schritte angezeigt werden. Beide sind gekoppelt: Wird der letzte Schritte-Schalter ausgeschaltet, gehen die Bögen mit aus; wird der Bögen-Schalter eingeschaltet, geht die Schrittanzeige mit an.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>leftoutpercentages: <em>&lt;list of floats&gt;</em>
+<ul>
+<li>Anteile, deren Prozentbeschriftung <strong>nicht</strong> gezeichnet werden soll, als Werte aus [0,1].</li>
+<li>default []</li>
+</ul>
+</li>
+<li>leftoutvalues: <em>&lt;list of floats&gt;</em>
+<ul>
+<li>Analog für die Wertbeschriftungen.</li>
+<li>default []</li>
+</ul>
+</li>
+<li>custompercentages: <em>&lt;list of floats&gt;</em>
+<ul>
+<li>Zusätzliche Anteile, die immer als Prozentbeschriftung erscheinen, unabhängig von den Schritten.</li>
+<li>default []</li>
+</ul>
+</li>
+<li>customvalues: <em>&lt;list of floats&gt;</em>
+<ul>
+<li>Analog für Wertbeschriftungen.</li>
+<li>default []</li>
+</ul>
+</li>
+</ul>
+<h4 id="bedienelemente">Bedienelemente</h4>
+<ul>
+<li>showbuttons: <em>&lt;bool&gt;</em>
+<ul>
+<li>Alle Schalter und Eingabefelder anzeigen oder nicht.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>hidetoggles: <em>&lt;list of strings&gt;</em>
+<ul>
+<li>Blendet einzelne Schalter aus, während die übrigen sichtbar bleiben. Wirkt nur, wenn <em>showbuttons</em> true ist.</li>
+<li>Zulässige Bezeichner: <strong>percentage</strong> (Anteil), <strong>part</strong> (Teil), <strong>basevalue</strong> (Ganzes), <strong>parts</strong> (Werte unten), <strong>percentages</strong> (Prozente oben), <strong>arch</strong> (Bögen), <strong>showtf-div</strong> (Anzahl der Schritte), <strong>showtf-divpercentage</strong> (Größe des Schritts in %), <strong>showtf-divvalue</strong> (Größe des Schritts), <strong>showtf-perc</strong> (Eingabe Anteil), <strong>showtf-value</strong> (Eingabe Teil), <strong>showtf-base</strong> (Eingabe Ganzes), <strong>overflow</strong></li>
+<li><strong>Hinweis</strong>: In der URL komma-getrennt <strong>ohne</strong> Anführungszeichen und ohne Leerzeichen angeben, e.g. <code>hidetoggles=arch,overflow</code>.</li>
+<li>default []</li>
+</ul>
+</li>
+<li>scaffoldbasevalue: <em>&lt;bool&gt;</em>
+<ul>
+<li>Verdeckt den Grundwert mit einem grauen Feld (als Lücke für Aufgaben).</li>
+<li>default false</li>
+</ul>
+</li>
+<li>scaffoldvalue: <em>&lt;bool&gt;</em>
+<ul>
+<li>Analog für den Prozentwert.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>scaffoldpercentage: <em>&lt;bool&gt;</em>
+<ul>
+<li>Analog für den Prozentsatz.</li>
+<li>default false</li>
+</ul>
+</li>
+</ul>
+<h3 id="zustand-strapwork">Zustand: strapwork</h3>
+<ul>
+<li>size: <em>&lt;float&gt;</em>
+<ul>
+<li>stellt generelle Größe von Container und Polygonen ein</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>sepsize: <em>&lt;float&gt;</em>
+<ul>
+<li>stellt generelle Größe der Trennstriche (Separatoren) und des Reset-Buttons ein</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>polys: <em>&lt;list&gt;</em>
+<ul>
+<li>dient der genaueren Konfiguration der Basis-Polygone. Hier werden in einer Liste die Ecken der verfügbaren Polyone (und damit auch die Anzahl an Polygonen) definiert, e.g. [3,3,4,4] erzeugt zwei Dreiecke und zwei Vierecke (in verschiedenen Farben)</li>
+<li>default [0,3,6]: Kreis, Dreieck, Viereck</li>
+</ul>
+</li>
+<li>polycolors: <em>&lt;list&gt;</em>
+<ul>
+<li>genaue Konfiguration der Farbe jedes Basis-Polygons. Muss mindestens so viele Einträge enthalten, <em>&lt;polys&gt;</em> gibt.</li>
+<li>Farben:
+<ol>
+<li>blau</li>
+<li>dunkelblau</li>
+<li>rot</li>
+<li>grün</li>
+<li>violett</li>
+<li>grau</li>
+<li>schwarz</li>
+</ol>
+</li>
+<li>default: [1..100]</li>
+</ul>
+</li>
+<li>rows: <em>&lt;int&gt;</em>
+<ul>
+<li>Anzahl der Zeilen/Streifen eines Containers</li>
+<li>default 1: Eine Zeile</li>
+</ul>
+</li>
+<li>state: <em>&lt;list of strings&gt;</em>
+<ul>
+<li>Definiert, welche der über <strong>vertices</strong> und <strong>colors</strong> definierten Polygone im Container beim Start enthalten sein sollen.</li>
+<li><strong>Beispiel</strong>: Für <strong>vertices</strong>=[0,3,4] sowie <strong>rows</strong>=3 stellt [&quot;1,2,2&quot;, &quot;3,3,3&quot;, &quot;&quot;] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.</li>
+<li>default [&quot;&quot;, &quot;&quot;, ...]</li>
+</ul>
+</li>
+<li>limit: <em>&lt;list&gt;</em>
+<ul>
+<li>Definiert, wie viele Polygone pro Band
+<ul>
+<li>Init Zustand <strong>fontsize</strong>: erlaubt sind. Muss (mindestens) so viele Einträge beinhalten wie <strong>row</strong> vorgibt. -1 für unendlich langes Band. Z.B. [3,5,-1] für 3 Container in die 3, 5 und unendlich viele Polygone psasen (von unten nach oben)</li>
+</ul>
+</li>
+<li>default [10,10,...] (potenziell 100 Bänder)</li>
+</ul>
+</li>
+<li>interactable: <em>&lt;string&gt;</em>
+<ul>
+<li>Konfiguriert, mit welchen Teilen des Containers interagiert werden kann, i.e. ob dort Polygone/Trennstriche verschoben, hinzugefügt oder entfernt werden können.</li>
+<li>Gesteuert wird das über die Buchstaben <strong>&quot;c&quot;</strong> (Container), <strong>&quot;p&quot;</strong> (Polygon) und <strong>&quot;s&quot;</strong> (Separator/Trennstrich)</li>
+<li><strong>&quot;cps&quot;</strong> (default, s.u.) lässt also alles interagierbar</li>
+<li><strong>&quot;cp&quot;</strong> lässt nur den Container selbst und die Polygone interagierbar. Mit den Trennstrichen kann nicht interagiert werden</li>
+<li>Restliche Kombinationen analog</li>
+<li>default &quot;cps&quot;</li>
+</ul>
+</li>
+<li>sepstate: <em>&lt;string&gt;</em>
+<ul>
+<li>Definiert an welchen Stellen ein Trennstrich (Separator) initialisiert werden soll. Wird mit komma-getrennt Ganzzahlen angegeben, wobei jede Zahl angibtm wie viele Polyone links davon sind. Die Angbae**&quot;1,3,5&quot;** erzeugt einen Separator nach dem ersten, dritten und fünften Polygon. Diese werden auch erzeugt, falls nicht so viele Polygone im Container existieren.</li>
+<li>default <strong>&quot;&quot;</strong> (leer)</li>
+</ul>
+</li>
+<li>patternlimit: *&lt;int&gt;
+<ul>
+<li>Limitiert, mit wie vielen Polygone der Mustercontainer gefüllt werden kann. <strong>-1</strong> erzeugt einen beliebig verlängerbaren Container. Das Limit bezieht sich (im Gegensatz zu <strong>limit</strong>) auf jede Zeile des Mustercontainers.</li>
+<li>default: 5</li>
+</ul>
+</li>
+<li>patternstate: <em>&lt;list of strings&gt;</em>
+<ul>
+<li>Definiert, welche der über <strong>vertices</strong> und <strong>colors</strong> definierten Polygone im Mustercontainer beim Start enthalten sein sollen.</li>
+<li>analog zu <strong>state</strong> (s.o.)</li>
+<li>default [&quot;&quot;, &quot;&quot;, ...]</li>
+</ul>
+</li>
+<li>drawpatterncontainer: <em>&lt;bool&gt;</em>
+<ul>
+<li>true, wenn Mustercontainer gezeichnet werden soll.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawseparator: <em>&lt;bool&gt;</em>
+<ul>
+<li>Trennsymbol an der linken Seite eines Containers anzeigen (true) oder nicht (false)</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawborders: <em>&lt;bool&gt;</em>
+<ul>
+<li>Rahmen um Polygone zeichnen (true) oder nicht (false)</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawresetbutton: <em>&lt;bool&gt;</em>
+<ul>
+<li>Reset Button anzeigen (true) oder nicht (false)</li>
+<li>default true</li>
+</ul>
+</li>
+<li>buttonsize: <em>&lt;float&gt;</em>
+<ul>
+<li>Größe des Reset-Buttons</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>polypadding: *&lt;float&gt;
+<ul>
+<li>Abstand zwischen den Polygonen in einem Band</li>
+<li>default .5</li>
+</ul>
+</li>
+<li>rcrows: <em>&lt;int&gt;</em>
+<ul>
+<li>analog rows</li>
+<li>default 1</li>
+</ul>
+</li>
+<li>rcstate: <em>&lt;list of strings&gt;</em>
+<ul>
+<li>analog state</li>
+<li>default [&quot;&quot;, &quot;&quot;, ...]</li>
+</ul>
+</li>
+<li>rclimit: <em>&lt;list&gt;</em>
+<ul>
+<li>analog limit</li>
+<li>default [10, 10, ...]</li>
+</ul>
+</li>
+<li>rcsepstate: <em>&lt;string&gt;</em>
+<ul>
+<li>analog sepstate</li>
+<li>default <strong>&quot;&quot;</strong> (leer)</li>
+</ul>
+</li>
+<li>drawrccontainer: <em>&lt;bool&gt;</em>
+<ul>
+<li>analog drawpatterncontainer</li>
+<li>default false</li>
+</ul>
+</li>
+<li>drawrcseparator: <em>&lt;bool&gt;</em>
+<ul>
+<li>analog drawseparator</li>
+<li>default false</li>
+</ul>
+</li>
+<li>rcinteractable: <em>&lt;string&gt;</em>
+<ul>
+<li>Konfiguriert, ob und womit im Referenz-Container interagiert werden kann. Gleiche Systematik wie <em>interactable</em> (s.o.), also <strong>&quot;c&quot;</strong>, <strong>&quot;p&quot;</strong>, <strong>&quot;s&quot;</strong> in beliebiger Kombination.</li>
+<li>Ein leerer String macht den Referenz-Container vollständig unbedienbar.</li>
+<li>Aus Kompatibilitätsgründen wird auch noch ein bool akzeptiert (<strong>true</strong> entspricht <strong>&quot;cps&quot;</strong>).</li>
+<li>default &quot;&quot; (nicht bedienbar)</li>
+</ul>
+</li>
+</ul>
+<h3 id="zustand-thales">Zustand: thales</h3>
+<h4 id="geometrie">Geometrie</h4>
+<ul>
+<li>A, B, C: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Startpositionen der drei Dreieckspunkte. C ist der bewegliche Punkt.</li>
+<li>default [7,5], [18,10], [12,12]</li>
+</ul>
+</li>
+<li>amoveable, bmoveable: <em>&lt;bool&gt;</em>
+<ul>
+<li>Ob A bzw. B ebenfalls bewegt werden können.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>softc: <em>&lt;bool&gt;</em>
+<ul>
+<li>Weiche Konstruktion: Wenn <strong>true</strong>, klebt C nicht am Thaleskreis und kann frei bewegt werden. Bei <strong>false</strong> bleibt C auf dem Kreis.</li>
+<li><strong>Achtung</strong>: Die Bedeutung wurde in Version 7 umgedreht. Frühere Konfigurationen mit explizitem <em>softc</em> verhalten sich danach umgekehrt.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>snap: <em>&lt;bool&gt;</em>
+<ul>
+<li>Beim Bewegen von C auf den rechten Winkel einrasten.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>snappingdifference: <em>&lt;float&gt;</em>
+<ul>
+<li>Fangbereich um den rechten Winkel, in Grad.</li>
+<li>default 5</li>
+</ul>
+</li>
+<li>generalsnapsize: <em>&lt;float&gt;</em>
+<ul>
+<li>Zusätzliches Einrasten auf Vielfache dieses Winkels, in Grad. 0 schaltet es ab.</li>
+<li>default 5</li>
+</ul>
+</li>
+<li>generalsnapdifference: <em>&lt;float&gt;</em>
+<ul>
+<li>Fangbereich dafür, in Grad.</li>
+<li>default .5</li>
+</ul>
+</li>
+<li>drawcircle: <em>&lt;bool&gt;</em>
+<ul>
+<li>Thaleskreis zeichnen.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawcenter: <em>&lt;bool&gt;</em>
+<ul>
+<li>Mittelpunkt M zeichnen.</li>
+<li>default true</li>
+</ul>
+</li>
+</ul>
+<h4 id="bedienelemente-1">Bedienelemente</h4>
+<ul>
+<li>showstampbutton, showundobutton, showresetbutton, showconstructionbutton, showhelpbutton: <em>&lt;bool&gt;</em>
+<ul>
+<li>Einzelnes Ein- und Ausblenden der Schaltflächen (Stempel, Rückgängig, Zurücksetzen, Konstruktionsart, Hilfe).</li>
+<li>default true</li>
+</ul>
+</li>
+<li>drawtogglealpha, drawtogglebeta, drawtogglegamma, drawtogglegamma1, drawtogglegamma2, drawtogglevalues: <em>&lt;bool&gt;</em>
+<ul>
+<li>Einzelnes Ein- und Ausblenden der Winkel-Schalter.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>showalpha, showbeta, showgamma, showgamma1, showgamma2, showanglevalues, showhelp: <em>&lt;bool&gt;</em>
+<ul>
+<li>Zustand dieser Schalter beim Start. Wirkt auch dann, wenn der jeweilige Schalter ausgeblendet ist.</li>
+<li>default false, außer <em>showgamma</em> und <em>showhelp</em> (true)</li>
+</ul>
+</li>
+</ul>
+<h4 id="stempeln-und-spur">Stempeln und Spur</h4>
+<ul>
+<li>stampmode: <em>&lt;string&gt;</em>
+<ul>
+<li><strong>&quot;stamp&quot;</strong> setzt einzelne Stempel, <strong>&quot;trace&quot;</strong> zeichnet eine durchgehende Spur.</li>
+<li>default &quot;stamp&quot;</li>
+</ul>
+</li>
+<li>stampbuttonimage: <em>&lt;string&gt;</em>
+<ul>
+<li>Symbol der Schaltfläche, <strong>&quot;stamp&quot;</strong> oder <strong>&quot;measure-angle&quot;</strong>.</li>
+<li>default &quot;stamp&quot;</li>
+</ul>
+</li>
+<li>stickstampbuttontopoint: <em>&lt;bool&gt;</em>
+<ul>
+<li>Stempel-Schaltfläche an Punkt C heften statt an fester Position.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>showstampedpoints: <em>&lt;bool&gt;</em>
+<ul>
+<li>Gestempelte Punkte anzeigen.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>showstampedvalues: <em>&lt;bool&gt;</em>
+<ul>
+<li>Liste der gemessenen Winkel anzeigen. Die Liste ist einspaltig und bei Bedarf scrollbar.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>jumptostamp: <em>&lt;bool&gt;</em>
+<ul>
+<li>Ein Klick auf einen Listeneintrag setzt C auf die zugehörige Position zurück.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>stampgradient: <em>&lt;bool&gt;</em>
+<ul>
+<li>Stempel in einem Farbverlauf einfärben, abhängig vom Abstand zum Mittelpunkt M.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>stampgradientstrength: <em>&lt;float&gt;</em>
+<ul>
+<li>Stärke des Verlaufs, aus [0,1]. 0 = kein Verlauf.</li>
+<li>default .8</li>
+</ul>
+</li>
+<li>stampcolor: <em>[&lt;float&gt;, &lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Farbe der Stempel, wenn <em>stampgradient</em> false ist.</li>
+<li>default [.8,.2,.2]</li>
+</ul>
+</li>
+<li>drawtrace: <em>&lt;bool&gt;</em>
+<ul>
+<li>Ob die Spur beim Start bereits aufgezeichnet wird.</li>
+<li><strong>Hinweis</strong>: Bereits gezeichnete Spurabschnitte bleiben sichtbar, auch wenn die Aufzeichnung pausiert wird.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>tracesize: <em>&lt;float&gt;</em>
+<ul>
+<li>Strichstärke der Spur.</li>
+<li>default 4</li>
+</ul>
+</li>
+<li>tracecolor: <em>&lt;string&gt;</em>
+<ul>
+<li>Farbe der Spur.</li>
+<li>default DIVOBLUE</li>
+</ul>
+</li>
+<li>traceminstep: <em>&lt;float&gt;</em>
+<ul>
+<li>Mindestabstand zwischen zwei Spurpunkten. Verhindert, dass bei ruhendem Stift unnötig viele Punkte entstehen.</li>
+<li>default .1</li>
+</ul>
+</li>
+</ul>
+<h4 id="winkelanzeige-und-beschriftung">Winkelanzeige und Beschriftung</h4>
+<ul>
+<li>showcurrentanglevalue: <em>&lt;bool&gt;</em>
+<ul>
+<li>Aktuellen Wert von Gamma in einem Feld anzeigen.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>anglevaluesinline: <em>&lt;bool&gt;</em>
+<ul>
+<li>Winkelwerte direkt am Winkel anzeigen statt nur in der Liste.</li>
+<li>default true</li>
+</ul>
+</li>
+<li>displayanglefully: <em>&lt;bool&gt;</em>
+<ul>
+<li>In der Liste &quot;γ = &quot; mit anzeigen statt nur den Wert.</li>
+<li>default false</li>
+</ul>
+</li>
+<li>displayanglefontsize: <em>&lt;int&gt;</em>
+<ul>
+<li>Schriftgröße der Winkelliste.</li>
+<li>default 24</li>
+</ul>
+</li>
+<li>defaultanglesizes: <em>[&lt;float&gt; x5]</em>
+<ul>
+<li>Radien der fünf Winkelbögen, in der Reihenfolge [α, β, γ, γ₁, γ₂].</li>
+<li>default [3,3,2,3,3]</li>
+</ul>
+</li>
+<li>anglelabelsize: <em>&lt;int&gt;</em>
+<ul>
+<li>Basis-Schriftgröße der Winkelbeschriftungen.</li>
+<li>default 18</li>
+</ul>
+</li>
+<li>anglelabelgammafactor: <em>&lt;float&gt;</em>
+<ul>
+<li>Faktor, um den γ größer beschriftet wird als die übrigen Winkel.</li>
+<li>default 1.3</li>
+</ul>
+</li>
+<li>anglelabelminscale: <em>&lt;float&gt;</em>
+<ul>
+<li>Untergrenze der Verkleinerung bei kleinen Winkeln. <strong>1</strong> schaltet die Skalierung ganz ab.</li>
+<li>default .65</li>
+</ul>
+</li>
+</ul>
+<h4 id="darstellung-1">Darstellung</h4>
+<ul>
+<li>pointlabelsize: <em>&lt;int&gt;</em>
+<ul>
+<li>Schriftgröße der Punktnamen.</li>
+<li>default 24</li>
+</ul>
+</li>
+<li>linelabelsize: <em>&lt;int&gt;</em>
+<ul>
+<li>Schriftgröße der Seitennamen.</li>
+<li>default 18</li>
+</ul>
+</li>
+<li>linesize: <em>&lt;float&gt;</em>
+<ul>
+<li>Strichstärke des Dreiecks.</li>
+<li>default 1.5</li>
+</ul>
+</li>
+<li>circlelinesize: <em>&lt;float&gt;</em>
+<ul>
+<li>Strichstärke des Kreises.</li>
+<li>default 1.5</li>
+</ul>
+</li>
+<li>circlelinecolor: <em>[&lt;float&gt;, &lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Farbe des Kreises.</li>
+<li>default .3*[1,1,1] (dunkelgrau)</li>
+</ul>
+</li>
+<li>imgoffset: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Versatz der Symbole auf den Schaltflächen.</li>
+<li>default [0,.65]</li>
+</ul>
+</li>
+</ul>
+<h4 id="positionen">Positionen</h4>
+<p>Alle folgenden Parameter werden mit <strong>NADA</strong> automatisch positioniert. Ein expliziter Wert überschreibt die automatische Ausrichtung – dann ist die Position allerdings nicht mehr an den sichtbaren Bereich gekoppelt und muss bei anderem Ausschnitt nachgezogen werden.</p>
+<ul>
+<li>toolbarmargin: <em>&lt;float&gt;</em>
+<ul>
+<li>Randabstand der Schaltflächenleiste.</li>
+<li>default .3</li>
+</ul>
+</li>
+<li>backbuttoncoord, resetbuttoncoord, stampbuttoncoord, constructionbuttoncoord, helpbuttoncoord: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Positionen der einzelnen Schaltflächen.</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>togglerefcoord: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Bezugspunkt der Winkel-Schalter-Spalte.</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>gammadisplaycoord: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Position der aktuellen Winkelanzeige.</li>
+<li>default NADA</li>
+</ul>
+</li>
+<li>gammalistcoord: <em>[&lt;float&gt;, &lt;float&gt;]</em>
+<ul>
+<li>Position der Winkelliste. Ohne Angabe steht sie rechtsbündig am Rand.</li>
+<li>default NADA</li>
+</ul>
+</li>
+</ul>
+<h2 id="validierung">Validierung</h2>
+<p>Je nach Komponente werden verschiedene Ergebnisse zurückgeliefert, welche zur Validierung genutzt werden können. Mindestens liefert eine Komponente ihre Zustandsparameter wieder als Ergebnis zurück. Der Zugriff erfolgt grundsätzlich über &lt;komponentenname&gt;\{RESULT_&lt;bezeichner&gt;}, e.g. &quot;<strong>meinvam</strong>\{RESULT_<strong>x</strong>}. Es können die üblichen Validierungsoperatoren (GREATER, EQUALS, ...) verwendet werden.
+Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zustandsbeschreibung, dazu siehe <a href="#referenzierung-divomath">Referenzierung</a>):</p>
+<h3 id="validierung-distributive">Validierung: distributive</h3>
+<p>(seit 5.2.3) Folgende Bezeichner können aberufen werden:</p>
+<ul>
+<li>rows            : Anzahl der eingestellten Zeilen</li>
+<li>cols            : Anzahl der eingestellten Spalten</li>
+<li>coloredrows     : Anzahl der gefärben Zeilen</li>
+<li>coloredcols     : Anzahl der gefärben Spalten</li>
+<li>cuthorizontally : bool, ob das Feld horizontal geschnitten ist</li>
+<li>cutvertically   : bool, ob das Feld vertikal geschnitten ist</li>
+<li>groupby         : Grupperinung der Elemente (ist eins von &quot;ROW&quot;, &quot;COLUMN&quot;, &quot;NONE&quot;)</li>
+</ul>
+<h3 id="validierung-divisors">Validierung: divisors</h3>
+<p>(seit 7) Eigene Validierungsbezeichner gibt es nicht. Alle Zustandsparameter werden aber als Ergebnis zurückgemeldet und können darum zur Validierung und Referenzierung genutzt werden, insbesondere:</p>
+<ul>
+<li>blobs   : Anzahl der Plättchen</li>
+<li>divisor : eingestellte Gruppengröße</li>
+</ul>
+<h3 id="validierung-numbercards">Validierung: numbercards</h3>
+<p>(seit 1.0.0) Die Bezeichner beginnen stets mit &quot;nc&quot; (numbercard) gefolgt von einer Zahl (1,2,...), welche die Zahlenkarte identifiziert. Die Bezeichnungen beginnen entsprechend mit nc1, nc2, ... in Abhängigkeit davon, auf welchen Wert der Parameter cards im <a href="#1-numbercards">Zustand</a> gesetzt wurde. Diesem Prefix folgt ein Unterstrich (_), wiederum gefolgt von einem Bezeichner.</p>
+<ul>
+<li>nc1 &lt;int&gt;:
+<ul>
+<li>Wert der Zahlenkarte</li>
+</ul>
+</li>
+<li>nc1_E &lt;int&gt;:
+<ul>
+<li>Wert der Einerstelle der Karte</li>
+</ul>
+</li>
+<li>nc1_Z, nc1_H, nc1_T, nc1_ZT, nc1_HT, nc1_M, nc1_ZM, nc1_HM &lt;int&gt;:
+<ul>
+<li>Analog für Zehner, ..., Hundermillion(er)</li>
+<li>Ab Milliardenstelle bezeichnung numerisch (10, 11, 12...)</li>
+</ul>
+</li>
+<li>nc1_unfolded &lt;bool&gt;:
+<ul>
+<li>Karte aufklappt (true) oder zusammengefaltet (false)</li>
+</ul>
+</li>
+</ul>
+<h3 id="validierung-percentagebar">Validierung: percentagebar</h3>
+<blockquote>
+<p>BISHER KEINE</p>
+</blockquote>
+<h3 id="validierung-thales">Validierung: thales</h3>
+<blockquote>
+<p>BISHER KEINE</p>
+</blockquote>
+<h3 id="validierung-strapwork">Validierung: strapwork</h3>
+<p>(seit 1.0.0, letzte 3.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der abzufragende Schlüssel einer Position enthält die Bandnummer und die Position, genauer ist der Schlüssel &quot;&lt;bandnummer&gt;.&lt;position&gt;&quot;.</p>
+<p>Ist das <strong>fünfte</strong> Polygon im <strong>ersten</strong> Band gesucht ist der Schlüssel entsprechend &quot;<strong>1.5</strong>&quot;. Der zugehörige Wert ist die ID des &quot;Basis-Polygons&quot;, sprich desjenigen Polygons aus der unteren Zeile, das an dieser Stelle steht. diese werden von links nach rechts von 1 an durchnummeriert. Kommt für den Schlüssel <strong>1.5</strong> also der Wert <strong>3</strong> zurück, befindet sich an dieser Stelle das dritte Basis-Polygon (von links). Kommt als Wert eine <strong>0</strong> zurück ist an der Stelle ein Trennstrich.</p>
+<p>Zusätzlich kann eine ganze Reihe referenziert werden analog zu oben als String. Soll in der 1. Zeile (Schlüssel: <strong>row1</strong>)beispielsweise eine Folge von 5 mal dem <em>ersten</em> Polyon stehen dann wäre der zugehörige Wert <strong>11111</strong>. Bei mehrreigen Bändern sind die Schlüssel der Zeilen entsprechend nummeriert als <strong>row1</strong>, <strong>row2</strong> etc.</p>
+<h2 id="referenzierung-divomath">Referenzierung (divomath)</h2>
+<p>Jede Komponente kann in ihrem Zustand grundsätzlich Werte anderer Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter <a href="#validierung">Validierung</a> aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM nach Bezeichnern, die denen der unter <a href="#validierung">Validierung</a> aufgeführten entsprechen, aber mit zwei Unterstrichen (&quot;__&quot;) beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung <em>&quot;size&quot;</em>, dann kann dieser durch <em>&quot;__size&quot;</em> überschrieben werden.</p>
+<p><strong>Wo die Referenzen stehen dürfen</strong>: Die Referenzen dürfen nur <strong>top level</strong> definiert werden, nicht im cindyjs Objekt. Dennoch sucht CindyJS auch dort nach Referenzen. Diese werden aber scheinbar nicht korrekt weitergereicht.</p>
+<p><strong>Priorität</strong>: Ein Wert, der als Referenz gesetzt wurde, schlägt den gespeicherten Zustand und die Editor-Vorgabe. Eine eigene, auf derselben Folie bereits abgegebene Antwort schlägt allerdings auch die Referenz.</p>
+<h3 id="beispiel-2">Beispiel</h3>
+<p>Am Bsp. der numbercards: Es seien zwei Folien gegegeben mit den Namen <em>&quot;ZAHLENKARTEN&quot;</em> und <em>&quot;ZAHLENKARTEN-2&quot;</em> auf denen jeweils die VAM-Komponenten <em>&quot;vam-karten&quot;</em> bzw. <em>&quot;vam-karten2&quot;</em> angelegt sind. Nachfolgend ein möglicher Zustand von <em>&quot;vam-karten2&quot;</em>, um auf das vorige VAM zuzugreifen.</p>
+<pre class="hljs"><code><div><span class="hljs-comment"># --- Im Zustand von &quot;vam-karten2&quot;</span>
+<span class="hljs-comment"># Die Referenzen stehen im cindyjs-Objekt und ueberschreiben die</span>
+<span class="hljs-comment"># darunter definierten Werte.</span>
+<span class="hljs-attr">__value:</span> <span class="hljs-string">ZAHLENKARTEN/vam-karten/{RESULT_value}</span>
+<span class="hljs-attr">__unfold:</span> <span class="hljs-string">ZAHLENKARTEN/vam-karten/{RESULT_unfold}</span>
+<span class="hljs-attr">cindyjs:</span>
+  <span class="hljs-attr">cards:</span> <span class="hljs-number">1</span>
+  <span class="hljs-attr">x:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-number">3</span>
+  <span class="hljs-attr">y:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-number">15</span>
+  <span class="hljs-attr">value:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-number">12123</span>
+  <span class="hljs-attr">edit:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">tttff</span>
+  <span class="hljs-attr">unfold:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">color:</span> <span class="hljs-literal">false</span>
+  <span class="hljs-attr">colortoggle:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">alpha:</span> <span class="hljs-number">0.5</span>
+  <span class="hljs-attr">separator:</span> <span class="hljs-string">.</span>
+</div></code></pre>
+<p>Die beiden <code>__</code>-Zeilen sind dabei die Referenz auf <em>&quot;vam-karten&quot;</em>. Dort wird der <em>&quot;value&quot;</em> der Zahlenkarte übernommen, sowie der Zustand, ob die Karte eingeklappt ist oder nicht. Dies überschreibt auch die Zustandsdefinition weiter unten, in der <em>&quot;value&quot;</em> auf <code>12123</code> gesetzt wird und <em>&quot;unfold&quot;</em> auf <code>true</code>.</p>
+<p>Dieselben Referenzen können auch auf Top-Level stehen (also neben <code>cindyjs:</code> statt darin). Das funktioniert im Viewer, im Editor aber nicht – siehe Hinweis oben.</p>
+<h3 id="sonstiges">Sonstiges</h3>
+<p>Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. <strong>Diese Funktion ist aber nicht getestet!</strong></p>
+<h2 id="changelog">Changelog</h2>
+<h3 id="v7">v7</h3>
+<ul>
+<li>GENERAL:
+<ul>
+<li>Build-Prozess vereinheitlicht: <strong>build.py</strong> erzeugt aus einem Cinderella-Export und der zugehörigen .cdy beide Zielformate (gepatchte HTML für abako, vam.cdyjs für divomath) in ein out-Verzeichnis</li>
+<li>Skripte werden aus dem .cdy-Archiv gelesen, nicht mehr aus dem HTML-Export (der lässt Skripte weg)</li>
+<li>HTML-Export wird beim Build gepatcht: touch-action gegen das iPadOS-&quot;Kritzeln&quot;, <strong>?full</strong> für fensterfüllende Darstellung, <strong>?rect=</strong> zur Wahl des sichtbaren Weltausschnitts – eine Datei statt zwei</li>
+</ul>
+</li>
+<li>FRAMEWORK:
+<ul>
+<li><strong>ENVIRONMENTALPARAMS</strong> als einheitliche Konfigurationsschnittstelle. <strong>defaultstateto()</strong> und die separaten <code>if(!ISDIVOMATH, ...)</code>-Blöcke entfallen in allen VAMs, stattdessen <strong>default to()</strong></li>
+<li><strong>VISIBLERECT</strong> als Layout-Bezugsrechteck eingeführt (mit <strong>VRTOPLEFT</strong>, <strong>VRTOPRIGHT</strong>, <strong>VRBOTTOMLEFT</strong>, <strong>VRBOTTOMRIGHT</strong>). In divomath fest, sonst aus dem tatsächlichen Ausschnitt abgeleitet. Alle VAMs positionieren daran statt an screenbounds()</li>
+<li><strong>FONTSCALE</strong> eingeführt: Schriftgrößen sind in Pixeln definiert, alles andere in Welteinheiten – der Faktor hält das Verhältnis unabhängig von Canvasgröße und Ausschnitt konstant</li>
+<li><strong>to json()</strong> und <strong>escape json()</strong> hinzugefügt. Der divomath-State wird jetzt explizit serialisiert statt per Stringverkettung – Cinderella und CindyJS behandelten Strings in Dicts unterschiedlich, was in divomath zu Syntaxfehlern führte. Die VAMs setzen darum keine QUOTEs mehr von Hand</li>
+<li><strong>divomath put result()</strong> serialisiert den Wert ebenfalls über to json(). Undefined und Listen kommen damit korrekt an</li>
+<li>Referenzierung: Dunder-Schlüssel werden jetzt im cindyjs-Objekt <strong>und</strong> auf Top-Level gesucht (cindyjs gewinnt), und das Präfix wird beim Ablegen entfernt – vorher landete der Wert unter einem Schlüssel, den niemand liest</li>
+<li>Textausgabe neu gebaut: <strong>draw label()</strong> und <strong>draw boxedlabel()</strong> mit <strong>mod'</strong>-Modifier-Konvention (mod'font, mod'color, mod'bold, mod'alpha, mod'bgcolor). <strong>draw textbox()</strong> bleibt als Alias erhalten</li>
+<li>Button: Label wird jetzt korrekt in der Hitbox zentriert, unabhängig von Schriftart und -größe. Gezeichnete Symbole (<strong>drawplus</strong>, <strong>drawminus</strong>, <strong>drawcross</strong>) statt Sonderzeichen, die sich nicht sauber zentrieren lassen</li>
+<li>ImageButton: Bildgröße wird aus der Buttongröße abgeleitet (<strong>imgfill</strong>) statt über einen festen scale-Faktor, der von der Auflösung abhing</li>
+<li><strong>list()</strong>: Objekt-Zweig wieder entfernt – er zerlegte ein einzelnes VAM-Objekt in seine Feldwerte. Für diesen Zweck <strong>values()</strong> verwenden</li>
+</ul>
+</li>
+<li>VAM:
+<ul>
+<li><strong>thales</strong> (neu): Satz des Thales mit beweglichem Punkt C, Winkelbögen, Stempeln und Spur
+<ul>
+<li>Winkelliste einspaltig und scrollbar, folgt automatisch neuen Einträgen</li>
+<li>Winkel- und Seitenbeschriftungen über generische Funktionen, Position hängt jetzt am Öffnungswinkel statt an handjustierten Offsets</li>
+<li>Beschriftungen skalieren einheitlich und gedämpft (<strong>anglelabelsize</strong>, <strong>anglelabelgammafactor</strong>, <strong>anglelabelminscale</strong>)</li>
+<li>Spur als Segmente: Pausieren löscht das Gezeichnete nicht mehr, Undo entfernt genau den letzten Abschnitt (<strong>tracesize</strong>, <strong>tracecolor</strong>, <strong>traceminstep</strong>)</li>
+<li>Farbverlauf der Stempel korrigiert und konfigurierbar (<strong>stampgradient</strong>, <strong>stampgradientstrength</strong>, <strong>stampcolor</strong>)</li>
+<li><strong>softc</strong> dreht seine Bedeutung um: true = weiche Konstruktion (<strong>Achtung</strong>, bestehende Konfigurationen)</li>
+<li>Reset- und Rückgängig-Button einzeln ausblendbar (<strong>showundobutton</strong>, <strong>showresetbutton</strong>), <strong>showhistorybuttons</strong> entfernt</li>
+</ul>
+</li>
+<li>percentagebar:
+<ul>
+<li>Fix: <strong>numberofbars</strong> und alle übrigen URL-Parameter wirkten nicht mehr (ENVIRONMENTALPARAMS wurde nach dem Einlesen überschrieben)</li>
+<li>Fix: Snapbar wirkte nur auf den letzten Streifen; richtet sich jetzt nach den Schritten des jeweiligen Streifens und rastet nicht mehr ein, wenn die Schritte ausgeblendet sind</li>
+<li>Bögen und Schrittanzeige gekoppelt</li>
+<li><strong>alwaysdrawarches</strong> ist jetzt Startwert des Schalters statt permanenter Überschreibung – der Schalter bleibt sichtbar und bedienbar</li>
+<li><strong>overflow</strong> und <strong>hidetoggles</strong> als Parameter hinzugefügt</li>
+<li>Fix: Overflow-Verhalten der Plus-Taste war inkonsistent zu Ziehen und Direkteingabe</li>
+</ul>
+</li>
+<li>distributive:
+<ul>
+<li>Termdarstellung generisch aufgebaut: Klammern verschwinden, sobald zerschnitten wurde; nach dem Zusammenrücken auf &quot;nix&quot; erscheinen die Anzahlen statt der Malaufgaben</li>
+<li><strong>requiregrouping</strong> hinzugefügt: Färben und Zerschneiden erst nach Wahl einer Zeilen- oder Spaltenstruktur</li>
+<li>Fix: <strong>coloredcolindex</strong> wurde beim Speichern nicht zurückgerechnet – der Wert kippte bei jedem Folienwechsel zwischen zwei Zuständen</li>
+<li>Fix: Schnitte wurden beim Wiederherstellen umgeschaltet statt gesetzt</li>
+<li>Fix: <strong>cuthorizontally</strong>/<strong>cutvertically</strong> waren nicht auswertbar, wenn sie false waren</li>
+<li>Performance: Atome werden als Polygonzug gezeichnet statt als CSG-Vereinigung aus Kreisen und Rechtecken</li>
+</ul>
+</li>
+<li>strapwork:
+<ul>
+<li>Fix: Container ragte über den sichtbaren Bereich hinaus; die Platzberechnung greift jetzt auch bei endlichen Limits</li>
+<li>Fix: Zu wenige Limit-Einträge führten zu Index-Fehlern</li>
+<li>Fix: Validierung meldete an Trennerpositionen eine 0 statt des Polygons – Polygon und Trenner nutzten denselben Schlüssel</li>
+<li>Fix: <strong>rcstate</strong> richtete sich nach <strong>rows</strong> statt nach <strong>rcrows</strong></li>
+<li><strong>rcinteractable</strong> akzeptiert jetzt dieselbe Schreibweise wie <strong>interactable</strong></li>
+</ul>
+</li>
+<li>divisors:
+<ul>
+<li>Fix: Plättchen wurden keinem Band zugeordnet, Endlosschleife beim Umsortieren</li>
+<li>UI unterhalb der Bänder hängt an VISIBLERECT statt an festen Koordinaten</li>
+<li>Rechnung wird als ein Text gesetzt statt aus vier gemessenen Fragmenten</li>
+<li><strong>fontsize</strong> hinzugefügt</li>
+</ul>
+</li>
+<li>numbercards:
+<ul>
+<li>Fix: Bei mehreren Karten erbten spätere Karten die Stellenkarten der früheren</li>
+<li>Fix: Klicks auf die Plus/Minus-Knöpfe der Stellenkarten wurden nur zufällig erkannt</li>
+<li>Fix: Schulschrift wurde nie verwendet (falscher Konstantenname)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v5194">v5.194</h3>
+<ul>
+<li>GENERAL:
+<ul>
+<li>Versionssystematik geändert zu <main>.<build> (momentan version 5, build 194)</li>
+<li>Build erhöht sich über Versionen hinweg</li>
+</ul>
+</li>
+<li>FRAMEWORK:
+<ul>
+<li>helper functions:
+<ul>
+<li>Funktionen zum Zeichnen von Kreisbögen (basierend auf einem Winkel) hinzugefügt <strong>arc(), drawarc(), drawclosedarc(), drawangle()</strong></li>
+<li>Convenience Funktionen (<strong>vectorlength(), normalize(), todeg(), torad()</strong>)</li>
+<li>Convenience overwrite für drawtextbox hinzugefügt</li>
+<li>numerals Funktion geändert: GIbt jetzt numeral von IRGENDEINER Zahl zurück nach Normung des Dudens (hinsichtlich Leerzeichen etc.)</li>
+<li>Wrapper für divomath Funktionen hinzugefügt (<strong>divomathPutResult()</strong> für <strong>divomathAddResult()</strong>)</li>
+<li>Sortierung in <strong>defaultstateto()</strong> geändert, sodass zuerst letztes divomath result herangezogen wird, danach erst overwrites</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>VAM:
+<ul>
+<li>percentagebar:
+<ul>
+<li>Fix: Toggle Button &quot;label&quot; zeigte nicht die angegebene Einheit</li>
+<li>Fix: &quot;Eingabe P&quot; Textfeld zeigte nicht die richtige Zahl</li>
+<li>Fix: Verschiedene falsche Berechnungen bei der Interaktion der verschiedenen TextInputs</li>
+<li>Parameter zur Konfiguration der Position des Prozentstreifens hinzugefügt</li>
+</ul>
+</li>
+<li>strapwork:
+<ul>
+<li>Resizing Verhalten des Reset Buttons geändert</li>
+<li>Resizing Verhalten des Separators geändert</li>
+<li>Fix: Separator reportete nicht richtig seine Position in Relation zu den Polygonen seines Containers</li>
+<li>Reset Button resettet jetzt auf referenzierten Zustand</li>
+<li>Handle zum individuellen Konfigurieren der Skalierung des Separators hinzugefügt (<strong>sepsize</strong>)</li>
+<li><strong>interactable</strong> handle zu String geändert, damit verschiedene Teile darüber (nicht-)interaktiv geschaltet werden können</li>
+<li>Größeren Kreis and die Hitbox des Separators gebaut zum einfacheren Greifen</li>
+<li>Fix: Separator übermittelt den State wo er gedropped wird, nicht wo er danach einsortiert wird (selbst wenn an der Stelle keine Polygone sind)</li>
+<li>Zeichenreihenfolge der Polygone geändert</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v523">v5.2.3</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>distributive:
+<ul>
+<li>divomath state und result reporting implementiert (Validierung und Referenzierung)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v520">v5.2.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>distributive:
+<ul>
+<li>Init Zustand <strong>groupby</strong>: Initialer Gruppierungszustand</li>
+<li>Init Zustand <strong>expressionposition</strong>: Position der Term-Anzeige</li>
+<li>Init Zustand <strong>expressionmoveable</strong>: Term beweglich oder nicht</li>
+<li>Init Zustand <strong>verbalposition</strong>: Position der verbalen Termbeschreibung</li>
+<li>Init Zustand <strong>verbalmoveable</strong>: verbale Termbeschreibung beweglich oder nicht</li>
+<li>visuelle Linie zeigt Zerschnitten-Zustand zusätzlich zu Abstand an</li>
+<li>Darstellung der Texte geändert</li>
+<li>Fix: einige String URL-Parameter nicht mehr parsen (gibt sonst NADA)</li>
+<li>gelöscht: Init Zustand <strong>lblpadding</strong></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v510">v5.1.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>distributive:
+<ul>
+<li>Init Zustand <strong>fontsize</strong>: Schriftgröße für Term und verbale Beschreibung</li>
+<li>Init Zustand <strong>drawexpression</strong>: Term anzeigen</li>
+<li>Init Zustand <strong>drawverbal</strong>: Verbale Beschreibung des Terms anzeigen</li>
+<li>Init Zustand <strong>drawtoolbutton</strong>: Tool Button (nicht) anzeigen</li>
+<li>Init Zustand <strong>tool</strong>: Bei Start eingestelltes Tool</li>
+<li>Init Zustand <strong>toolbuttonx</strong>: x-Koordinate des Tool Buttons</li>
+<li>Init Zustand <strong>toolbuttony</strong>: y-Koordinate des Tool Buttons</li>
+<li>Init Zustand <strong>groupingtype</strong>: Welche Gruppierungen sind mit Klick möglich (Keine, Zeile, Spalte, Beide)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v500">v5.0.0</h3>
+<ul>
+<li>FW:
+<ul>
+<li>constants:
+<ul>
+<li>Bild von kreisförmigen Button zu ICONS hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CLASS:
+<ul>
+<li>Button:
+<ul>
+<li>Subklasse ImageButton() hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>VAM:
+<ul>
+<li>strapwork:
+<ul>
+<li>Fix: Scrollbar überlagert den Reset Button</li>
+<li>Fix: Scrollbar wird nicht ordnungsgemäß beim Start angezeigt, wenn Container zu voll</li>
+<li>Dreieck-Polygon wurde als zu groß geändert. Skaliert mit .9</li>
+<li>Init Zustand <strong>patternstate</strong>: Zustand des Patterncontainers</li>
+<li>Init Zustand <strong>drawresetbutton</strong>: Reset Button (nicht) anzeigen</li>
+<li>Init Zustand <strong>interactable</strong>: Mit Container kann (nicht) interagiert werden</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v430">v4.3.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>strapwork:
+<ul>
+<li>Referenzcontainer hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v410">v4.1.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>distributive:
+<ul>
+<li>neue Logik für das Färben. Jetzt färbt das Zeichnen einer Zeile die zugehörigen Spalten und umgekehrt.</li>
+<li>divomath Zustandskontrollelemente hinzugefügt.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FW:
+<ul>
+<li>constants:
+<ul>
+<li>VALUEMAP hinzugefügt, welche die Zahlwörter den Zahlen von 1 bis 12 zuordnet</li>
+</ul>
+</li>
+<li>helper functions:
+<ul>
+<li>numerals(&lt;int&gt;) hinzugefügt: Gibt von einer Ganzzahl das zugehörige Zahlwort zurück, wenn die übergebene Ganzzahl kleiner als 13 ist. Gibt ansonsten die Zahl selbst (als Zahl) zurück.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v400">v4.0.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>neues VAM: (percentagebar, ) distributive</li>
+<li>divisors:
+<ul>
+<li>Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert</li>
+</ul>
+</li>
+<li>strapwork:
+<ul>
+<li>Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert</li>
+<li>Fix: Separator wird in Ergebnis für ganze Zeile nicht mit reportet.</li>
+<li>Fix: Polygone wurden falsch umgeordnet, wenn mit Mustercontainer eingefügt</li>
+<li>divomathUpdateResults() wird auch bei Update eines Separators ausgeführt</li>
+<li>Hintergrund der Basispolygone von Gold zu einem dunkelgrauen Rand geändert</li>
+<li>Kopien des Separators in hellerem Grau als Ur-Separator</li>
+<li>Reset Button resettet jetzt auch Separators</li>
+<li>Reset Button setzt in divomath auf den über den Editor konfigurierten Zustand zurück, nicht den letzten Zustand beim Folienaufruf</li>
+<li>PatternContainer ist jetzt Multiline</li>
+<li>PatternContainer kann jetzt ein Limit bekommen, Zustandvariable <strong>patternlimit</strong> hinzugefügt.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CLASS:
+<ul>
+<li>Button:
+<ul>
+<li>Fix: Falsche Farbdarstellung</li>
+<li>Feature: isfloating flag, um Verschiebbarkeit des Buttons zu togglen</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FW:
+<ul>
+<li>draw:
+<ul>
+<li>Debug Infos angepasst</li>
+<li>'firstdraw flag zum tracken, ob erster Aufruf der draw Funktion stattfindet</li>
+</ul>
+</li>
+<li>constants:
+<ul>
+<li>Bilder hinzugefügt und entsprechende Konstante für Bildreferenzen (ICONS)</li>
+<li>CDOT geändert, enthält jetzt Leerzeichen davor und danach</li>
+</ul>
+</li>
+<li>divomathconfig:
+<ul>
+<li>usedivomath als flag für Wechsel zu storyline/web-config hinzugefügt</li>
+<li>'dmdefaultstate hinzugefügt, für direkten Zugriff auf das cindyjs-Objekt aus der divomath Editor Zustandsbeschreibung. Im Gegensatz zu 'dmstate, dem zuletzt gespeicherten Zustand beim Verlassen einer Seite.</li>
+</ul>
+</li>
+<li>helper functions:
+<ul>
+<li>inpoly(): Check hinzugefügt, ob Lösung von linearsolve() definiert ist</li>
+<li>+postValue(): postet eine Nachricht zur KOmmunikation mit dem Browser (oder dem SL-Player)</li>
+<li>+incircle(): Checkt, ob ein Punkt in einem Kreis liegt</li>
+<li>+getURLparam() und getURLparams(): Holt URL Suchparameter aus URL und übergibt gibt sie zurück</li>
+</ul>
+</li>
+<li>configuration:
+<ul>
+<li>+'urlparams: Speichert alle URL Suchparameter als Dict.</li>
+<li>vam switch für auszuspielendes VAM über 'urlparams konfigurierbar</li>
+<li>'debuglevel ebenfalls</li>
+<li>debugging output hinzugefügt</li>
+</ul>
+</li>
+<li>mousedown:
+<ul>
+<li>variable mousedown auf true setzen</li>
+</ul>
+</li>
+<li>mouseup:
+<ul>
+<li>variable mousedown auf false setzen</li>
+</ul>
+</li>
+<li>keydown:
+<ul>
+<li>&quot;k/K&quot;: manueller Aufruf von divomathUpdateResults()</li>
+<li>&quot;+/-&quot;: Inkrementieren und Dekrementieren von 'debuglevel (nur Numblock?)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>build Prozess des divomath codes in separates Skript ausgelagert</li>
+</ul>
+<h3 id="v310">v3.1.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>divisors:
+<ul>
+<li>Fix: UI unten wird durch eine waagerechte Gerade optisch vom oberen Teil getrennt, nicht durch ein Rechteck</li>
+<li>Fix: Blobs werden beim Erzeugen zufällig im Viewport der Welt angelegt, nicht irgendwo auf dem Bildschirm</li>
+<li>Buttons sind jetzt einzeln ausblendbar (<s>drawbuttons</s> --&gt; drawblobbuttons &amp; drawdivbuttons)</li>
+<li>Vertikaler Balken zur Einstellung des Divisors ein-/ausblendbar (drawbar)</li>
+<li>default timing von 1 auf .5 geändert</li>
+<li>fix: Balken verschwindet, wenn die Seite neu geladen wird</li>
+</ul>
+</li>
+<li>numbercards:
+<ul>
+<li>Fix: Alpha Wert wird auf 1 gesetzt, wenn Seite neu aufgerufen wird</li>
+<li>Fix: Zeige immer Placecards, auch beim Start oberhalb der Numbercard</li>
+<li>Fix: Falsche Farben und Farbwechsel, wenn zusammengeklappt wird (war falsch in constants definiert)</li>
+<li>Aufruf von divomathUpdateResults() an Knopfdrücke gebunden</li>
+<li>Workaround für divomath Problem, des nicht korrekten Zurückmeldens der Zustands-Werte implementiert</li>
+</ul>
+</li>
+<li>strapwork:
+<ul>
+<li>Musterfolgencontainer nicht mehr fix in seiner Größe. Größe passt sich an den Inhalt an.</li>
+<li>Aussehen des Separators angepasst (Ellipse statt Kreis)</li>
+<li>Aufruf von divomathUpdateResults() an movepolysintoplace() Methode gebunden</li>
+<li>divoYellow farbenen Hintergrund für Grundpolygone eingefügt</li>
+<li>Layout angepasst (Container unten, Patterncontainer oben)</li>
+<li>Submission reporting für ganze Zeile (als row1, row2, ...) hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FW:
+<ul>
+<li>global drawing:
+<ul>
+<li>Aufruf von divomathUpdateResults() wenn 'fristdraw==true</li>
+</ul>
+</li>
+<li>configuration;
+<ul>
+<li>'firstdraw flag hinzugefügt, die am Ende des drawscripts false gesetzt wird.</li>
+</ul>
+</li>
+<li>constants:
+<ul>
+<li>DIVOYELLOW als Farbe hinzugefügt</li>
+<li>Fix: Farbdefinition von DIVORED und DIVOBLUE getauscht (waren falschherum)</li>
+</ul>
+</li>
+<li>helper functions:
+<ul>
+<li>values() hinzugefügt: Gibt Werte aller Keys eines Objekts als Liste zurück</li>
+<li>ellipse() hinzugefügt: Zeichnet Ellipsen basierend auf Achsen und Drehwinkel</li>
+<li>defaultto() hinzugefügt: Weist einer Variablen einen Standardwert zu</li>
+<li>defaultstateto() hinzugefügt: handlet divomath Zustand Definition aus verschiedenen Quellen</li>
+<li>getboundingbox(3) mit neuer Definition überladen</li>
+<li>label bg aus drawtextbox() entfernt --&gt; funktioniert in HTML aus irgendwelchen Gründen nicht</li>
+<li>tobool() und isbool() Funktionen hinzugefügt um in bool zu konvertieren und Typ einfach zu prüfen</li>
+</ul>
+</li>
+<li><strong>new</strong> <em>keypressed</em>
+<ul>
+<li>hauptsächlich für debugging, zeigt momentan auf Druck von &quot;k&quot; einige hauptsächlich divomath-spezifische Infos an.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CLASS:
+<ul>
+<li>Button:
+<ul>
+<li>Attribute labelheight und fontfamily hinzugefügt</li>
+</ul>
+</li>
+<li>TextInput:
+<ul>
+<li>Attribute labelpadding und fontfamily hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v300">v3.0.0</h3>
+<ul>
+<li>neues VAM: percentagebar als preview</li>
+<li>VAM:
+<ul>
+<li>divisors:
+<ul>
+<li>Konfiguration für Darstellung der UI Buttons hinzugefügt (<strong>drawbuttons</strong>)</li>
+<li>Fix: <strong>color</strong> Konfiguration</li>
+</ul>
+</li>
+<li>numbercards:
+<ul>
+<li>Farbbutton geändert. Ist jetzt grau, wenn auch die Karten grau sind und farbig, wenn die Karten farbig sind.</li>
+<li>Klickverhalten der Numbercards geändert:
+<ul>
+<li>Kinder Placecards werden nicht mehr nach der Animation gelöscht um eine Gesamtkarte zu bilden. Stattdessen bleiben die Placecards erhalten werden nur in der Position animiert. (~ Zeile 503, setpropertylater() auskommentiert)</li>
+<li>Farben werden auch nicht mehr gefadet beim aus- und einklappen. Placecards (und Farben) sind auch im zusammengeklappten Zustand sichtbar. (~ Zeilen 523 &amp; 562 auskommentiert, Animationskonstrukt aber erhalten)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>strapwork:
+<ul>
+<li>RegPolys sind &quot;gleichgroß&quot;. Bei Polygonen mit gerader Eckenzahl sind gegenüberliegende Kanten 2<em>RADIUS weit entfernt, bei ungerader Eckenzahl, ist jede Ecke von ihrer gegenüberliegenden Kante 2</em>RADIUS weit entfernt. Vorher hatten alle den gleichen Umkreis mit RADIUS.</li>
+<li>RegPolys werden mit der unteren Kante parallel zur x-Achse ausgerichtet, es sei denn, &quot;rotation&quot; wird spezifiziert (nicht dm-konfigurierbar)</li>
+<li>Ist das RegPoly ein Kreis, wird es nicht mehr als Kreis verwaltet, sondern ein 100-Eck. Der Einheitlichkeit wegen. &quot;shape&quot; und &quot;draw&quot; entsprechend angepasst</li>
+<li>dm-config:
+<ul>
+<li><strong>vertices</strong>: Polygone können nur noch als Liste an Ecken angegeben werden, nicht mehr Alternativ als Anzahl. Es geht also nur noch e.g. [3,6,9] Für ein Drei-, Sechs- und Neuneck. Nicht mehr e.g. &quot;4&quot;, um vier Polygone mit steigender Anzahl Ecken zu bauen (Kreis, Dreieck, Viereck, Fünfeck)</li>
+<li><strong>colors</strong>: Analoges gilt für Farben. Es <em>MUSS</em> eine Liste angegeben werden, die die gleiche Länge hat wie <strong>vertices</strong> oder GAR NICHTS. Dann wird die Liste [1,2,3,...] verwendet (Standardreihenfolge der DIVOMATH Farbpalette).</li>
+<li>NEU <strong>state</strong> ([ ] &lt;string&gt;): Definiert, welche der über <strong>vertices</strong> und <strong>colors</strong> definierten Polygone im Container beim Start enthalten sein sollen. Für <strong>vertices</strong>=[0,3,4] sowie <strong>rows</strong>=3 stellt [&quot;1,2,2&quot;, &quot;3,3,3&quot;, &quot;&quot;] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.</li>
+<li>NEU <strong>drawpatterncontainer</strong> (&lt;bool&gt;): true, wenn PatternContainer gezeichnet werden soll.</li>
+<li><strong>borders</strong> in <strong>drawborders</strong> umbenannt. Funktion gleich.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FW:
+<ul>
+<li>mousedown Handler:
+<ul>
+<li>
+<p>Zeile 41 entfernt, die dafür sorgt, das hottes Element nach vorne geholt wird. Holt sonst bei <strong>strapwork</strong> im Zweifel Container vor Polygone.</p>
+<blockquote>
+<p><strong>@Todo</strong>: Durch Layer-System und &quot;movetofront&quot; Attribut austauschen (mit Ulli abstimmen, geht das rückwärtskompatibel?!).</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CLASS:
+<ul>
+<li>Scrollbar:
+<ul>
+<li>&quot;script&quot; wird nicht mehr auf &quot;moveend&quot; getriggered (zusätzlich zu &quot;move&quot;), sondern bei &quot;click&quot; (zusätzlich zu &quot;move&quot;), da sonst immer der &quot;value&quot; VOR der Änderung verwendet wird.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v211">v2.1.1</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>numbercards:
+<ul>
+<li>Fix: Anordnung der Montessorifarben korrigiert</li>
+<li>Fix: divomath Einstellung, ob eine Karte eingeklappt dargestellt wird oder nicht (&quot;unfold&quot; Attribut)</li>
+</ul>
+</li>
+<li>divisors:
+<ul>
+<li>neue divomath Konfiguration: &quot;stripmargin&quot;</li>
+<li>divomath Konfig. &quot;padding&quot; umbenannt in &quot;blobmargin&quot;</li>
+<li>Ausrichtung der Polygone angepasst (ungerade #Ecken =&gt; Spitze oben, gerade =&gt; Kante oben)</li>
+<li>Aussehen des verschiebbaren Balkens rechts der Bänder geändert</li>
+<li>Verhalten des verschiebbaren Balkens angepasst</li>
+<li>fix: verschiebbarer Balken ordnet sich beim loslassen an den Bändern an</li>
+<li>Attribute &quot;width&quot; und &quot;height&quot; für Strips hinzugefügt</li>
+</ul>
+</li>
+<li>CLASS:
+<ul>
+<li><em>new</em> Key:
+<ul>
+<li>Eine Taste für eine Tastatur (erbt von Button)</li>
+</ul>
+</li>
+<li><em>new</em> Keyboard:
+<ul>
+<li>eine (momentan nur numerische) Tastatur, die eingeblendet werden kann, wenn ein Textfeld angeklickt wird o.ä.</li>
+</ul>
+</li>
+<li><em>new</em> TextInput:
+<ul>
+<li>eine Quasi-Textbox, die beim Auswählen ein &quot;Keyboard&quot; zur Eingabe steuern kann.</li>
+</ul>
+</li>
+<li><em>new</em> Toggle:
+<ul>
+<li>Toggle-Button, dessen &quot;state&quot; als bool verwendet werden kann. Ruft bei &quot;click&quot; sein &quot;script&quot; auf.</li>
+</ul>
+</li>
+<li><em>new</em> Scrollbar:
+<ul>
+<li>Scrollbalken, dessen &quot;value&quot; zur Konfiguration anderer Komponenten genutzt werden kann.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FW:
+<ul>
+<li>constants:
+<ul>
+<li>unicode für verschiedene Pfeile hinzugefügt (LEFTARROW, RIGHTARROW, ...)</li>
+</ul>
+</li>
+<li>helper functions:
+<ul>
+<li>incircle(): Prüft, ob ein Punkt innerhalb eines Kreises liegt</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v210">v2.1.0</h3>
+<ul>
+<li>VAM:
+<ul>
+<li>strapwork:
+<ul>
+<li>Animationsverhalten angepasst</li>
+<li>Scrollbar hinzugefügt</li>
+<li>Resetbutton hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CLASS:
+<ul>
+<li>Button:
+<ul>
+<li>&quot;hasborder&quot; (bool) als Attribut hinzugefügt</li>
+</ul>
+</li>
+<li><em>new</em> Scrollbar:
+<ul>
+<li>Eine Scrollleiste um Content zu bewegen. Beim Bewegen der Scrollbar wird deren Wert aktualisiert. Was damit getan werden soll (am Ende eines move-Events) muss über das &quot;script&quot;-Attribut konfiguriert werden. &quot;max&quot; und &quot;min&quot; Attribute können einzeln gesetzt werden (default: 100 bzw. 0). Zugriff auf den aktuellen Wert über das Attribut &quot;value&quot;. &quot;value&quot; ändert sich linear mit der Position der Scrollbar.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v200">v2.0.0</h3>
+<ul>
+<li>neues VAM: &quot;divisors&quot;</li>
+<li>VAM:
+<ul>
+<li>numbercards:
+<ul>
+<li>Fix: Als Liste übergebene Listen (z.B. für x und y) werden jetzt korrekt verarbeitet.</li>
+<li>Styling angepasst: schmalerer Rand, Aus-/Einklappbutton abgerundetes Rechteck, Farbbutton pro Karte und neues Styling, neues Layout für +/- Buttons, Farben an Montessorifarben angepasst</li>
+<li>Trennzeichen zwischen 3er-Gruppen von Ziffern hinzugefügt, einstellbar über Editor (&quot;separator&quot;)</li>
+<li>Dokumentation angepasst</li>
+</ul>
+</li>
+<li>strapwork:
+<ul>
+<li>divomath Zustandsdefinition angepasst</li>
+<li>Eistellbarkeit zwischen fixer und flexibler Containerlänge hinzugefügt</li>
+<li>löschen der letzten Komponente bei vollem Container hinzugefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>FW
+<ul>
+<li>draw:
+<ul>
+<li>Fix: debug Funktion entfernt, die überall nadas beim debuggen gezeichnet hat</li>
+<li>objpreview entfernt, wird nicht benötigt</li>
+</ul>
+</li>
+<li>constants:
+<ul>
+<li>colors:
+<ul>
+<li>geändert: DIVOBLUE von (120,147,194) zu (83,125,156)</li>
+<li>geändert: DIVORED von (255,84,84) zu (235,85,78)</li>
+<li>geändert: DIVOGREY von (165,165,165) zu (130,149,192) --&gt; eher blau</li>
+<li>hinzugefügt: MONTERED, MONTEGREEN, MONTEBLUE, MONTEGREY für Montessorifarben. Zusätzliche MONTEPALETTE als Liste aller Montessorifarben</li>
+</ul>
+</li>
+<li>VALUEMAP: weist Zahlen von 1-12 die Wörter &quot;Einer&quot;, &quot;Zweier&quot; ... &quot;Zwölfer&quot; zu</li>
+<li>HEXMAP: weist den Strings &quot;0&quot; bis &quot;9&quot; sowie &quot;A&quot; bis &quot;F&quot; bzw. &quot;a&quot; bis &quot;f&quot; die Zahlen 1 bis 15 zu</li>
+<li>COLORMAP: enthält die meisten vordefinierten Farben
+<ul>
+<li>Farben: &quot;DARKRED&quot;, &quot;DARKBLUE&quot;, &quot;DARKGREEN&quot;,	&quot;DZLMCOLORGOLD&quot;, &quot;DZLMCOLORDARK&quot;, &quot;PLACECOLORGREEN&quot;, &quot;PLACECOLORBLUE&quot;,&quot;PLACECOLORRED&quot;, &quot;DIVOGREEN&quot;, &quot;DIVOVIOLET&quot;, &quot;DIVOGREY&quot;, &quot;DIVOBLACK&quot;, &quot;DIVORED&quot;, &quot;DIVOBLUE&quot;</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>helper functions:
+<ul>
+<li>list(&lt;any&gt;): Erzwingt eine Liste für irgendeine Übergabe (Zahl, Objekt). nada bleibt nada, list bleibt list, String wird char array.</li>
+<li>centroid:
+<ul>
+<li>centroid(list): Berechnet den Schwerpunkt einer Liste von Punkten (geometrisches Mittel)</li>
+</ul>
+</li>
+<li>centerofmass:
+<ul>
+<li>centerofmass(list): Berechnet das arithmetische Mittel einer Liste von Punkten</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>CLASS
+<ul>
+<li>Button:
+<ul>
+<li>Schatten des Buttons von generischem Rechteck zur tatsächlichen Button Form (shape Attribut) geändert</li>
+<li>Attribut &quot;show&quot;, zum Ein- und Ausblenden des Buttons hinzugefügt</li>
+<li>Flag &quot;hasshadow&quot; hinzugefügt, um das Zeichnen des Schattens steuern zu können</li>
+<li>Handles für &quot;color&quot;, &quot;bordercolor&quot; und &quot;fontcolor&quot; eingefügt</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="v100">v1.0.0</h3>
+<ul>
+<li>neue VAMs: &quot;numbercards&quot;, &quot;strapwork&quot;</li>
+</ul>
+
+</body>
+</html>

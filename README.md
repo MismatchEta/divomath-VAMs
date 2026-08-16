@@ -1,8 +1,10 @@
-> v5.2.3
+> v7b398
 
 # divomath VAM Dokumentation
 
 JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das [Komponentenverhalten](#komponentenverhalten) und den [Zustand](#konfiguration-des-zustands-eines-vams) konfiguriert.
+
+Examplarische Einbindungen im Editor sind hier zu finden: <https://editor.divomath-nrw.de/folien/634fa76ad6627092d00ffb24/6697a005040ef4466b6d5342/6697a02b69fcc16c3e49d692/0/6a79a78eae9dd79ab405da92>
 
 ## Komponentenverhalten
 
@@ -25,18 +27,19 @@ JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Wi
 
 Folgende Strings sind für *vam* Schlüssel zulässig:
 
-- divisors (seit: 2.0.0, letzte Änderung: 3.1.0)
-- numbercards (seit: 1.0.0, letzte Änderung: 3.1.0)
-- percentagebar (seit 3.0.0, letzte Änderung: 4.0.0)
-- strapwork (seit: 1.0.0, letzte Änderung: 3.1.0)
-- distributive (seit 4.0.0, letzte Änderung: 4.1.0)
+- divisors (seit: 2.0.0, letzte Änderung: 7)
+- numbercards (seit: 1.0.0, letzte Änderung: 7)
+- percentagebar (seit 3.0.0, letzte Änderung: 7)
+- strapwork (seit: 1.0.0, letzte Änderung: 7)
+- distributive (seit 4.0.0, letzte Änderung: 7)
+- thales (seit: 7)
 
 ### Beispiel
 
 Eine Minimalkonfiguration zur Darstellung der Zahlenkarten-Komponente ("numbercards").
 ``` yaml
 configuration:
-  cindyJSPrefix: divomath
+  cindyJsPrefix: divomath
   vam: numbercards
 ```
 
@@ -59,7 +62,7 @@ cindyjs:
 
 - gridposition: *\[\<float>, \<float>]>*
   - Startposition des Rechteckfelds (referenziert linke untere Ecke.)
-  - default [10,7]
+  - default [10,8]
 - rows: *\<int>*
   - Anzahl der Zeilen des Rechteckfelds
   - default 5
@@ -83,7 +86,7 @@ cindyjs:
   - default .2
 - cutwidth: *\<float>*
   - Der Abstand zwischen Teilen nach einem Schnitt (zusätzlich zum padding).
-  - default .2
+  - default .3
 - gridmoveable: *\<bool>*
   - Schalter, ob das gesamte Rechteckfeld verschoben werden kann.
   - default *true*
@@ -95,11 +98,11 @@ cindyjs:
   - default .4
 - labelpadding: *\<float>*
   - Abstand des Output-Texts zum oberen und linken Rand.
-  - default .3
+  - default 10.3
 - animationspeed: *\<float>*
   - Modifier für alle Animationen. Je größer, desto schneller laufen Animationen ab.
   - default .15
-- fonsize: *\<int>*
+- fontsize: *\<int>*
   - Schriftgröße für Term- und Beschreibungsdarstellung.
   - default 18
 - drawexpression: *\<bool>*
@@ -150,11 +153,26 @@ cindyjs:
 - verbalmoveable *\<bool>*
   - verbale Termbeschreibung beweglich oder nicht
   - default false
+- requiregrouping *\<bool>*
+  - Wenn true, können Färben und Zerschneiden erst genutzt werden, nachdem eine Zeilen- oder Spaltenstruktur gewählt wurde. Der Werkzeug-Button wird bis dahin blass dargestellt und lässt sich nicht umschalten.
+  - **Achtung**: Die Sperre gilt auch für das Zurücknehmen. Wer gruppiert, färbt, zerschneidet und dann auf "nix" zurückgeht, kann die Färbung von dort aus nicht mehr entfernen, ohne vorher wieder zu gruppieren.
+  - default true
+- showexpressiontoggle *\<bool>*
+  - Schalter zum Ein- und Ausblenden von Term und verbaler Beschreibung anzeigen
+  - default false
+- expressiontogglestate *\<bool>*
+  - Zustand dieses Schalters beim Start
+  - default true
+- picturemode *\<bool>*
+  - Entfernt jede Interaktivität aus dem VAM. Das Feld wird gezeichnet wie konfiguriert, reagiert aber auf keinerlei Eingaben. Gedacht für Abbildungen in Aufgabentexten.
+  - Bedienelemente (Werkzeug-Button, Schalter) werden weiterhin gezeichnet, sind aber inaktiv.
+  - default false
 
 ### Zustand: divisors
 
 - color: *[\<string>,\<string>]*
-  - Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Folgende Farbstrings sind u.a. möglich: 
+  - Repräsentiert die beiden Farben, die von der Komponente genutzt werden. Der erste Werte bestimmt die Farbe der Blobs in einem vollen Band, die zweite Farbe die der "übrigen" Blobs.
+  - Folgende Farbstrings sind u.a. möglich: 
     - DARKRED=(228,26,28)/255;
     - DARKGREEN=(77,175,74)/255;
     - DARKBLUE=(55,126,184)/255;
@@ -172,6 +190,7 @@ cindyjs:
     - DIVOBLACK = grey(0);
     - DIVORED = (235,85,78)/255;
     - DIVOBLUE = (83,125,156)/255;
+  - Statt einem String geht auch eine 3-elementige Liste (R,G,B)
   - default [DIVOGREY, DIVORED]
 - size: *\<float>*
   - Größe der Blobs
@@ -184,7 +203,7 @@ cindyjs:
   - default .5
 - timing: *\<float>*
   - Zeit für die Animation bei der Bewegung der Blobs
-  - default 1
+  - default .5
 - blobs: *\<int>*
   - Anzahl der Blobs zu Beginn
   - default 0
@@ -224,6 +243,9 @@ cindyjs:
 - displaydivisorcount: *\<bool>*
   - Anzeige der Gruppengröße
   - default true
+- fontsize: *\<int>*
+  - Schriftgröße der Texte unterhalb der Bänder
+  - default 16
 
 ### Zustand: numbercards
 
@@ -252,17 +274,115 @@ cindyjs:
   - default true: Montessori Farben
 - colortoggle: *\<bool>*
   - Anzeigen eines Schalters zur Einstellung der Farbe ("color", s.o.)
-  - default false: Nicht anzeigen
+  - default true
 - alpha: *\<float>*
   - Transparenz der Zahlenkarte im ausgeklappten Zustand. (aus [0,1])
   - default 0.2
 - separator: *\<char>*
   - Trennzeichen für 3er-Gruppen von Ziffern (Punkt, Leerzeichen oder sonstiges)
-  - default " " (Leerzeichen)
+  - default "" (kein Trennzeichen)
 
-### Zustand: percentagbar
+### Zustand: percentagebar
 
-> @ToDo
+#### Streifen
+
+- numberofbars: *\<int>*
+  - Anzahl der dargestellten Prozentstreifen. Bei mehr als einem teilen sich die Streifen die verfügbare Breite.
+  - default 1
+- barvalue: *\<float>*
+  - Anteil des Streifens beim Start, als Wert aus [0,1]. 0.25 färbt also ein Viertel des Streifens.
+  - default 0
+- basevalue: *\<float>*
+  - Grundwert, also der Wert, der dem ganzen Streifen entspricht.
+  - default 1000
+- unit: *\<string>*
+  - Einheit, die hinter den Werten angezeigt wird.
+  - default "MB"
+- subdivisions: *\<int>*
+  - Anzahl der Schritte, in die der Streifen unterteilt ist.
+  - default 1
+- barprecision: *\<float>*
+  - Schrittweite beim Ziehen des Streifens, als Anteil. .01 entspricht 1 %.
+  - default .01
+- snapbar: *\<bool>*
+  - Wenn true, rastet der Streifen beim Ziehen auf den eingestellten Schritten ein statt in *barprecision*-Schritten. Wirkt nur, solange die Schritte auch angezeigt werden.
+  - default false
+- isbardraggable: *\<bool>*
+  - Streifen mit der Maus bzw. dem Finger veränderbar oder nicht.
+  - default true
+- overflow: *\<bool>*
+  - Erlaubt Werte über 100 %. Wirkt auf Ziehen, Direkteingabe und die Plus-Taste gleichermaßen.
+  - default false
+- keepstable: *\<string>*
+  - Bestimmt, welche Größe konstant bleibt, wenn eine der drei anderen geändert wird. Eins von **"basevalue"** (Ganzes), **"value"** (Teil) oder **"percentage"** (Anteil).
+  - default "basevalue"
+
+#### Darstellung
+
+- barposition: *\[\<float>, \<float>]*
+  - Position des Streifens (linke untere Ecke). NADA positioniert automatisch.
+  - default NADA
+- barwidth: *\<float>*
+  - Breite des Streifens. NADA passt die Breite automatisch an den sichtbaren Bereich an.
+  - **Hinweis**: Bei Einbettung in Storyline sollte hier ein fester Wert stehen. Die automatische Anpassung führt sonst dazu, dass Schrift und Streifen je nach Einbettung unterschiedlich groß zueinander wirken.
+  - default NADA
+- barheight: *\<float>*
+  - Höhe des Streifens.
+  - default 1.5
+- barpadding: *\<float>*
+  - Abstand zwischen mehreren Streifen.
+  - default 2.5
+- barcolor: *\<string>*
+  - Farbe des Streifens. Farbnamen wie bei [divisors](#zustand-divisors).
+  - default DZLMCOLORGOLD
+- fontfamily: *\<string>*
+  - Schriftart der Beschriftungen. NADA verwendet die Standardschrift.
+  - default NADA
+- decimalspercentage: *\<int>*
+  - Nachkommastellen bei Prozentangaben.
+  - default 2
+- decimalsvalue: *\<int>*
+  - Nachkommastellen bei Werten.
+  - default 2
+
+#### Bögen und Beschriftungen
+
+- alwaysdrawarches: *\<bool>*
+  - Bögen von Anfang an anzeigen. Der zugehörige Schalter ist dabei sichtbar und aktiviert, lässt sich also weiterhin umschalten.
+  - **Hinweis**: Bögen werden nur gezeichnet, solange auch die Schritte angezeigt werden. Beide sind gekoppelt: Wird der letzte Schritte-Schalter ausgeschaltet, gehen die Bögen mit aus; wird der Bögen-Schalter eingeschaltet, geht die Schrittanzeige mit an.
+  - default true
+- leftoutpercentages: *\<list of floats>*
+  - Anteile, deren Prozentbeschriftung **nicht** gezeichnet werden soll, als Werte aus [0,1].
+  - default []
+- leftoutvalues: *\<list of floats>*
+  - Analog für die Wertbeschriftungen.
+  - default []
+- custompercentages: *\<list of floats>*
+  - Zusätzliche Anteile, die immer als Prozentbeschriftung erscheinen, unabhängig von den Schritten.
+  - default []
+- customvalues: *\<list of floats>*
+  - Analog für Wertbeschriftungen.
+  - default []
+
+#### Bedienelemente
+
+- showbuttons: *\<bool>*
+  - Alle Schalter und Eingabefelder anzeigen oder nicht.
+  - default true
+- hidetoggles: *\<list of strings>*
+  - Blendet einzelne Schalter aus, während die übrigen sichtbar bleiben. Wirkt nur, wenn *showbuttons* true ist.
+  - Zulässige Bezeichner: **percentage** (Anteil), **part** (Teil), **basevalue** (Ganzes), **parts** (Werte unten), **percentages** (Prozente oben), **arch** (Bögen), **showtf-div** (Anzahl der Schritte), **showtf-divpercentage** (Größe des Schritts in %), **showtf-divvalue** (Größe des Schritts), **showtf-perc** (Eingabe Anteil), **showtf-value** (Eingabe Teil), **showtf-base** (Eingabe Ganzes), **overflow**
+  - **Hinweis**: In der URL komma-getrennt **ohne** Anführungszeichen und ohne Leerzeichen angeben, e.g. `hidetoggles=arch,overflow`.
+  - default []
+- scaffoldbasevalue: *\<bool>*
+  - Verdeckt den Grundwert mit einem grauen Feld (als Lücke für Aufgaben).
+  - default false
+- scaffoldvalue: *\<bool>*
+  - Analog für den Prozentwert.
+  - default false
+- scaffoldpercentage: *\<bool>*
+  - Analog für den Prozentsatz.
+  - default false
 
 ### Zustand: strapwork
 
@@ -321,11 +441,14 @@ cindyjs:
   - Trennsymbol an der linken Seite eines Containers anzeigen (true) oder nicht (false)
   - default true
 - drawborders: *\<bool>*
-  - Reset Button anzeigen (true) oder nicht (false)
+  - Rahmen um Polygone zeichnen (true) oder nicht (false)
   - default true
 - drawresetbutton: *\<bool>*
-  - Rahmen um Polygone zeichnen (true) oder nicht (false)
-  - default false
+  - Reset Button anzeigen (true) oder nicht (false)
+  - default true
+- buttonsize: *\<float>*
+  - Größe des Reset-Buttons
+  - default 1
 - polypadding: *\<float> 
   - Abstand zwischen den Polygonen in einem Band
   - default .5
@@ -347,9 +470,167 @@ cindyjs:
 - drawrcseparator: *\<bool>*
   - analog drawseparator
   - default false
-- rcinteractable: *\<bool>*
-  - Konfiguriert, ob mit dem Referenz-Container interagiert werden kann, i.e. ob dort Polygone verschoben, hinzugefügt oder entfernt werden können.
+- rcinteractable: *\<string>*
+  - Konfiguriert, ob und womit im Referenz-Container interagiert werden kann. Gleiche Systematik wie *interactable* (s.o.), also **"c"**, **"p"**, **"s"** in beliebiger Kombination.
+  - Ein leerer String macht den Referenz-Container vollständig unbedienbar.
+  - Aus Kompatibilitätsgründen wird auch noch ein bool akzeptiert (**true** entspricht **"cps"**).
+  - default "" (nicht bedienbar)
+
+### Zustand: thales
+
+#### Geometrie
+
+- A, B, C: *\[\<float>, \<float>]*
+  - Startpositionen der drei Dreieckspunkte. C ist der bewegliche Punkt.
+  - default [7,5], [18,10], [12,12]
+- amoveable, bmoveable: *\<bool>*
+  - Ob A bzw. B ebenfalls bewegt werden können.
   - default false
+- softc: *\<bool>*
+  - Weiche Konstruktion: Wenn **true**, klebt C nicht am Thaleskreis und kann frei bewegt werden. Bei **false** bleibt C auf dem Kreis.
+  - **Achtung**: Die Bedeutung wurde in Version 7 umgedreht. Frühere Konfigurationen mit explizitem *softc* verhalten sich danach umgekehrt.
+  - default true
+- snap: *\<bool>*
+  - Beim Bewegen von C auf den rechten Winkel einrasten.
+  - default true
+- snappingdifference: *\<float>*
+  - Fangbereich um den rechten Winkel, in Grad.
+  - default 5
+- generalsnapsize: *\<float>*
+  - Zusätzliches Einrasten auf Vielfache dieses Winkels, in Grad. 0 schaltet es ab.
+  - default 5
+- generalsnapdifference: *\<float>*
+  - Fangbereich dafür, in Grad.
+  - default .5
+- drawcircle: *\<bool>*
+  - Thaleskreis zeichnen.
+  - default true
+- drawcenter: *\<bool>*
+  - Mittelpunkt M zeichnen.
+  - default true
+
+#### Bedienelemente
+
+- showstampbutton, showundobutton, showresetbutton, showconstructionbutton, showhelpbutton: *\<bool>*
+  - Einzelnes Ein- und Ausblenden der Schaltflächen (Stempel, Rückgängig, Zurücksetzen, Konstruktionsart, Hilfe).
+  - default true
+- drawtogglealpha, drawtogglebeta, drawtogglegamma, drawtogglegamma1, drawtogglegamma2, drawtogglevalues: *\<bool>*
+  - Einzelnes Ein- und Ausblenden der Winkel-Schalter.
+  - default true
+- showalpha, showbeta, showgamma, showgamma1, showgamma2, showanglevalues, showhelp: *\<bool>*
+  - Zustand dieser Schalter beim Start. Wirkt auch dann, wenn der jeweilige Schalter ausgeblendet ist.
+  - default false, außer *showgamma* und *showhelp* (true)
+
+#### Stempeln und Spur
+
+- stampmode: *\<string>*
+  - **"stamp"** setzt einzelne Stempel, **"trace"** zeichnet eine durchgehende Spur.
+  - default "stamp"
+- stampbuttonimage: *\<string>*
+  - Symbol der Schaltfläche, **"stamp"** oder **"measure-angle"**.
+  - default "stamp"
+- stickstampbuttontopoint: *\<bool>*
+  - Stempel-Schaltfläche an Punkt C heften statt an fester Position.
+  - default false
+- showstampedpoints: *\<bool>*
+  - Gestempelte Punkte anzeigen.
+  - default true
+- showstampedvalues: *\<bool>*
+  - Liste der gemessenen Winkel anzeigen. Die Liste ist einspaltig und bei Bedarf scrollbar.
+  - default true
+- jumptostamp: *\<bool>*
+  - Ein Klick auf einen Listeneintrag setzt C auf die zugehörige Position zurück.
+  - default false
+- stampgradient: *\<bool>*
+  - Stempel in einem Farbverlauf einfärben, abhängig vom Abstand zum Mittelpunkt M.
+  - default true
+- stampgradientstrength: *\<float>*
+  - Stärke des Verlaufs, aus [0,1]. 0 = kein Verlauf.
+  - default .8
+- stampcolor: *\[\<float>, \<float>, \<float>]*
+  - Farbe der Stempel, wenn *stampgradient* false ist.
+  - default [.8,.2,.2]
+- drawtrace: *\<bool>*
+  - Ob die Spur beim Start bereits aufgezeichnet wird.
+  - **Hinweis**: Bereits gezeichnete Spurabschnitte bleiben sichtbar, auch wenn die Aufzeichnung pausiert wird.
+  - default false
+- tracesize: *\<float>*
+  - Strichstärke der Spur.
+  - default 4
+- tracecolor: *\<string>*
+  - Farbe der Spur.
+  - default DIVOBLUE
+- traceminstep: *\<float>*
+  - Mindestabstand zwischen zwei Spurpunkten. Verhindert, dass bei ruhendem Stift unnötig viele Punkte entstehen.
+  - default .1
+
+#### Winkelanzeige und Beschriftung
+
+- showcurrentanglevalue: *\<bool>*
+  - Aktuellen Wert von Gamma in einem Feld anzeigen.
+  - default true
+- anglevaluesinline: *\<bool>*
+  - Winkelwerte direkt am Winkel anzeigen statt nur in der Liste.
+  - default true
+- displayanglefully: *\<bool>*
+  - In der Liste "γ = " mit anzeigen statt nur den Wert.
+  - default false
+- displayanglefontsize: *\<int>*
+  - Schriftgröße der Winkelliste.
+  - default 24
+- defaultanglesizes: *\[\<float> x5]*
+  - Radien der fünf Winkelbögen, in der Reihenfolge [α, β, γ, γ₁, γ₂].
+  - default [3,3,2,3,3]
+- anglelabelsize: *\<int>*
+  - Basis-Schriftgröße der Winkelbeschriftungen.
+  - default 18
+- anglelabelgammafactor: *\<float>*
+  - Faktor, um den γ größer beschriftet wird als die übrigen Winkel.
+  - default 1.3
+- anglelabelminscale: *\<float>*
+  - Untergrenze der Verkleinerung bei kleinen Winkeln. **1** schaltet die Skalierung ganz ab.
+  - default .65
+
+#### Darstellung
+
+- pointlabelsize: *\<int>*
+  - Schriftgröße der Punktnamen.
+  - default 24
+- linelabelsize: *\<int>*
+  - Schriftgröße der Seitennamen.
+  - default 18
+- linesize: *\<float>*
+  - Strichstärke des Dreiecks.
+  - default 1.5
+- circlelinesize: *\<float>*
+  - Strichstärke des Kreises.
+  - default 1.5
+- circlelinecolor: *\[\<float>, \<float>, \<float>]*
+  - Farbe des Kreises.
+  - default .3*[1,1,1] (dunkelgrau)
+- imgoffset: *\[\<float>, \<float>]*
+  - Versatz der Symbole auf den Schaltflächen.
+  - default [0,.65]
+
+#### Positionen
+
+Alle folgenden Parameter werden mit **NADA** automatisch positioniert. Ein expliziter Wert überschreibt die automatische Ausrichtung – dann ist die Position allerdings nicht mehr an den sichtbaren Bereich gekoppelt und muss bei anderem Ausschnitt nachgezogen werden.
+
+- toolbarmargin: *\<float>*
+  - Randabstand der Schaltflächenleiste.
+  - default .3
+- backbuttoncoord, resetbuttoncoord, stampbuttoncoord, constructionbuttoncoord, helpbuttoncoord: *\[\<float>, \<float>]*
+  - Positionen der einzelnen Schaltflächen.
+  - default NADA
+- togglerefcoord: *\[\<float>, \<float>]*
+  - Bezugspunkt der Winkel-Schalter-Spalte.
+  - default NADA
+- gammadisplaycoord: *\[\<float>, \<float>]*
+  - Position der aktuellen Winkelanzeige.
+  - default NADA
+- gammalistcoord: *\[\<float>, \<float>]*
+  - Position der Winkelliste. Ohne Angabe steht sie rechtsbündig am Rand.
+  - default NADA
 
 ## Validierung
 
@@ -370,7 +651,10 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zusta
 
 ### Validierung: divisors
 
-> BISHER KEINE
+(seit 7) Eigene Validierungsbezeichner gibt es nicht. Alle Zustandsparameter werden aber als Ergebnis zurückgemeldet und können darum zur Validierung und Referenzierung genutzt werden, insbesondere:
+
+- blobs   : Anzahl der Plättchen
+- divisor : eingestellte Gruppengröße
 
 ### Validierung: numbercards
 
@@ -390,6 +674,10 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zusta
 
 > BISHER KEINE
 
+### Validierung: thales
+
+> BISHER KEINE
+
 ### Validierung: strapwork
 
 (seit 1.0.0, letzte 3.0.0) Für die Validierung kann der Inhalt jeder Position in jedem Container abgefragt werden. Der abzufragende Schlüssel einer Position enthält die Bandnummer und die Position, genauer ist der Schlüssel "\<bandnummer>.\<position>".
@@ -400,7 +688,11 @@ Zusätzlich kann eine ganze Reihe referenziert werden analog zu oben als String.
 
 ## Referenzierung (divomath)
 
-Jede Komponente kann in ihrem Zustand grundsätzlich Werte andere Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter [Validierung](#validierung) aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM im Top-Level der Zustandsbeschreibung nach Bezeichnern, die denen der unter [Validierung](#validierung) aufgeführten entpsrechen, aber mit zwei Unterstrichen ("\_\_") beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung *"size"*, dann kann dieser (**Top-Level(!)**) durch *"\__size"* überschrieben werden. Dieses Verhalten kann dazu genutzt werden, um Zustände anderer Komponenten abzugreifen und zu verwenden. #
+Jede Komponente kann in ihrem Zustand grundsätzlich Werte anderer Komponenten verwenden, um ihren eigenen Zustand zu definieren. Auf diese Weise können auch die unter [Validierung](#validierung) aufgeführten Zustandsdefinitionen überschrieben werden. Dafür sucht jedes VAM nach Bezeichnern, die denen der unter [Validierung](#validierung) aufgeführten entsprechen, aber mit zwei Unterstrichen ("\_\_") beginnen. Hat ein VAM bspw. einen Zustand mit der Bezeichnung *"size"*, dann kann dieser durch *"\__size"* überschrieben werden.
+
+**Wo die Referenzen stehen dürfen**: Die Referenzen dürfen nur **top level** definiert werden, nicht im cindyjs Objekt. Dennoch sucht CindyJS auch dort nach Referenzen. Diese werden aber scheinbar nicht korrekt weitergereicht.
+
+**Priorität**: Ein Wert, der als Referenz gesetzt wurde, schlägt den gespeicherten Zustand und die Editor-Vorgabe. Eine eigene, auf derselben Folie bereits abgegebene Antwort schlägt allerdings auch die Referenz.
 
 ### Beispiel
 
@@ -408,11 +700,10 @@ Am Bsp. der numbercards: Es seien zwei Folien gegegeben mit den Namen *"ZAHLENKA
 
 ``` yaml
 # --- Im Zustand von "vam-karten2"
-# Hier werden die Zustände unten überschrieben
+# Die Referenzen stehen im cindyjs-Objekt und ueberschreiben die
+# darunter definierten Werte.
 __value: ZAHLENKARTEN/vam-karten/{RESULT_value}
 __unfold: ZAHLENKARTEN/vam-karten/{RESULT_unfold}
-
-# Default Zustandsbeschreibung
 cindyjs:
   cards: 1
   x:
@@ -427,18 +718,74 @@ cindyjs:
     - true
   color: false
   colortoggle: true
-    - Init Zustand **fontsize**: 
   alpha: 0.5
   separator: .
 ```
 
-Die ersten beiden Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird der *"value"* der Zahlenkarte, sowie der Zustand übernommen, ob die Karte eingeklappt ist oder nicht. Dies überschreibt auch die Zustandsdefinition weiter unten, in der *"value"* auf `12123` gesetzt wird und *"unfold"* auf `true`.
+Die beiden `__`-Zeilen sind dabei die Referenz auf *"vam-karten"*. Dort wird der *"value"* der Zahlenkarte übernommen, sowie der Zustand, ob die Karte eingeklappt ist oder nicht. Dies überschreibt auch die Zustandsdefinition weiter unten, in der *"value"* auf `12123` gesetzt wird und *"unfold"* auf `true`.
+
+Dieselben Referenzen können auch auf Top-Level stehen (also neben `cindyjs:` statt darin). Das funktioniert im Viewer, im Editor aber nicht – siehe Hinweis oben.
 
 ### Sonstiges
 
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
 
 ## Changelog
+
+### v7
+- GENERAL:
+  - Build-Prozess vereinheitlicht: **build.py** erzeugt aus einem Cinderella-Export und der zugehörigen .cdy beide Zielformate (gepatchte HTML für abako, vam.cdyjs für divomath) in ein out-Verzeichnis
+  - Skripte werden aus dem .cdy-Archiv gelesen, nicht mehr aus dem HTML-Export (der lässt Skripte weg)
+  - HTML-Export wird beim Build gepatcht: touch-action gegen das iPadOS-"Kritzeln", **?full** für fensterfüllende Darstellung, **?rect=** zur Wahl des sichtbaren Weltausschnitts – eine Datei statt zwei
+- FRAMEWORK:
+  - **ENVIRONMENTALPARAMS** als einheitliche Konfigurationsschnittstelle. **defaultstateto()** und die separaten `if(!ISDIVOMATH, ...)`-Blöcke entfallen in allen VAMs, stattdessen **default to()**
+  - **VISIBLERECT** als Layout-Bezugsrechteck eingeführt (mit **VRTOPLEFT**, **VRTOPRIGHT**, **VRBOTTOMLEFT**, **VRBOTTOMRIGHT**). In divomath fest, sonst aus dem tatsächlichen Ausschnitt abgeleitet. Alle VAMs positionieren daran statt an screenbounds()
+  - **FONTSCALE** eingeführt: Schriftgrößen sind in Pixeln definiert, alles andere in Welteinheiten – der Faktor hält das Verhältnis unabhängig von Canvasgröße und Ausschnitt konstant
+  - **to json()** und **escape json()** hinzugefügt. Der divomath-State wird jetzt explizit serialisiert statt per Stringverkettung – Cinderella und CindyJS behandelten Strings in Dicts unterschiedlich, was in divomath zu Syntaxfehlern führte. Die VAMs setzen darum keine QUOTEs mehr von Hand
+  - **divomath put result()** serialisiert den Wert ebenfalls über to json(). Undefined und Listen kommen damit korrekt an
+  - Referenzierung: Dunder-Schlüssel werden jetzt im cindyjs-Objekt **und** auf Top-Level gesucht (cindyjs gewinnt), und das Präfix wird beim Ablegen entfernt – vorher landete der Wert unter einem Schlüssel, den niemand liest
+  - Textausgabe neu gebaut: **draw label()** und **draw boxedlabel()** mit **mod'**-Modifier-Konvention (mod'font, mod'color, mod'bold, mod'alpha, mod'bgcolor). **draw textbox()** bleibt als Alias erhalten
+  - Button: Label wird jetzt korrekt in der Hitbox zentriert, unabhängig von Schriftart und -größe. Gezeichnete Symbole (**drawplus**, **drawminus**, **drawcross**) statt Sonderzeichen, die sich nicht sauber zentrieren lassen
+  - ImageButton: Bildgröße wird aus der Buttongröße abgeleitet (**imgfill**) statt über einen festen scale-Faktor, der von der Auflösung abhing
+  - **list()**: Objekt-Zweig wieder entfernt – er zerlegte ein einzelnes VAM-Objekt in seine Feldwerte. Für diesen Zweck **values()** verwenden
+- VAM:
+  - **thales** (neu): Satz des Thales mit beweglichem Punkt C, Winkelbögen, Stempeln und Spur
+    - Winkelliste einspaltig und scrollbar, folgt automatisch neuen Einträgen
+    - Winkel- und Seitenbeschriftungen über generische Funktionen, Position hängt jetzt am Öffnungswinkel statt an handjustierten Offsets
+    - Beschriftungen skalieren einheitlich und gedämpft (**anglelabelsize**, **anglelabelgammafactor**, **anglelabelminscale**)
+    - Spur als Segmente: Pausieren löscht das Gezeichnete nicht mehr, Undo entfernt genau den letzten Abschnitt (**tracesize**, **tracecolor**, **traceminstep**)
+    - Farbverlauf der Stempel korrigiert und konfigurierbar (**stampgradient**, **stampgradientstrength**, **stampcolor**)
+    - **softc** dreht seine Bedeutung um: true = weiche Konstruktion (**Achtung**, bestehende Konfigurationen)
+    - Reset- und Rückgängig-Button einzeln ausblendbar (**showundobutton**, **showresetbutton**), **showhistorybuttons** entfernt
+  - percentagebar:
+    - Fix: **numberofbars** und alle übrigen URL-Parameter wirkten nicht mehr (ENVIRONMENTALPARAMS wurde nach dem Einlesen überschrieben)
+    - Fix: Snapbar wirkte nur auf den letzten Streifen; richtet sich jetzt nach den Schritten des jeweiligen Streifens und rastet nicht mehr ein, wenn die Schritte ausgeblendet sind
+    - Bögen und Schrittanzeige gekoppelt
+    - **alwaysdrawarches** ist jetzt Startwert des Schalters statt permanenter Überschreibung – der Schalter bleibt sichtbar und bedienbar
+    - **overflow** und **hidetoggles** als Parameter hinzugefügt
+    - Fix: Overflow-Verhalten der Plus-Taste war inkonsistent zu Ziehen und Direkteingabe
+  - distributive:
+    - Termdarstellung generisch aufgebaut: Klammern verschwinden, sobald zerschnitten wurde; nach dem Zusammenrücken auf "nix" erscheinen die Anzahlen statt der Malaufgaben
+    - **requiregrouping** hinzugefügt: Färben und Zerschneiden erst nach Wahl einer Zeilen- oder Spaltenstruktur
+    - Fix: **coloredcolindex** wurde beim Speichern nicht zurückgerechnet – der Wert kippte bei jedem Folienwechsel zwischen zwei Zuständen
+    - Fix: Schnitte wurden beim Wiederherstellen umgeschaltet statt gesetzt
+    - Fix: **cuthorizontally**/**cutvertically** waren nicht auswertbar, wenn sie false waren
+    - Performance: Atome werden als Polygonzug gezeichnet statt als CSG-Vereinigung aus Kreisen und Rechtecken
+  - strapwork:
+    - Fix: Container ragte über den sichtbaren Bereich hinaus; die Platzberechnung greift jetzt auch bei endlichen Limits
+    - Fix: Zu wenige Limit-Einträge führten zu Index-Fehlern
+    - Fix: Validierung meldete an Trennerpositionen eine 0 statt des Polygons – Polygon und Trenner nutzten denselben Schlüssel
+    - Fix: **rcstate** richtete sich nach **rows** statt nach **rcrows**
+    - **rcinteractable** akzeptiert jetzt dieselbe Schreibweise wie **interactable**
+  - divisors:
+    - Fix: Plättchen wurden keinem Band zugeordnet, Endlosschleife beim Umsortieren
+    - UI unterhalb der Bänder hängt an VISIBLERECT statt an festen Koordinaten
+    - Rechnung wird als ein Text gesetzt statt aus vier gemessenen Fragmenten
+    - **fontsize** hinzugefügt
+  - numbercards:
+    - Fix: Bei mehreren Karten erbten spätere Karten die Stellenkarten der früheren
+    - Fix: Klicks auf die Plus/Minus-Knöpfe der Stellenkarten wurden nur zufällig erkannt
+    - Fix: Schulschrift wurde nie verwendet (falscher Konstantenname)
 
 ### v5.194
 - GENERAL:

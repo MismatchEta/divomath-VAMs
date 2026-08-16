@@ -1,4 +1,4 @@
-<!-- build 399 | 2026-08-10T10:13:15.683Z -->
+<!-- build 403 | 2026-08-16T21:03:04.609Z -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -2312,7 +2312,7 @@ LOGDEBUG = 3;
 // Vam choice //
 // ========== //
 
-VAM = "divisors";
+VAM = "percentagebar";
 
 
 // ============ //
@@ -7792,21 +7792,27 @@ forall(bars, bar,
 obj = obj 
 	++ if(showbuttons, values(toggles))
 	-- apply(select(hidetoggles, contains(keys(toggles), #)), toggles:#);
-obj = obj ++ values(textfields) -- [
-	textfields:"basevalue", textfields:"value", textfields:"percentage", 
-	textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
-];
-obj = obj ++ values(buttons) -- [
-	buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
-	buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage",
-	buttons:"minusdiv", buttons:"plusdiv",
-	buttons:"minusdiv-percentage",	buttons:"plusdiv-percentage",
-	buttons:"minusdiv-value", buttons:"plusdiv-value"
-];
+obj = obj 
+	++ values(textfields)
+	-- [
+		textfields:"basevalue", textfields:"value", textfields:"percentage", 
+		textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
+	];
+obj = obj ++ values(buttons) 
+	-- [
+		buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
+		buttons:"minusbase", buttons:"minusvalue",buttons:"minuspercentage",
+		buttons:"minusdiv", buttons:"plusdiv",
+		buttons:"minusdiv-percentage",	buttons:"plusdiv-percentage",
+		buttons:"minusdiv-value", buttons:"plusdiv-value"
+	];
 obj = obj :> arch1;
 obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj ++ bars;
+
+
+
 
 bars_1:"toggleactive";
 
@@ -7817,6 +7823,11 @@ toggles:"showtf-perc":"script";
 toggles:"showtf-div":"script";
 toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
+
+// Remove divisions textfield and buttons if buttons are not showing.
+if(!showbuttons,
+	obj = obj -- [textfields:"divisions", buttons:"plusdiv", buttons:"minusdiv"];
+);
 
 ); // end vam-if
 ;
@@ -10680,7 +10691,8 @@ var VAM_Q = new URLSearchParams(window.location.search);
 var VAM_FULL = VAM_Q.has("full");
 var VAM_PRESETS = {
     "divomath": [-0.27428199274629916, 18.50596739294148, 24.217486536011474, -0.40335587168573406],
-    "classic": [-1.7258704824220432, 22.351088099515103, 36.49896464677728, 0.23437747292151204]
+    "classic": [-1.7258704824220432, 22.351088099515103, 36.49896464677728, 0.23437747292151204],
+    "wide": [-6.285577682895096, 25.03577551661606, 31.42788841447548, 2.9190648900224683]
 };
 var VAM_RECT = VAM_PRESETS["divomath"];
 (function () {
@@ -10749,5 +10761,34 @@ var cdy = CindyJS({
 </head>
 <body>
     <div id="CSCanvas"></div>
+
+<script>
+/* divoVAM-post-export-patch: freehand drawing overlay, active with ?draw */
+(function () {
+    var q = new URLSearchParams(window.location.search);
+    if (!q.has("draw")) return;
+
+    var pos = (q.get("drawpos") || "0.4,0.05").split(",").map(Number);
+    if (pos.length !== 2 || pos.some(isNaN)) pos = [0.4, 0.05];
+
+    window.CONFIGURATION = {
+        mode: "website",
+        elementID: "CSCanvas",
+        penSize: Number(q.get("drawpen")) || 2,
+        startLocation: {
+            x_absolute: undefined, y_absolute: undefined,
+            x_relative: pos[0], y_relative: pos[1]
+        },
+        menubar: {
+            moveable: q.has("drawmoveable"),
+            direction: q.get("drawdir") || "right"
+        }
+    };
+
+    var s = document.createElement("script");
+    s.src = "freehand-drawing.js";
+    document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>
