@@ -366,7 +366,7 @@ code {
     });
   </script>
 <blockquote>
-<p>v7b398</p>
+<p>v7b403</p>
 </blockquote>
 <h1 id="divomath-vam-dokumentation">divomath VAM Dokumentation</h1>
 <p>JS Framework zum Import als Komponente in divomath zur Verwendung von CindyJS Widgets im Editor. Nach dem Import der aktuellen Version des divoVAM Frameworks kann über die Komponente im Editor auf verschiedene CindyJS Widgets zugegriffen werden. Diese werden hauptsächlich über das <a href="#komponentenverhalten">Komponentenverhalten</a> und den <a href="#konfiguration-des-zustands-eines-vams">Zustand</a> konfiguriert.</p>
@@ -1573,6 +1573,82 @@ Nachfolgend die von jeder Komponente gelieferten Ergebnisse (exklusive der Zusta
 <p>Dieselben Referenzen können auch auf Top-Level stehen (also neben <code>cindyjs:</code> statt darin). Das funktioniert im Viewer, im Editor aber nicht – siehe Hinweis oben.</p>
 <h3 id="sonstiges">Sonstiges</h3>
 <p>Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. <strong>Diese Funktion ist aber nicht getestet!</strong></p>
+<h2 id="standalone-betrieb-abakodzlmde">Standalone-Betrieb (abako.dzlm.de)</h2>
+<p>Dieselbe Datei lässt sich auch ohne divomath verwenden. Die Konfiguration
+läuft dann über URL-Parameter, die Namen sind identisch zu den unter
+<a href="#konfiguration-des-zustands-eines-vams">Zustand</a> beschriebenen.</p>
+<pre class="hljs"><code><div>https://abako.dzlm.de/cindy/vam/divoVAM.html?vam=percentagebar&amp;basevalue=120&amp;barvalue=0.5
+</div></code></pre>
+<p>Einen solchen Link erzeugt die Editor-Seite unter
+<a href="https://abako.dzlm.de/cindy/vam/">https://abako.dzlm.de/cindy/vam/</a> über ein Formular je VAM. <strong>Das ist der
+empfohlene Weg</strong> – die HTML-Datei selbst muss dafür nicht bearbeitet werden.</p>
+<h3 id="darstellung-2">Darstellung</h3>
+<ul>
+<li><strong>?full</strong>
+<ul>
+<li>Der Canvas füllt das Browserfenster statt der festen Größe 885 x 519.</li>
+<li><strong>Achtung</strong>: Bei Einbettung in Articulate Storyline <strong>nicht</strong> verwenden.
+Ohne feste Canvasgröße hängt das Größenverhältnis von Schrift und
+Objekten von der Einbettung ab, und die Darstellung wird unvorhersehbar.</li>
+</ul>
+</li>
+<li><strong>?rect=&lt;preset&gt;</strong>
+<ul>
+<li>Wählt den sichtbaren Weltausschnitt. Zulässig: <strong>divomath</strong> (24.5 x 18.9,
+Voreinstellung), <strong>classic</strong> (38.2 x 22.1), <strong>wide</strong> (der Ausschnitt der
+früheren Datei <code>divoVAM-full.html</code>).</li>
+</ul>
+</li>
+<li><strong>?rect=a,b,c,d</strong>
+<ul>
+<li>Freier Ausschnitt als vier Zahlen [links, oben, rechts, unten]. Bei
+ungültiger Angabe greift die Voreinstellung.</li>
+</ul>
+</li>
+</ul>
+<p><code>divoVAM-full.html</code> existiert weiterhin und leitet auf <code>divoVAM.html?full&amp;rect=wide</code>
+weiter, damit bestehende Links funktionieren.</p>
+<h3 id="freihandzeichnen">Freihandzeichnen</h3>
+<p>Ein Stiftwerkzeug, das sich als zweite Zeichenfläche über das VAM legt: drei
+Stiftfarben, Radierer, ein- und ausklappbare Werkzeugleiste. In divomath wird
+so etwas von der Plattform bereitgestellt, im Standalone-Betrieb nicht – daher
+diese Option.</p>
+<ul>
+<li><strong>?draw</strong>
+<ul>
+<li>Schaltet das Werkzeug ein.</li>
+<li><strong>Voraussetzung</strong>: <code>freehand-drawing.js</code> muss neben der HTML-Datei auf dem
+Server liegen. <code>build.py</code> legt sie mit ins Ausgabeverzeichnis.</li>
+</ul>
+</li>
+<li><strong>?drawpen=&lt;int&gt;</strong>
+<ul>
+<li>Strichstaerke in Pixeln. Voreinstellung 2.</li>
+</ul>
+</li>
+<li><strong>?drawpos=&lt;x&gt;,&lt;y&gt;</strong>
+<ul>
+<li>Position der Werkzeugleiste, relativ zur Zeichenfläche (Werte aus [0,1]).
+Voreinstellung 0.4,0.05.</li>
+</ul>
+</li>
+<li><strong>?drawdir=&lt;richtung&gt;</strong>
+<ul>
+<li>Richtung, in die sich die Leiste öffnet: <strong>right</strong>, <strong>left</strong>, <strong>up</strong> oder
+<strong>down</strong>. Voreinstellung right.</li>
+</ul>
+</li>
+<li><strong>?drawmoveable</strong>
+<ul>
+<li>Erlaubt es, die Werkzeugleiste zu verschieben.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Hinweise zur Bedienung:</strong> Solange der Stift aktiv ist, liegt die Zeichenfläche
+über dem VAM – dieses ist dann nicht bedienbar. Ein erneuter Klick auf den
+Stift-Button gibt es wieder frei. Die Zeichnung bleibt dabei sichtbar.</p>
+<p><strong>Achtung</strong>: Die Zeichenfläche wird beim Laden positioniert und folgt einer
+späteren Änderung der Fenstergröße nicht.</p>
 <h2 id="changelog">Changelog</h2>
 <h3 id="v7">v7</h3>
 <ul>

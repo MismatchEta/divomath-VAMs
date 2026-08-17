@@ -173,6 +173,7 @@ def freehand_block():
 
         ?draw               switch it on
         ?drawpen=4          pen width in px
+        ?drawerase=20       side length of the eraser square in px
         ?drawpos=0.4,0.05   menu bar position, relative to the canvas
         ?drawdir=right      direction the menu bar unfolds in
         ?drawmoveable       let the user drag the menu bar around
@@ -193,7 +194,8 @@ def freehand_block():
     window.CONFIGURATION = {{
         mode: "website",
         elementID: "CSCanvas",
-        penSize: Number(q.get("drawpen")) || 2,
+        penSize: Number(q.get("drawpen")) || 4,
+        eraserSize: Number(q.get("drawerase")) || 20,
         startLocation: {{
             x_absolute: undefined, y_absolute: undefined,
             x_relative: pos[0], y_relative: pos[1]

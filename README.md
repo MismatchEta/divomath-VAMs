@@ -1,4 +1,4 @@
-> v7b398
+> v7b403
 
 # divomath VAM Dokumentation
 
@@ -729,6 +729,70 @@ Dieselben Referenzen können auch auf Top-Level stehen (also neben `cindyjs:` st
 ### Sonstiges
 
 Prinzipiell können so auch die Ergebnisse anderer Komponenten in divomath verwendet werden, etwa eines anderen VAMs, eines Textfeldes oder dergleichen. **Diese Funktion ist aber nicht getestet!**
+
+## Standalone-Betrieb (abako.dzlm.de)
+
+Dieselbe Datei lässt sich auch ohne divomath verwenden. Die Konfiguration
+läuft dann über URL-Parameter, die Namen sind identisch zu den unter
+[Zustand](#konfiguration-des-zustands-eines-vams) beschriebenen.
+
+```
+https://abako.dzlm.de/cindy/vam/divoVAM.html?vam=percentagebar&basevalue=120&barvalue=0.5
+```
+
+Einen solchen Link erzeugt die Editor-Seite unter
+<https://abako.dzlm.de/cindy/vam/> über ein Formular je VAM. **Das ist der
+empfohlene Weg** – die HTML-Datei selbst muss dafür nicht bearbeitet werden.
+
+### Darstellung
+
+- **?full**
+  - Der Canvas füllt das Browserfenster statt der festen Größe 885 x 519.
+  - **Achtung**: Bei Einbettung in Articulate Storyline **nicht** verwenden.
+    Ohne feste Canvasgröße hängt das Größenverhältnis von Schrift und
+    Objekten von der Einbettung ab, und die Darstellung wird unvorhersehbar.
+- **?rect=\<preset>**
+  - Wählt den sichtbaren Weltausschnitt. Zulässig: **divomath** (24.5 x 18.9,
+    Voreinstellung), **classic** (38.2 x 22.1), **wide** (der Ausschnitt der
+    früheren Datei `divoVAM-full.html`).
+- **?rect=a,b,c,d**
+  - Freier Ausschnitt als vier Zahlen [links, oben, rechts, unten]. Bei
+    ungültiger Angabe greift die Voreinstellung.
+
+`divoVAM-full.html` existiert weiterhin und leitet auf `divoVAM.html?full&rect=wide`
+weiter, damit bestehende Links funktionieren.
+
+### Freihandzeichnen
+
+Ein Stiftwerkzeug, das sich als zweite Zeichenfläche über das VAM legt: drei
+Stiftfarben, Radierer, ein- und ausklappbare Werkzeugleiste. In divomath wird
+so etwas von der Plattform bereitgestellt, im Standalone-Betrieb nicht – daher
+diese Option.
+
+- **?draw**
+  - Schaltet das Werkzeug ein.
+  - **Voraussetzung**: `freehand-drawing.js` muss neben der HTML-Datei auf dem
+    Server liegen. `build.py` legt sie mit ins Ausgabeverzeichnis.
+- **?drawpen=\<int>**
+  - Strichstärke des Stifts in Pixeln. Voreinstellung 2.
+- **?drawerase=\<int>**
+  - Kantenlänge des Radierers in Pixeln. Voreinstellung 20.
+- **?drawpos=\<x>,\<y>**
+  - Position des Stift-Knopfs, relativ zur Zeichenfläche (Werte aus [0,1]).
+    Die Werkzeugleiste klappt von dort aus in die mit *drawdir* gewählte
+    Richtung auf. Voreinstellung 0.4,0.05.
+- **?drawdir=\<richtung>**
+  - Richtung, in die sich die Leiste öffnet: **right**, **left**, **up** oder
+    **down**. Voreinstellung right.
+- **?drawmoveable**
+  - Erlaubt es, die Werkzeugleiste zu verschieben.
+
+**Hinweise zur Bedienung:** Solange der Stift aktiv ist, liegt die Zeichenfläche
+über dem VAM – dieses ist dann nicht bedienbar. Ein erneuter Klick auf den
+Stift-Button gibt es wieder frei. Die Zeichnung bleibt dabei sichtbar.
+
+**Achtung**: Die Zeichenfläche wird beim Laden positioniert und folgt einer
+späteren Änderung der Fenstergröße nicht.
 
 ## Changelog
 

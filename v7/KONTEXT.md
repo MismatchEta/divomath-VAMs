@@ -197,6 +197,32 @@ Aus divoVAM 3.1.0 übernommen, Schichten 1–3d sind übertragen.
 
 ### Framework
 
+- **percentagebar: UI-Skalierung** (neu, aus dem Termin mit Yasemin am 16.08.)
+  Alles außer dem Streifen selbst soll gemeinsam skalierbar sein: Textfelder,
+  Schriftgrößen, Schalter und vermutlich auch die Tastatur. Hintergrund ist die
+  Storyline-Einbettung, wo der Streifen die volle Breite nutzen soll, das
+  Bedienfeld aber unabhängig davon lesbar bleiben muss.
+  - Vermutlich ein Parameter `uiscale`, der in die Konstruktoren von Toggle,
+    TextInput, Button und Keyboard einfließt – analog zu FONTSCALE, aber
+    konfigurierbar statt auflösungsabhängig.
+  - ⚠️ Betrifft Framework-Klassen, die alle VAMs nutzen. Der Standardwert muss
+    1 sein, damit sich für die anderen nichts ändert.
+- **Freihandzeichnen: Brücke zum Event-Log.** Das Werkzeug schreibt nichts in
+  die Ereignisdaten – eine Skizze, die niemand sieht, ist für die
+  Prozessdatenauswertung verloren.
+  - Vorbedingung: `log event` in `[FUN] Event Logging` steht noch in
+    `if(false, ...)` mit dem Vermerk "Needs proper JSON serializer first".
+    Den gibt es jetzt (`to json`), der Aufruf kann scharf geschaltet werden.
+  - Offen: Was soll erhoben werden? Zeitpunkt und Farbe sind trivial. Die
+    vollständige Punktfolge wäre auswertbar, aber viel Volumen; Bounding-Box
+    und Strichlänge wären kompakt, sagen aber nichts über den Inhalt. Für die
+    fachliche Semantik interessant wäre die Box in **Weltkoordinaten** – dafür
+    bräuchte das JS Zugriff auf die CindyJS-Transformation.
+  - Weg: `window.FREEHAND_APP` ist die Instanz; von dort per `cdy.evokeCS(...)`
+    ins Framework, damit alle Ereignisse eine Reihenfolge und ID-Vergabe teilen.
+- **Freihandzeichnen: Fenstergröße.** Die Zeichenfläche wird beim Laden
+  positioniert und folgt einer späteren Änderung nicht (`@improvement`-Vermerk
+  im Konstruktor).
 - `draw textbox`-Aufrufstellen auf `draw label` umstellen, dann Alias entfernen
 - `image scale`-Muster steht viermal fast identisch da (ImageButton,
   distributive-Toolbutton, zwei Thales-Toggles) — als Framework-Funktion
