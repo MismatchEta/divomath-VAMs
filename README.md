@@ -60,7 +60,7 @@ Two more are under construction but unfinished and should not be used in product
 ├─ assets/
     └─ img/
         └─ ... # Icons used by the widgets
-├─ special embeds/ # Ready-made embeddings
+├─ usage examples/ # Ready-made usage examples
     └─ storyline/ # Storyline embedding
 ├─ CHANGELOG.md # Version history
 └─ README.md # this file
@@ -76,7 +76,7 @@ python3 build.py "<cdy-filename>"
 The full loop:
 
 1. Edit in Cinderella
-2. **Save** the `.cdy`
+2. **Save** the `divoVAM.cdy`
 3. **Export** the HTML over the existing `divoVAM.html`
 4. `python3 build.py "divoVAM"`
 5. Upload the contents of `out/`
