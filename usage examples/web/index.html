@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>CindyVAM for Web</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .advanced { margin: 1em 0; }
+    .advanced > summary { cursor: pointer; padding: .4em 0; }
+    .advanced[open] > summary { margin-bottom: .6em; }
+    .field-block { display: block; }
+    .checkgrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(13em, 1fr));
+      gap: .15em .8em;
+      margin-top: .3em;
+    }
+    .checkgrid .checkitem {
+      display: flex;
+      align-items: center;
+      gap: .4em;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <h1>Virtuelle Arbeitsmittel</h1>
+  <p>
+    Wähle ein Arbeitsmittel, konfiguriere weitere Parameter im Popup.
+    Es gibt auch ein <a href="https://raw.githubusercontent.com/MismatchEta/divomath-VAMs/refs/heads/main/docs/doc-german.md?token=GHSAT0AAAAAAEGJ6HIY2B7XSYJB5LQWHV7M2UG3XYQ">README</a>.
+  </p>
+
+  <form id="generalconfigForm">
+    <div class="field">
+      <label for="vam-fullscreen">VAM im Vollbild anzeigen: </label>
+      <select id="vam-fullscreen" name="fullscreen">
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="button-grid">
+    <button class="image-button btn-vam-distributive"
+            data-first-key="vam"
+            data-first-value="distributive"
+            data-config-template="tmpl-distributive">
+      <span>Distributivfeld</span>
+    </button>
+
+    <button class="image-button btn-vam-divisors"
+            data-first-key="vam"
+            data-first-value="divisors"
+            data-config-template="tmpl-divisors">
+      <span>Teilbarkeit</span>
+    </button>
+
+    <button class="image-button btn-vam-numbercards"
+            data-first-key="vam"
+            data-first-value="numbercards"
+            data-config-template="tmpl-numbercards">
+      <span>Zahlenkarten</span>
+    </button>
+
+    <button class="image-button btn-vam-percentagebar"
+            data-first-key="vam"
+            data-first-value="percentagebar"
+            data-config-template="tmpl-percentagebar">
+      <span>Prozentstreifen</span>
+    </button>
+
+    <button class="image-button btn-vam-strapwork"
+            data-first-key="vam"
+            data-first-value="strapwork"
+            data-config-template="tmpl-strapwork">
+      <span>Bandornamente</span>
+    </button>
+
+    <button class="image-button btn-vam-thales"
+            data-first-key="vam"
+            data-first-value="thales"
+            data-config-template="tmpl-thales">
+      <span>Satz des Thales</span>
+    </button>
+  </div>
+
+  <p style="display:none;"><!-- DO NOT DISPLAY, REQUIRED FOR SCRIPT THOUGH -->
+    Erzeugter Link:
+    <a id="resultLink" href="#" target="_blank"></a>
+  </p>
+
+  <!-- Modal / Popup -->
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal" id="modal">
+      <button class="close-btn" type="button" id="closeModal">&times;</button>
+      <h2 id="modalTitle">Konfiguration</h2>
+      <form id="configForm">
+        <!-- Dynamischer Inhalt per Template -->
+      </form>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <template id="tmpl-distributive">
+    <h3>Grundsätzliche Einstellungen</h3>
+    <div class="field">
+      <label for="distributive-rows">Anzahl der Zeilen: </label>
+      <input type="number" id="distributive-rows" name="rows" placeholder="5">
+    </div>
+    <div class="field">
+      <label for="distributive-cols">Anzahl der Spalten: </label>
+      <input type="number" id="distributive-cols" name="cols" placeholder="7">
+    </div>
+    <div class="field">
+      <label for="distributive-groupingtype">Mögliche Gruppierungen: </label>
+      <select id="distributive-groupingtype" name="groupingtype">
+        <option value="">(Voreinstellung)</option>
+        <option value="NONE">keine</option>
+        <option value="ROW">nur Zeilen</option>
+        <option value="COL">nur Spalten</option>
+        <option value="ROWCOL">Zeilen und Spalten</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-groupby">Gruppierung bei Start: </label>
+      <select id="distributive-groupby" name="groupby">
+        <option value="">(Voreinstellung)</option>
+        <option value="NONE">keine</option>
+        <option value="ROW">nach Zeilen</option>
+        <option value="COLUMN">nach Spalten</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-coloredrowindex">Gefärbte Zeilen bei Start (Anzahl von unten): </label>
+      <input type="number" id="distributive-coloredrowindex" name="coloredrowindex" placeholder="keine">
+    </div>
+    <div class="field">
+      <label for="distributive-coloredcolindex">Gefärbte Spalten bei Start (Anzahl von rechts): </label>
+      <input type="number" id="distributive-coloredcolindex" name="coloredcolindex" placeholder="keine">
+    </div>
+    <div class="field">
+      <label for="distributive-cuthorizontally">Waagerecht zerschnitten bei Start: </label>
+      <select id="distributive-cuthorizontally" name="cuthorizontally">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-cutvertically">Senkrecht zerschnitten bei Start: </label>
+      <select id="distributive-cutvertically" name="cutvertically">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-requiregrouping">Färben/Zerschneiden erst nach Gruppieren: </label>
+      <select id="distributive-requiregrouping" name="requiregrouping">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-drawexpression">Term anzeigen: </label>
+      <select id="distributive-drawexpression" name="drawexpression">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-drawverbal">Sprachliche Beschreibung anzeigen: </label>
+      <select id="distributive-drawverbal" name="drawverbal">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="distributive-picturemode">Bildmodus (keine Interaktion): </label>
+      <select id="distributive-picturemode" name="picturemode">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+
+    <details class="advanced">
+      <summary><strong>Zusätzliche erweiterte Einstellungen</strong></summary>
+
+      <h4>Feld und Punkte</h4>
+      <div class="field">
+        <label for="distributive-gridposition">Position des Feldes [x,y]: </label>
+        <input type="text" id="distributive-gridposition" name="gridposition" placeholder="[10,7]">
+      </div>
+      <div class="field">
+        <label for="distributive-gridmoveable">Feld verschiebbar: </label>
+        <select id="distributive-gridmoveable" name="gridmoveable">
+          <option value="">(Voreinstellung)</option>
+          <option value="true">Ja</option>
+          <option value="false">Nein</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="distributive-size">Größe der Punkte: </label>
+        <input type="text" id="distributive-size" name="size" placeholder="1">
+      </div>
+      <div class="field">
+        <label for="distributive-cornerradius">Eckenradius der Punkte: </label>
+        <input type="text" id="distributive-cornerradius" name="cornerradius" placeholder=".5">
+      </div>
+      <div class="field">
+        <label for="distributive-verticalpadding">Senkrechter Abstand: </label>
+        <input type="text" id="distributive-verticalpadding" name="verticalpadding" placeholder=".1">
+      </div>
+      <div class="field">
+        <label for="distributive-horizontalpadding">Waagerechter Abstand: </label>
+        <input type="text" id="distributive-horizontalpadding" name="horizontalpadding" placeholder=".1">
+      </div>
+      <div class="field">
+        <label for="distributive-groupspacing">Abstand beim Gruppieren: </label>
+        <input type="text" id="distributive-groupspacing" name="groupspacing" placeholder=".2">
+      </div>
+      <div class="field">
+        <label for="distributive-cutwidth">Abstand beim Zerschneiden: </label>
+        <input type="text" id="distributive-cutwidth" name="cutwidth" placeholder=".3">
+      </div>
+      <div class="field">
+        <label for="distributive-animationspeed">Geschwindigkeit der Animation: </label>
+        <input type="text" id="distributive-animationspeed" name="animationspeed" placeholder=".15">
+      </div>
+
+      <h4>Werkzeuge</h4>
+      <div class="field">
+        <label for="distributive-tool">Werkzeug bei Start: </label>
+        <select id="distributive-tool" name="tool">
+          <option value="">(Voreinstellung)</option>
+          <option value="hand">Hand</option>
+          <option value="bucket">Farbeimer</option>
+          <option value="scissors">Schere</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="distributive-drawtoolbutton">Werkzeug-Button anzeigen: </label>
+        <select id="distributive-drawtoolbutton" name="drawtoolbutton">
+          <option value="">(Voreinstellung)</option>
+          <option value="true">Ja</option>
+          <option value="false">Nein</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="distributive-buttonsize">Größe des Buttons: </label>
+        <input type="text" id="distributive-buttonsize" name="buttonsize" placeholder="2">
+      </div>
+      <div class="field">
+        <label for="distributive-buttonpadding">Randabstand des Buttons: </label>
+        <input type="text" id="distributive-buttonpadding" name="buttonpadding" placeholder=".4">
+      </div>
+      <div class="field">
+        <label for="distributive-toolbuttonx">x-Position des Buttons: </label>
+        <input type="text" id="distributive-toolbuttonx" name="toolbuttonx" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="distributive-toolbuttony">y-Position des Buttons: </label>
+        <input type="text" id="distributive-toolbuttony" name="toolbuttony" placeholder="automatisch">
+      </div>
+
+      <h4>Term und Beschreibung</h4>
+      <div class="field">
+        <label for="distributive-fontsize">Schriftgröße: </label>
+        <input type="number" id="distributive-fontsize" name="fontsize" placeholder="18">
+      </div>
+      <div class="field">
+        <label for="distributive-labelpadding">Randabstand der Texte: </label>
+        <input type="text" id="distributive-labelpadding" name="labelpadding" placeholder="10.3">
+      </div>
+      <div class="field">
+        <label for="distributive-expressionposition">Position des Terms [x,y]: </label>
+        <input type="text" id="distributive-expressionposition" name="expressionposition" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="distributive-expressionmoveable">Term verschiebbar: </label>
+        <select id="distributive-expressionmoveable" name="expressionmoveable">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="distributive-verbalposition">Position der Beschreibung [x,y]: </label>
+        <input type="text" id="distributive-verbalposition" name="verbalposition" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="distributive-verbalmoveable">Beschreibung verschiebbar: </label>
+        <select id="distributive-verbalmoveable" name="verbalmoveable">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="distributive-showexpressiontoggle">Schalter zum Ein-/Ausblenden anzeigen: </label>
+        <select id="distributive-showexpressiontoggle" name="showexpressiontoggle">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="distributive-expressiontogglestate">Schalter bei Start aktiv: </label>
+        <select id="distributive-expressiontogglestate" name="expressiontogglestate">
+          <option value="">(Voreinstellung)</option>
+          <option value="true">Ja</option>
+          <option value="false">Nein</option>
+        </select>
+      </div>
+    </details>
+
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-divisors">
+    <h3>Grundsätzliche Einstellungen</h3>
+    <div class="field">
+      <label for="divisors-blobs">Anzahl der Plättchen bei Start: </label>
+      <input type="number" id="divisors-blobs" name="blobs" placeholder="0">
+    </div>
+    <div class="field">
+      <label for="divisors-maxblobs">Maximale Anzahl der Plättchen: </label>
+      <input type="number" id="divisors-maxblobs" name="maxblobs" placeholder="100">
+    </div>
+    <div class="field">
+      <label for="divisors-divisor">Gruppengröße bei Start: </label>
+      <input type="number" id="divisors-divisor" name="divisor" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="divisors-maxcols">Maximale Gruppengröße: </label>
+      <input type="number" id="divisors-maxcols" name="maxcols" placeholder="10">
+    </div>
+    <div class="field">
+      <label for="divisors-drawblobbuttons">Plättchen-Buttons anzeigen: </label>
+      <select id="divisors-drawblobbuttons" name="drawblobbuttons">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="divisors-drawdivbuttons">Gruppen-Buttons anzeigen: </label>
+      <select id="divisors-drawdivbuttons" name="drawdivbuttons">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="divisors-drawbar">Schieberegler anzeigen: </label>
+      <select id="divisors-drawbar" name="drawbar">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+
+    <h4>Anzeigen unterhalb der Bänder</h4>
+    <div class="field">
+      <label for="divisors-displaycalc">Rechnung (a : b): </label>
+      <select id="divisors-displaycalc" name="displaycalc">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="divisors-displayresult">Ergebnis (= c Rest d): </label>
+      <select id="divisors-displayresult" name="displayresult">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="divisors-displaydescription">Sprachliche Beschreibung: </label>
+      <select id="divisors-displaydescription" name="displaydescription">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="divisors-displayblobcount">Gesamtanzahl: </label>
+      <select id="divisors-displayblobcount" name="displayblobcount">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="divisors-displaydivisorcount">Gruppengröße: </label>
+      <select id="divisors-displaydivisorcount" name="displaydivisorcount">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+
+    <details class="advanced">
+      <summary><strong>Zusätzliche erweiterte Einstellungen</strong></summary>
+      <div class="field">
+        <label for="divisors-size">Größe der Plättchen: </label>
+        <input type="text" id="divisors-size" name="size" placeholder=".7">
+      </div>
+      <div class="field">
+        <label for="divisors-blobmargin">Abstand zwischen Plättchen: </label>
+        <input type="text" id="divisors-blobmargin" name="blobmargin" placeholder=".2">
+      </div>
+      <div class="field">
+        <label for="divisors-stripmargin">Abstand zwischen Bändern: </label>
+        <input type="text" id="divisors-stripmargin" name="stripmargin" placeholder=".5">
+      </div>
+      <div class="field">
+        <label for="divisors-fontsize">Schriftgröße der Texte: </label>
+        <input type="number" id="divisors-fontsize" name="fontsize" placeholder="16">
+      </div>
+      <div class="field">
+        <label for="divisors-color">Farben [Band, Rest]: </label>
+        <input type="text" id="divisors-color" name="color" placeholder="[DIVORED,DIVOGREY]">
+      </div>
+      <div class="field">
+        <label for="divisors-timing">Dauer der Animation: </label>
+        <input type="text" id="divisors-timing" name="timing" placeholder=".5">
+      </div>
+      <div class="field">
+        <label for="divisors-sequentialorder">Sequenziell umsortieren: </label>
+        <select id="divisors-sequentialorder" name="sequentialorder">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+    </details>
+
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-numbercards">
+    <h3>Grundsätzliche Einstellungen</h3>
+    <div class="field">
+      <label for="numbercards-cards">Anzahl der Karten: </label>
+      <input type="number" id="numbercards-cards" name="cards" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="numbercards-value">Werte der Karten: </label>
+      <input type="text" id="numbercards-value" name="value" placeholder="[1234]">
+    </div>
+    <div class="field">
+      <label for="numbercards-unfold">Karten aufgeklappt starten: </label>
+      <input type="text" id="numbercards-unfold" name="unfold" placeholder="[true]">
+    </div>
+    <div class="field">
+      <label for="numbercards-edit">Editierbare Stellen je Karte: </label>
+      <input type="text" id="numbercards-edit" name="edit" placeholder="["tttt"]">
+    </div>
+    <div class="field">
+      <label for="numbercards-color">Karten farbig darstellen: </label>
+      <select id="numbercards-color" name="color">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="numbercards-colortoggle">Farbwechsel-Schalter anzeigen: </label>
+      <select id="numbercards-colortoggle" name="colortoggle">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+
+    <details class="advanced">
+      <summary><strong>Zusätzliche erweiterte Einstellungen</strong></summary>
+      <div class="field">
+        <label for="numbercards-x">x-Koordinaten der Karten: </label>
+        <input type="text" id="numbercards-x" name="x" placeholder="[3,13,23]">
+      </div>
+      <div class="field">
+        <label for="numbercards-y">y-Koordinaten der Karten: </label>
+        <input type="text" id="numbercards-y" name="y" placeholder="[16,16,16]">
+      </div>
+      <div class="field">
+        <label for="numbercards-alpha">Transparenz aufgeklappter Karten: </label>
+        <input type="text" id="numbercards-alpha" name="alpha" placeholder=".2">
+      </div>
+      <div class="field">
+        <label for="numbercards-separator">Trennzeichen für Tausender: </label>
+        <input type="text" id="numbercards-separator" name="separator" placeholder="(keines)">
+      </div>
+    </details>
+
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-percentagebar">
+    <h3>Grundsätzliche Einstellungen</h3>
+    <div class="field">
+      <label for="percentagebar-barvalue">Prozentsatz bei Init (in %): </label>
+      <input type="text" id="percentagebar-barvalue" name="barvalue" placeholder="0">
+    </div>
+    <div class="field">
+      <label for="percentagebar-basevalue">Grundwert bei Init: </label>
+      <input type="text" id="percentagebar-basevalue" name="basevalue" placeholder="1000">
+    </div>
+    <div class="field">
+      <label for="percentagebar-unit">Einheit: </label>
+      <input type="text" id="percentagebar-unit" name="unit" placeholder="MB">
+    </div>
+    <div class="field">
+      <label for="percentagebar-barprecision">Präzision (Schrittweite in %): </label>
+      <input type="text" id="percentagebar-barprecision" name="barprecision" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="percentagebar-snapbar">Bewegung des Streifens an Schrittanzahl ausrichten: </label>
+      <select id="percentagebar-snapbar" name="snapbar">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-numberofbars">Anzahl der angezeigten Prozentstreifen: </label>
+      <input type="number" min="1" id="percentagebar-numberofbars" name="numberofbars" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="percentagebar-subdivisions">Anzahl der Schritte am Streifen: </label>
+      <input type="number" min="0" id="percentagebar-subdivisions" name="subdivisions" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="percentagebar-overflow">Overflow (Werte über 100 % erlauben): </label>
+      <select id="percentagebar-overflow" name="overflow">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-keepstable">Beim Ändern konstant halten: </label>
+      <select id="percentagebar-keepstable" name="keepstable">
+        <option value="">(Voreinstellung)</option>
+        <option value="basevalue">Ganzes</option>
+        <option value="value">Teil</option>
+        <option value="percentage">Anteil</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="percentagebar-alwaysdrawarches">Bögen von Anfang an anzeigen: </label>
+      <select id="percentagebar-alwaysdrawarches" name="alwaysdrawarches">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+
+    <details class="advanced">
+      <summary><strong>Zusätzliche erweiterte Einstellungen</strong></summary>
+
+      <div class="field">
+        <label for="percentagebar-isbardraggable">Prozentstreifen interaktiv: </label>
+        <select id="percentagebar-isbardraggable" name="isbardraggable">
+          <option value="">(Voreinstellung)</option>
+          <option value="true">Ja</option>
+          <option value="false">Nein</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="percentagebar-showbuttons">Schalter (Toggles) anzeigen: </label>
+        <select id="percentagebar-showbuttons" name="showbuttons">
+          <option value="">(Voreinstellung)</option>
+          <option value="true">Ja</option>
+          <option value="false">Nein</option>
+        </select>
+      </div>
+      <div class="field field-block">
+        <label>Einzelne Schalter ausblenden: </label>
+        <div class="checkgrid">
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="percentage"> Anteil</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="part"> Teil</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="basevalue"> Ganzes</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="parts"> Werte unten</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="percentages"> Prozente oben</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="arch"> Bögen</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="showtf-div"> Anzahl der Schritte</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="showtf-divpercentage"> Größe des Schritts in %</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="showtf-divvalue"> Größe des Schritts</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="showtf-perc"> Eingabe Anteil</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="showtf-value"> Eingabe Teil</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="showtf-base"> Eingabe Ganzes</label>
+          <label class="checkitem"><input type="checkbox" name="hidetoggles" data-list="true" value="overflow"> Overflow</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="percentagebar-barposition">Position des Streifens [x,y]: </label>
+        <input type="text" id="percentagebar-barposition" name="barposition" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="percentagebar-barwidth">Breite des Streifens: </label>
+        <input type="text" id="percentagebar-barwidth" name="barwidth" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="percentagebar-barheight">Höhe des Streifens: </label>
+        <input type="text" id="percentagebar-barheight" name="barheight" placeholder="1.5">
+      </div>
+      <div class="field">
+        <label for="percentagebar-barpadding">Abstand zwischen Prozentstreifen: </label>
+        <input type="text" id="percentagebar-barpadding" name="barpadding" placeholder="2.5">
+      </div>
+      <div class="field">
+        <label for="percentagebar-barcolor">Farbe des Streifens: </label>
+        <input type="text" id="percentagebar-barcolor" name="barcolor" placeholder="DZLMCOLORGOLD">
+      </div>
+      <div class="field">
+        <label for="percentagebar-fontfamily">Schriftart: </label>
+        <input type="text" id="percentagebar-fontfamily" name="fontfamily" placeholder="(Voreinstellung)">
+      </div>
+      <div class="field">
+        <label for="percentagebar-decimalspercentage">Nachkommastellen Prozentsatz: </label>
+        <input type="number" min="0" id="percentagebar-decimalspercentage" name="decimalspercentage" placeholder="2">
+      </div>
+      <div class="field">
+        <label for="percentagebar-decimalsvalue">Nachkommastellen Prozentwert: </label>
+        <input type="number" min="0" id="percentagebar-decimalsvalue" name="decimalsvalue" placeholder="2">
+      </div>
+      <div class="field">
+        <label for="percentagebar-leftoutpercentages">Nicht zu zeichnende Prozentsätze: </label>
+        <input type="text" id="percentagebar-leftoutpercentages" name="leftoutpercentages" placeholder="[]">
+      </div>
+      <div class="field">
+        <label for="percentagebar-leftoutvalues">Nicht zu zeichnende Prozentwerte: </label>
+        <input type="text" id="percentagebar-leftoutvalues" name="leftoutvalues" placeholder="[]">
+      </div>
+      <div class="field">
+        <label for="percentagebar-custompercentages">Immer zu zeichnende Prozentsätze: </label>
+        <input type="text" id="percentagebar-custompercentages" name="custompercentages" placeholder="[]">
+      </div>
+      <div class="field">
+        <label for="percentagebar-customvalues">Immer zu zeichnende Prozentwerte: </label>
+        <input type="text" id="percentagebar-customvalues" name="customvalues" placeholder="[]">
+      </div>
+      <div class="field">
+        <label for="percentagebar-scaffoldbasevalue">Grundwert verdecken: </label>
+        <select id="percentagebar-scaffoldbasevalue" name="scaffoldbasevalue">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="percentagebar-scaffoldvalue">Prozentwert verdecken: </label>
+        <select id="percentagebar-scaffoldvalue" name="scaffoldvalue">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="percentagebar-scaffoldpercentage">Prozentsatz verdecken: </label>
+        <select id="percentagebar-scaffoldpercentage" name="scaffoldpercentage">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+    </details>
+
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-strapwork">
+    <h3>Grundsätzliche Einstellungen</h3>
+    <div class="field">
+      <label for="strapwork-rows">Anzahl der Streifen: </label>
+      <input type="number" id="strapwork-rows" name="rows" placeholder="1">
+    </div>
+    <div class="field">
+      <label for="strapwork-limit">Plättchen je Streifen (-1 = unbegrenzt): </label>
+      <input type="text" id="strapwork-limit" name="limit" placeholder="[10]">
+    </div>
+    <div class="field">
+      <label for="strapwork-state">Belegung je Streifen bei Start: </label>
+      <input type="text" id="strapwork-state" name="state" placeholder="["3,6,1"]">
+    </div>
+    <div class="field">
+      <label for="strapwork-polys">Verfügbare Plättchen (Eckenzahlen): </label>
+      <input type="text" id="strapwork-polys" name="polys" placeholder="[0,3,6]">
+    </div>
+    <div class="field">
+      <label for="strapwork-sepstate">Position der Trenner: </label>
+      <input type="text" id="strapwork-sepstate" name="sepstate" placeholder="(keine)">
+    </div>
+    <div class="field">
+      <label for="strapwork-interactable">Bedienbar (c=Behälter, p=Plättchen, s=Trenner): </label>
+      <input type="text" id="strapwork-interactable" name="interactable" placeholder="cps">
+    </div>
+
+    <h4>Anzeigen</h4>
+    <div class="field">
+      <label for="strapwork-drawpolys">Vorrat an Plättchen: </label>
+      <select id="strapwork-drawpolys" name="drawpolys">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="strapwork-drawpatterncontainer">Musterbehälter: </label>
+      <select id="strapwork-drawpatterncontainer" name="drawpatterncontainer">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="strapwork-drawseparator">Trenner: </label>
+      <select id="strapwork-drawseparator" name="drawseparator">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="strapwork-drawborders">Ränder der Plättchen: </label>
+      <select id="strapwork-drawborders" name="drawborders">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="strapwork-drawresetbutton">Zurücksetzen-Button: </label>
+      <select id="strapwork-drawresetbutton" name="drawresetbutton">
+        <option value="">(Voreinstellung)</option>
+        <option value="true">Ja</option>
+        <option value="false">Nein</option>
+      </select>
+    </div>
+
+    <details class="advanced">
+      <summary><strong>Zusätzliche erweiterte Einstellungen</strong></summary>
+
+      <h4>Musterbehälter</h4>
+      <div class="field">
+        <label for="strapwork-patternlimit">Plättchen im Musterbehälter: </label>
+        <input type="number" id="strapwork-patternlimit" name="patternlimit" placeholder="5">
+      </div>
+      <div class="field">
+        <label for="strapwork-patternstate">Belegung des Musterbehälters: </label>
+        <input type="text" id="strapwork-patternstate" name="patternstate" placeholder="[""]">
+      </div>
+
+      <h4>Referenzbehälter</h4>
+      <div class="field">
+        <label for="strapwork-drawrccontainer">Referenzbehälter anzeigen: </label>
+        <select id="strapwork-drawrccontainer" name="drawrccontainer">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="strapwork-drawrcseparator">Trenner im Referenzbehälter: </label>
+        <select id="strapwork-drawrcseparator" name="drawrcseparator">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="strapwork-rcrows">Anzahl der Streifen: </label>
+        <input type="number" id="strapwork-rcrows" name="rcrows" placeholder="1">
+      </div>
+      <div class="field">
+        <label for="strapwork-rclimit">Plättchen je Streifen: </label>
+        <input type="text" id="strapwork-rclimit" name="rclimit" placeholder="[10]">
+      </div>
+      <div class="field">
+        <label for="strapwork-rcstate">Belegung je Streifen: </label>
+        <input type="text" id="strapwork-rcstate" name="rcstate" placeholder="[""]">
+      </div>
+      <div class="field">
+        <label for="strapwork-rcsepstate">Position der Trenner: </label>
+        <input type="text" id="strapwork-rcsepstate" name="rcsepstate" placeholder="(keine)">
+      </div>
+      <div class="field">
+        <label for="strapwork-rcinteractable">Bedienbar (leer = nein): </label>
+        <input type="text" id="strapwork-rcinteractable" name="rcinteractable" placeholder="(nicht bedienbar)">
+      </div>
+
+      <h4>Darstellung</h4>
+      <div class="field">
+        <label for="strapwork-size">Größe der Plättchen: </label>
+        <input type="text" id="strapwork-size" name="size" placeholder="1">
+      </div>
+      <div class="field">
+        <label for="strapwork-polypadding">Abstand zwischen Plättchen: </label>
+        <input type="text" id="strapwork-polypadding" name="polypadding" placeholder=".5">
+      </div>
+      <div class="field">
+        <label for="strapwork-polycolors">Farben der Plättchen: </label>
+        <input type="text" id="strapwork-polycolors" name="polycolors" placeholder="1..100">
+      </div>
+      <div class="field">
+        <label for="strapwork-sepsize">Größe der Trenner: </label>
+        <input type="text" id="strapwork-sepsize" name="sepsize" placeholder="1">
+      </div>
+      <div class="field">
+        <label for="strapwork-buttonsize">Größe des Buttons: </label>
+        <input type="text" id="strapwork-buttonsize" name="buttonsize" placeholder="1">
+      </div>
+    </details>
+
+    <button type="submit">VAM erzeugen</button>
+  </template>
+
+  <template id="tmpl-thales">
+    <h3>Grundsätzliche Einstellungen</h3>
+    <div class="field">
+      <label for="thales-A">Punkt A: </label>
+      <input type="text" id="thales-A" name="A" placeholder="[7,5]">
+    </div>
+    <div class="field">
+      <label for="thales-B">Punkt B: </label>
+      <input type="text" id="thales-B" name="B" placeholder="[18,10]">
+    </div>
+    <div class="field">
+      <label for="thales-C">Punkt C (beweglich): </label>
+      <input type="text" id="thales-C" name="C" placeholder="[12,12]">
+    </div>
+    <div class="field">
+      <label for="thales-softc">Weiche Konstruktion (C klebt nicht am Kreis): </label>
+      <select id="thales-softc" name="softc">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="thales-snap">Auf rechten Winkel einrasten: </label>
+      <select id="thales-snap" name="snap">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="thales-stampmode">Modus: </label>
+      <select id="thales-stampmode" name="stampmode">
+        <option value="">(Voreinstellung)</option>
+        <option value="stamp">Stempeln</option>
+        <option value="trace">Spur zeichnen</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="thales-drawcircle">Thaleskreis anzeigen: </label>
+      <select id="thales-drawcircle" name="drawcircle">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="thales-drawcenter">Mittelpunkt M anzeigen: </label>
+      <select id="thales-drawcenter" name="drawcenter">
+        <option value="">(Voreinstellung)</option>
+        <option value="false">Nein</option>
+        <option value="true">Ja</option>
+      </select>
+    </div>
+
+    <h4>Winkel, die von Anfang an angezeigt werden</h4>
+    <div class="field field-block">
+      <div class="checkgrid">
+        <label class="checkitem"><input type="checkbox" name="showalpha" value="true"> α (Alpha)</label>
+        <label class="checkitem"><input type="checkbox" name="showbeta" value="true"> β (Beta)</label>
+        <label class="checkitem"><input type="checkbox" name="showgamma" value="true"> γ (Gamma)</label>
+        <label class="checkitem"><input type="checkbox" name="showgamma1" value="true"> γ₁ (Gamma 1)</label>
+        <label class="checkitem"><input type="checkbox" name="showgamma2" value="true"> γ₂ (Gamma 2)</label>
+        <label class="checkitem"><input type="checkbox" name="showanglevalues" value="true"> Winkel messen</label>
+        <label class="checkitem"><input type="checkbox" name="showhelp" value="true"> Visuelle Hilfe</label>
+      </div>
+    </div>
+
+    <details class="advanced">
+      <summary><strong>Zusätzliche erweiterte Einstellungen</strong></summary>
+
+      <h4>Bedienelemente ausblenden</h4>
+      <div class="field field-block">
+        <div class="checkgrid">
+          <label class="checkitem"><input type="checkbox" name="showstampbutton" value="false"> Stempel-/Spur-Button</label>
+          <label class="checkitem"><input type="checkbox" name="showundobutton" value="false"> Rückgängig-Button</label>
+          <label class="checkitem"><input type="checkbox" name="showresetbutton" value="false"> Reset-Button</label>
+          <label class="checkitem"><input type="checkbox" name="showconstructionbutton" value="false"> Konstruktions-Schalter</label>
+          <label class="checkitem"><input type="checkbox" name="showhelpbutton" value="false"> Hilfe-Schalter</label>
+        </div>
+      </div>
+
+      <h4>Winkel-Schalter ausblenden</h4>
+      <div class="field field-block">
+        <div class="checkgrid">
+          <label class="checkitem"><input type="checkbox" name="drawtogglealpha" value="false"> α</label>
+          <label class="checkitem"><input type="checkbox" name="drawtogglebeta" value="false"> β</label>
+          <label class="checkitem"><input type="checkbox" name="drawtogglegamma" value="false"> γ</label>
+          <label class="checkitem"><input type="checkbox" name="drawtogglegamma1" value="false"> γ₁</label>
+          <label class="checkitem"><input type="checkbox" name="drawtogglegamma2" value="false"> γ₂</label>
+          <label class="checkitem"><input type="checkbox" name="drawtogglevalues" value="false"> Winkel messen</label>
+        </div>
+      </div>
+
+      <h4>Beweglichkeit und Einrasten</h4>
+      <div class="field">
+        <label for="thales-amoveable">Punkt A beweglich: </label>
+        <select id="thales-amoveable" name="amoveable">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-bmoveable">Punkt B beweglich: </label>
+        <select id="thales-bmoveable" name="bmoveable">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-snappingdifference">Fangbereich rechter Winkel (in °): </label>
+        <input type="number" id="thales-snappingdifference" name="snappingdifference" placeholder="5">
+      </div>
+      <div class="field">
+        <label for="thales-generalsnapsize">Einrasten auf Vielfache von (in °): </label>
+        <input type="number" id="thales-generalsnapsize" name="generalsnapsize" placeholder="5">
+      </div>
+      <div class="field">
+        <label for="thales-generalsnapdifference">Fangbereich dafür (in °): </label>
+        <input type="text" id="thales-generalsnapdifference" name="generalsnapdifference" placeholder=".5">
+      </div>
+
+      <h4>Stempel</h4>
+      <div class="field">
+        <label for="thales-stampbuttonimage">Symbol des Buttons: </label>
+        <select id="thales-stampbuttonimage" name="stampbuttonimage">
+          <option value="">(Voreinstellung)</option>
+          <option value="stamp">Stempel</option>
+          <option value="measure-angle">Winkelmesser</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-stickstampbuttontopoint">Button an Punkt C heften: </label>
+        <select id="thales-stickstampbuttontopoint" name="stickstampbuttontopoint">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-showstampedpoints">Gestempelte Punkte anzeigen: </label>
+        <select id="thales-showstampedpoints" name="showstampedpoints">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-showstampedvalues">Winkelliste anzeigen: </label>
+        <select id="thales-showstampedvalues" name="showstampedvalues">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-jumptostamp">Klick auf Winkel setzt C zurück: </label>
+        <select id="thales-jumptostamp" name="jumptostamp">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-stampgradient">Farbverlauf der Stempel: </label>
+        <select id="thales-stampgradient" name="stampgradient">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-stampgradientstrength">Stärke des Farbverlaufs (0–1): </label>
+        <input type="text" id="thales-stampgradientstrength" name="stampgradientstrength" placeholder=".8">
+      </div>
+      <div class="field">
+        <label for="thales-stampcolor">Stempelfarbe (ohne Verlauf): </label>
+        <input type="text" id="thales-stampcolor" name="stampcolor" placeholder="[.8,.2,.2]">
+      </div>
+
+      <h4>Spur</h4>
+      <div class="field">
+        <label for="thales-drawtrace">Spur von Anfang an aufzeichnen: </label>
+        <select id="thales-drawtrace" name="drawtrace">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-tracesize">Strichstärke der Spur: </label>
+        <input type="number" id="thales-tracesize" name="tracesize" placeholder="4">
+      </div>
+      <div class="field">
+        <label for="thales-tracecolor">Farbe der Spur: </label>
+        <input type="text" id="thales-tracecolor" name="tracecolor" placeholder="DIVOBLUE">
+      </div>
+      <div class="field">
+        <label for="thales-traceminstep">Mindestabstand der Spurpunkte: </label>
+        <input type="text" id="thales-traceminstep" name="traceminstep" placeholder=".1">
+      </div>
+
+      <h4>Winkelanzeige und Beschriftung</h4>
+      <div class="field">
+        <label for="thales-showcurrentanglevalue">Aktuellen Winkelwert anzeigen: </label>
+        <select id="thales-showcurrentanglevalue" name="showcurrentanglevalue">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-anglevaluesinline">Winkelwerte am Winkel statt in Liste: </label>
+        <select id="thales-anglevaluesinline" name="anglevaluesinline">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-displayanglefully">In der Liste "γ =" mit anzeigen: </label>
+        <select id="thales-displayanglefully" name="displayanglefully">
+          <option value="">(Voreinstellung)</option>
+          <option value="false">Nein</option>
+          <option value="true">Ja</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="thales-displayanglefontsize">Schriftgröße der Winkelliste: </label>
+        <input type="number" id="thales-displayanglefontsize" name="displayanglefontsize" placeholder="24">
+      </div>
+      <div class="field">
+        <label for="thales-defaultanglesizes">Radien der Bögen [α,β,γ,γ₁,γ₂]: </label>
+        <input type="text" id="thales-defaultanglesizes" name="defaultanglesizes" placeholder="[3,3,2,3,3]">
+      </div>
+      <div class="field">
+        <label for="thales-anglelabelsize">Schriftgröße der Winkelbeschriftung: </label>
+        <input type="number" id="thales-anglelabelsize" name="anglelabelsize" placeholder="18">
+      </div>
+      <div class="field">
+        <label for="thales-anglelabelgammafactor">Vergrößerungsfaktor für γ: </label>
+        <input type="text" id="thales-anglelabelgammafactor" name="anglelabelgammafactor" placeholder="1.3">
+      </div>
+      <div class="field">
+        <label for="thales-anglelabelminscale">Untergrenze der Verkleinerung (1 = keine): </label>
+        <input type="text" id="thales-anglelabelminscale" name="anglelabelminscale" placeholder=".65">
+      </div>
+
+      <h4>Darstellung</h4>
+      <div class="field">
+        <label for="thales-pointlabelsize">Schriftgröße Punktnamen: </label>
+        <input type="number" id="thales-pointlabelsize" name="pointlabelsize" placeholder="24">
+      </div>
+      <div class="field">
+        <label for="thales-linelabelsize">Schriftgröße Seitennamen: </label>
+        <input type="number" id="thales-linelabelsize" name="linelabelsize" placeholder="18">
+      </div>
+      <div class="field">
+        <label for="thales-linesize">Strichstärke Dreieck: </label>
+        <input type="text" id="thales-linesize" name="linesize" placeholder="1.5">
+      </div>
+      <div class="field">
+        <label for="thales-circlelinesize">Strichstärke Kreis: </label>
+        <input type="text" id="thales-circlelinesize" name="circlelinesize" placeholder="1.5">
+      </div>
+      <div class="field">
+        <label for="thales-circlelinecolor">Farbe des Kreises: </label>
+        <input type="text" id="thales-circlelinecolor" name="circlelinecolor" placeholder=".3*[1,1,1]">
+      </div>
+      <div class="field">
+        <label for="thales-imgoffset">Versatz der Button-Symbole: </label>
+        <input type="text" id="thales-imgoffset" name="imgoffset" placeholder="[0,.65]">
+      </div>
+
+      <h4>Positionen (leer = automatisch)</h4>
+      <div class="field">
+        <label for="thales-toolbarmargin">Randabstand der Leiste: </label>
+        <input type="text" id="thales-toolbarmargin" name="toolbarmargin" placeholder=".3">
+      </div>
+      <div class="field">
+        <label for="thales-backbuttoncoord">Rückgängig-Button: </label>
+        <input type="text" id="thales-backbuttoncoord" name="backbuttoncoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-resetbuttoncoord">Reset-Button: </label>
+        <input type="text" id="thales-resetbuttoncoord" name="resetbuttoncoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-stampbuttoncoord">Stempel-Button: </label>
+        <input type="text" id="thales-stampbuttoncoord" name="stampbuttoncoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-constructionbuttoncoord">Konstruktions-Schalter: </label>
+        <input type="text" id="thales-constructionbuttoncoord" name="constructionbuttoncoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-helpbuttoncoord">Hilfe-Schalter: </label>
+        <input type="text" id="thales-helpbuttoncoord" name="helpbuttoncoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-togglerefcoord">Winkel-Schalter (Spalte): </label>
+        <input type="text" id="thales-togglerefcoord" name="togglerefcoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-gammadisplaycoord">Winkelanzeige: </label>
+        <input type="text" id="thales-gammadisplaycoord" name="gammadisplaycoord" placeholder="automatisch">
+      </div>
+      <div class="field">
+        <label for="thales-gammalistcoord">Winkelliste: </label>
+        <input type="text" id="thales-gammalistcoord" name="gammalistcoord" placeholder="automatisch">
+      </div>
+    </details>
+
+    <button type="submit">VAM erzeugen</button>
+  </template>
+  
+  <script>
+    let baseUrl;
+
+    const backdrop = document.getElementById('modalBackdrop');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const configForm = document.getElementById('configForm');
+    const resultLink = document.getElementById('resultLink');
+    const closeModalBtn = document.getElementById('closeModal');
+
+    let firstKey = null;
+    let firstValue = null;
+
+    // Gemerkte Eingaben je VAM (bleiben erhalten, solange die Seite offen ist)
+    const savedValues = {};
+    let currentTemplateId = null;
+
+    function restoreValues(form, tmplId) {
+      const data = savedValues[tmplId];
+      if (!data) return;
+      Array.from(form.elements).forEach(el => {
+        if (!el.name || !(el.name in data)) return;
+        if (el.type === 'checkbox') el.checked = data[el.name];
+        else el.value = data[el.name];
+      });
+    }
+
+    function storeValues(form, tmplId) {
+      const data = {};
+      Array.from(form.elements).forEach(el => {
+        if (!el.name) return;
+        data[el.name] = (el.type === 'checkbox') ? el.checked : el.value;
+      });
+      savedValues[tmplId] = data;
+    }
+
+    // Bild-Buttons aktivieren
+    document.querySelectorAll('.image-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        firstKey = btn.dataset.firstKey;
+        firstValue = btn.dataset.firstValue;
+
+        modalTitle.textContent = 'Konfiguration für ' + firstValue;
+
+        const tmpl = document.getElementById(btn.dataset.configTemplate);
+        currentTemplateId = btn.dataset.configTemplate;
+        configForm.innerHTML = '';
+        configForm.appendChild(tmpl.content.cloneNode(true));
+        restoreValues(configForm, currentTemplateId);
+
+        backdrop.classList.add('active');
+      });
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      if (currentTemplateId) storeValues(configForm, currentTemplateId);
+      backdrop.classList.remove('active');
+    });
+
+    backdrop.addEventListener('click', e => {
+      if (e.target === backdrop) {
+        if (currentTemplateId) storeValues(configForm, currentTemplateId);
+        backdrop.classList.remove('active');
+      }
+    });
+
+    backdrop.addEventListener('submit', e => {
+      if (e.target.id !== 'configForm') return;
+      e.preventDefault();
+      
+      // Base Config einsammeln
+      // Es gibt nur noch EINE Datei; Vollbild wird ueber den Parameter
+      // "full" gesteuert (siehe build.py, js_prelude).
+      baseUrl = 'https://abako.dzlm.de/cindy/vam/testing/divoVAM.html';
+      const fullscreen = document.getElementById('vam-fullscreen').value === "true";
+
+      const form = e.target;
+      if (currentTemplateId) storeValues(form, currentTemplateId);
+      const params = [];
+
+      // erster Parameter
+      if (firstKey && firstValue)
+        params.push(encodeURIComponent(firstKey) + '=' + encodeURIComponent(firstValue));
+
+      params.push("debuglevel=0");
+
+      // Vollbild: Parameter ohne Wert genuegt (URLSearchParams.has("full"))
+      if (fullscreen) params.push("full");
+
+      // weitere Parameter einsammeln
+      const listGroups = {};   // Checkbox-Gruppen, die als Liste uebergeben werden
+
+      Array.from(form.elements).forEach(el => {
+        if (!el.name || el.disabled) return;
+        if (el.type === 'button' || el.type === 'submit') return;
+
+        if (el.type === 'checkbox') {
+          // Gruppen mit data-list sammeln und spaeter als ["a","b"] ausgeben
+          if (el.dataset.list === 'true') {
+            if (!listGroups[el.name]) listGroups[el.name] = [];
+            if (el.checked) listGroups[el.name].push(el.value);
+            return;
+          }
+          if (el.checked)
+            params.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value || 'on'));
+          return;
+        }
+
+        if (el.tagName === 'SELECT') {
+          if (el.value !== '')
+            params.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
+          return;
+        }
+
+        if (el.type === 'text' || el.type === 'number') {
+          if (el.value.trim() !== '')
+            params.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
+        }
+      });
+
+      // gesammelte Checkbox-Gruppen als komma-separierte Liste anhaengen.
+      // Wichtig: KEINE Anfuehrungszeichen verwenden - CindyScript kann in
+      // URL-Parametern keine escapten Quotes verarbeiten (siehe get url params()).
+      Object.keys(listGroups).forEach(name => {
+        const vals = listGroups[name];
+        if (!vals.length) return;   // leer -> Parameter weglassen, VAM-Default greift
+        params.push(encodeURIComponent(name) + '=' + encodeURIComponent(vals.join(',')));
+      });
+
+      const url = params.length ? baseUrl + '?' + params.join('&') : baseUrl;
+
+      resultLink.textContent = url;
+      resultLink.href = url;
+
+      backdrop.classList.remove('active');
+
+      //window.location.href = url;
+      window.open(url,'_blank');
+    });
+  </script>
+</body>
+</html>

@@ -29,7 +29,7 @@ of them.
 - `numbercards`: Place value understanding
 - `percentagebar`: Just an interactive percentagebar
 - `strapwork`: Recognizing patterns
-- `thales`: Thales' theorem and it's inverse
+- `thales`: Thales' theorem and its inverse
 
 Two more are under construction but unfinished and should not be used in production:
 - `doublenumberline`
