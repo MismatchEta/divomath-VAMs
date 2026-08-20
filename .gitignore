@@ -1,11 +1,9 @@
-# .gitignore for VAM-Framework
-/divoVAM template MR - strapwork.js
-/divoVAM template MR.js
-/divoVAM template.js
-/font-test.html
-/README.pdf
-/VAM-Framework - divomath-MR.cdy
-/2025-07-15 11-53-47.mp4
-/_tests
-/_philipp
-/divomath VAMs.code-workspace
+# directories
+/.vscode
+/archive
+/out
+/vam specifications
+
+# files
+divomath VAMs.code-workspace
+KONTEXT.md
