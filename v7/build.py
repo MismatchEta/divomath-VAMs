@@ -109,7 +109,7 @@ HEAD_PATCH = """
 
       /* only applies with ?full */
       html.divo-full, html.divo-full body {{ height: 100%; margin: 0; padding: 0; }}
-      html.divo-full #CSCanvas {{ width: 100vw; height: 100vh; }}
+      /* html.divo-full #CSCanvas {{ width: 100vw; height: 100vh; }} <-- dead, since CindyJS sets divStylewidth from port which now always exists */
 
     </style>
 """

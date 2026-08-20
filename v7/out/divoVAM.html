@@ -1,4 +1,4 @@
-<!-- build 410 | 2026-08-17T12:52:55.867Z -->
+<!-- build 427 | 2026-08-20T08:55:16.821Z -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -19,7 +19,7 @@
 
       /* only applies with ?full */
       html.divo-full, html.divo-full body { height: 100%; margin: 0; padding: 0; }
-      html.divo-full #CSCanvas { width: 100vw; height: 100vh; }
+      /* html.divo-full #CSCanvas { width: 100vw; height: 100vh; } <-- dead, since CindyJS sets divStylewidth from port which now always exists */
 
     </style>
 
@@ -45,7 +45,7 @@
     <script type="text/javascript" src="https://cindyjs.org/dist/v0.8/Cindy.js"></script>
 <script id="csinit" type="text/x-cindyscript">
 //[FUN] Divomath
-/** v3 ******************************************************************************************
+/** v4 ******************************************************************************************
 * Fields and functions for interacting with the divomath platform. divomath uses the following hooks
 * - divomath get var state				- Hook for divomath callbackfunction
 * - divomathAddResult(key, value)	- Adds a submission to the result
@@ -109,9 +109,10 @@
 * }
 *
 * Recent changes:
-* 2026-07-26: Change log behavior.
-* 2026-08-09: Add json serializing to divomath get var state(1).
-* 2026-08-09: Add guards to divomath put results(2).
+* 2026-07-26 Change log behavior.
+* 2026-08-09 Add json serializing to divomath get var state(1).
+* 2026-08-09 Add guards to divomath put results(2).
+* 2026-08-19 Fix divomath get params() method missing the handling of stored states since the refactor - whoops
 ************************************************************************************************/
 
 // ==================================== //
@@ -297,6 +298,30 @@ divomath get params() := if(ISDIVOMATH,
 	if(length(underscorekeys) == 0,
 		debug at("divomath get params()", "No underscore keys found. So no references."));
 
+	// --- 3. Handle last saved state (from divomathVarState) ---
+	//
+	// Weaker than a previous answer and than references, stronger than the
+	// editor default - "add property" keeps the first entry, so insertion
+	// order IS the priority order.
+	//
+	// divomath hands back an empty LIST instead of an empty object when a
+	// slide is revisited without a stored state, so the type has to be
+	// checked before keys() is called.
+	laststatekeys = if(isundefined(DIVOMATH'VARSTATE) % islist(DIVOMATH'VARSTATE),
+		[]
+	,
+		keys(DIVOMATH'VARSTATE)
+	);
+
+	forall(laststatekeys, key,
+		add property(ENVIRONMENTALPARAMS, key, DIVOMATH'VARSTATE:key);
+		debug at("divomath get params()", "Property " + key
+			+ " added to ENVIRONMENTALPARAMS from DIVOMATH'VARSTATE. value: "
+			+ DIVOMATH'VARSTATE:key);
+	);
+
+	if(length(laststatekeys) == 0, debug at("divomath get params()", "No stored state found."));
+
 	// --- 4. Handle default divomath config (from cindyjs object) ---
 	editorstatekeys = keys(DIVOMATH'CINDYJSSTATEDEF);
 	
@@ -311,50 +336,6 @@ divomath get params() := if(ISDIVOMATH,
 	debug at("divomath get params()", "Finished getting parameters. State of ENVIRONMENTALPARAMS: " + ENVIRONMENTALPARAMS);
 
 	ENVIRONMENTALPARAMS; // Return (altough changes in place)
-);
-
-
-default state to(key, value) := If(ISDIVOMATH,
-
-error at("default state to()", "DONT USE ANYMORE, use default to(3) instead.");
-
-	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue, defaultstateobject, defaultstatevalue);
-
-	// Get config overwrites for forward referencing from RESULT structure (if any)
-	resultkey = "__" + key; // Built key with dunder to separate from other keys of DIVOMATH'CONFIG
-	resultvalue = divomathConfig:resultkey; // Get corresponding value if any
-
-	// Check DIVOMATH'PREVANSWER for if there already was an interaction from a previous session
-	prevansvalue = if(contains(keys(DIVOMATH'PREVANSWER), key), DIVOMATH'PREVANSWER:key);
-
-	// Get value from stateobject, if any (for resetting previous state)
-	stateobject = default to(DIVOMATH'VARSTATE, {}); // Set DIVOMATH'VARSTATE manually to empty object
-	if(islist(stateobject), stateobject = {}); // ?? DIVOMATH'VARSTATE is empty list not nada, if divomath site is revisted
-	statevalue = if(contains(keys(stateobject), key), stateobject:key);
-
-	// Get default state from cindyjs entry of editor state settings
-	defaultstateobject = default to(DIVOMATH'CINDYJSSTATEDEF, {});
-	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
-
-	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
-	if(!isundefined(prevansvalue), 
-		value = prevansvalue; // try prev ans if any
-	, 
-		if(!isundefined(resultvalue),
-			value = resultvalue; // else: try overwrite value if any
-		,
-			if(!isundefined(statevalue), 
-				value = statevalue; // else: try state if any
-			,
-				if(!isundefined(defaultstatevalue), 
-					value = defaultstatevalue; // else: try state if any
-				)
-			)
-		)
-	); // if all fails use value from param
-
-	// Return
-	value;
 );
 ;
 //[FUN] Debug Logging
@@ -1517,11 +1498,12 @@ to rad(angle) := angle/180*PI;
 vectorlength(vector) := sqrt(sum(apply(vector,#^2)));
 ;
 //[FUN] Drawing
-/** v2 ******************************************************************************************
+/** v3 ******************************************************************************************
 * Helper functions for drawing
 *
 * Recent changes:
-* 2027-07-30: Add functions - label angle, label segment, label point
+* 2026-07-30 Add functions - label angle, label segment, label point
+* 2026-08-19 Add image scale fit() - scales images properly finally depending on resolution
 ************************************************************************************************/
 
 draw arc(p1,p2,p3,r) := connect(arc(p1,p2,p3,r), color->color);
@@ -1768,6 +1750,35 @@ label point(P, awayfrom, text, size, font) := (
  
 	pos; // Return
 );
+
+/**
+* Width and height of a text as {"w": ..., "h": ...}, in world units.
+* Convenience wrapper around get boundingbox().
+**/
+text box size(text, fontsize, fontfamily) := (
+	regional(box);
+	box = get boundingbox(text, [0,0], fontsize, fontfamily);
+ 
+	{"w": box_2_1 - box_1_1, "h": box_4_2 - box_1_2};
+);
+
+
+/**
+* Scale factor for drawimage(pos, img, scale->...).
+*
+* drawimage sizes images in WORLD units: worldsize = imagesize(img) / IMGREFRESOLUTION * scale.
+* The factor is therefore independent of screenresolution() - do not add one.
+*
+* img        image name or image object
+* targetsize desired world size of the image's LONGER side
+*
+* Returns 0 while the image is not available, so nothing is drawn instead of the image appearing at scale 1.
+*/
+image scale fit(img, boxsize) := (
+	regional(px);
+	px = imagesize(img);
+	if(isundefined(px_1), 0, IMGREFRESOLUTION * min(boxsize_1 / px_1, boxsize_2 / px_2));
+);
 ;
 //[FUN] Web Controls
 /** v1 ******************************************************************************************
@@ -1844,6 +1855,9 @@ post value(name, value, msgtoken) := (
 *
 * Recent changes:
 ************************************************************************************************/
+
+c2v(z) := complex to vector(z);
+complex to vector(z) := [re(z), im(z)];
 
 gt zero(x) := x > 0;
 lt zero(x) := x < 0;
@@ -1934,7 +1948,26 @@ list(thing) := (
 	list;
 );
 
+
+
+/** True if ALL entries of a list are true. Empty list -> true. **/
+list and(list) := !list or(apply(list, !#));
+//list and(list) := !contains(list, false);
+ 
+/** True if ANY entry of a list is true. Empty list -> false. **/
 list or(list) := contains(list,true);
+
+/**
+* Smallest entry of a list together with its index: [value, index].
+**/
+min with index(l) := (
+	regional(newlist);
+	newlist = [];
+	forall(1..length(l),
+		newlist = newlist ++ [[l_#, #]];
+	);
+	sort(newlist, #_1)_1;
+);
 
 to bool(expression) := (
 	regional(result);
@@ -1946,6 +1979,11 @@ to bool(expression) := (
 	if(isundefined(result), result = false); // default to false for everything else
 	result;
 );
+
+/**
+* All entries of a list that are not undefined.
+**/
+select defined(l) := select(l, !isundefined(#));
 
 type(data) := (
 	regional(type);
@@ -2055,14 +2093,17 @@ new dolater(object, command, duration) := (
 
 ;
 //[FW] Constants
-/** v4 ******************************************************************************************
+/** v7 ******************************************************************************************
 * Predefined Constants (convention: CAPITALIZE CONSTANTS)
 *
 * Recent changes:
-* 2026-06-11: Remove legacy naming scheme (potentially breaks older VAMs)
-* 2026-06-11: Add constants for logging states (0..3)
-* 2026-07-27: Add VISIBLERECT
-* 2026-06-30: Add Icons for tracebuttonimageon and tracebuttonimageoff
+* 2026-06-11 Remove legacy naming scheme (potentially breaks older VAMs)
+* 2026-06-11 Add constants for logging states (0..3)
+* 2026-07-27 Add VISIBLERECT
+* 2026-06-30 Add Icons for tracebuttonimageon and tracebuttonimageoff
+* 2026-08-13 Add COLORPLASMA16 colors
+* 2026-08-17 Add UISCALE
+* 2026-08-19 Add IMAGEREFRESOLUTION for scaling images properly
 ************************************************************************************************/
 
 // Predefined Constants
@@ -2144,6 +2185,26 @@ COLORMAP = {
 	"DIVOBLACK" : DIVOBLACK, "DIVORED" : DIVORED, "DIVOBLUE" : DIVOBLUE
 };
 
+// Plasma colors ... blue -> purple -> magenta -> orange -> yellow
+COLORSPLASMA16 = [
+    [5.03830e-02, 2.98030e-02, 5.27975e-01],
+    [2.00445e-01, 1.79020e-02, 5.93364e-01],
+    [3.12543e-01, 8.23900e-03, 6.35700e-01],
+    [4.17642e-01, 5.64000e-04, 6.58390e-01],
+    [5.17933e-01, 2.15630e-02, 6.54109e-01],
+    [6.10667e-01, 9.02040e-02, 6.19951e-01],
+    [6.92840e-01, 1.65141e-01, 5.64522e-01],
+    [7.64193e-01, 2.40396e-01, 5.02126e-01],
+    [8.26588e-01, 3.15714e-01, 4.41316e-01],
+    [8.81443e-01, 3.92529e-01, 3.83229e-01],
+    [9.28329e-01, 4.72975e-01, 3.26067e-01],
+    [9.65024e-01, 5.59118e-01, 2.68513e-01],
+    [9.88260e-01, 6.52325e-01, 2.11364e-01],
+    [9.94141e-01, 7.53137e-01, 1.61404e-01],
+    [9.77995e-01, 8.61432e-01, 1.42808e-01],
+    [9.40015e-01, 9.75158e-01, 1.31326e-01]
+];
+
 // B | System info
 // B.0 | Version information
 VERSION = version();
@@ -2166,6 +2227,8 @@ VRBOTTOMLEFT  = VISIBLERECT_1;
 VRBOTTOMRIGHT = VISIBLERECT_2;
 VRTOPRIGHT    = VISIBLERECT_3;
 VRTOPLEFT     = VISIBLERECT_4;
+
+UISCALE = 1; // Scale UI components, like Toggles, Buttons, ...
 
 // C | Fonts
 // C.1 | Available Fonts
@@ -2244,6 +2307,7 @@ GREEK = {
 };
 
 // D | Images
+IMGREFRESOLUTION = 72;  // drawimage(): Weltgröße = imagesize * scale / IMGREFRESOLUTION
 ICONS = {
 	"reset" : "icon-reset.png",
 	"reset2" : "icon-reset-DZLMDARK.png",
@@ -2312,7 +2376,12 @@ LOGDEBUG = 3;
 // Vam choice //
 // ========== //
 
-VAM = "percentagebar";
+VAM = "default";
+if(!ISCINDYJS & !ISDIVOMATH, // probably authoring in Cinderella
+
+	VAM = "thales"; // <-- CHANGE HERE
+
+);
 
 
 // ============ //
@@ -2360,7 +2429,7 @@ EVENTLOG = [];
 EVENTID = 0;		// Auto incrementing
 ;
 //[FW] Init start
-/** v4 ******************************************************************************************
+/** v5 ******************************************************************************************
 * Init of general variables for use in the framework.
 *
 * Recent changes:
@@ -2368,6 +2437,7 @@ EVENTID = 0;		// Auto incrementing
 * 2026-07-25: Add divomath configuration items "vam", "debuglevel" and "bgcolor" to ENVIRONMENTALPARAMS
 * 2026-07-27: Fix parsing issues for LOGLEVEL and MAXLOGMESSAGES
 * 2026-07-29: Add access to LOGGINGENABLED via ENVIRONMENTALPARAMS
+* 2026-08-17 Add UISCALE
 ************************************************************************************************/
 
 // =========================== //
@@ -2391,6 +2461,7 @@ if(ISDIVOMATH,
 
 if(!isundefined(ENVIRONMENTALPARAMS:"vam"), VAM = ENVIRONMENTALPARAMS:"vam");
 if(!isundefined(ENVIRONMENTALPARAMS:"bgcolor"), BGCOLOR = parse(ENVIRONMENTALPARAMS:"bgcolor"+""));
+if(!isundefined(ENVIRONMENTALPARAMS:"uiscale"), UISCALE = parse(ENVIRONMENTALPARAMS:"uiscale"+""));
 if(!isundefined(ENVIRONMENTALPARAMS:"loggingenabled"), LOGGINGENABLED = parse(ENVIRONMENTALPARAMS:"loggingenabled"+""));
 
 get screen params(); // Sets bordersize and pinchsensitivity
@@ -2437,11 +2508,13 @@ typeorder = [];		// Order in which objects should be drawn by their "type" attri
 animations = [];	// Handles animation object.
 ;
 //[C] Button
-/** v9 ******************************************************************************************
+/** v11 ******************************************************************************************
 * Classes for Button, ImageButton.
 *
 * Recent changes:
-* 2026-07-24: Added "hasbody" property to control drawing of button
+* 2026-07-24 Add "hasbody" property to control drawing of button
+* 2026-08-17 Add UISCALE
+* 2026-08-19 Fix image scaling issue
 ************************************************************************************************/
 
 new Button(coord,width,height,label,fontsize) := (
@@ -2449,21 +2522,32 @@ new Button(coord,width,height,label,fontsize) := (
 	obj = new VAMobject("Button");
 
 	obj:"coord"  = coord;
-	obj:"width"  = width;
-	obj:"height" = height;
+	obj:"width"  = width * UISCALE;
+	obj:"height" = height * UISCALE;
 	obj:"cornerradius" = (width+height) / 50;
 	obj:"color"	 = DZLMCOLORLIGHT;
 	obj:"bordercolor" = DZLMCOLORDARK;
 	obj:"fontcolor" = DZLMCOLORDARK;
 	obj:"label"	 = label;
-	obj:"fontsize" = defaultto(fontsize, 12) * FONTSCALE;
+	obj:"fontsize" = default to(fontsize, 12) * FONTSCALE * UISCALE;
 	obj:"fontfamily" = NADA;
 	obj:"labelheight" = (
 		regional(box);
 		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
 		box_4_2 - box_1_2;
 	);
+	obj:"labelwidth" = (
+		regional(box);
+		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
+		box_2_1 - box_1_1;
+	);
+	obj:"labelcoord" := (
+		regional(centre, px);
 
+		centre = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1);
+		px = pixelsize(my("label"), size->my("fontsize"), font->my("fontfamily")) / screenresolution();
+		centre - [px_1/2, (px_2 - px_3)/2] + my("customlabeloffset")
+	);
 	obj:"ismoveable" = false;
 	obj:"isfloating" = false;
 	obj:"hasbody" = true;
@@ -2471,7 +2555,7 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"hasborder" = true;
 	obj:"show" = true;
 	obj:"customlabeloffset" = [0,0];
-	obj:"shadowoffset" = [0.03,-.05];
+	obj:"shadowoffset" = [0.03,-.05] * UISCALE;
 
 	obj:"symbolsize" = .22;   // half length of the symbol, relative to button width
 	obj:"symbolweight" = 3;   // line width
@@ -2483,7 +2567,7 @@ new Button(coord,width,height,label,fontsize) := (
 		my("width"),
 		my("height")
 	);
-	obj:"shape" := roundedrectangle(
+	obj:"shape" := rounded rectangle(
 		my("coord"),
 		my("width"),
 		my("height"),
@@ -2492,7 +2576,7 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"draw" := if(my("show"),
 		// Draw shadow
 		if(my("hasshadow") & (my("hasbody") % my("hasborder")),
-			fill(roundedrectangle(
+			fill(rounded rectangle(
 				my("coord")+my("shadowoffset"),
 				my("width"),
 				my("height"),
@@ -2516,13 +2600,8 @@ new Button(coord,width,height,label,fontsize) := (
 		if(my("hasborder"), draw(my("shape"), color->my("bordercolor")));
 		
 		// Draw Label
-		regional(centre, px);
-
-		centre = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1);
-		px = pixelsize(my("label"), size->my("fontsize"), font->my("fontfamily")) / screenresolution();
-
 		drawtext(
-			centre - [px_1/2, (px_2 - px_3)/2] + my("customlabeloffset"),
+			my("labelcoord"),
 			my("label"),
 			size->my("fontsize"), font->my("fontfamily"),
 			color->my("fontcolor"), bold->false
@@ -2532,14 +2611,14 @@ new Button(coord,width,height,label,fontsize) := (
 		my("drawafter");
 
 		// Debug draw
-		if(LOGLEVEL > 2,
+		if(LOGLEVEL > LOGWARN,
 			connect([my("hitbox")_1,my("hitbox")_3], color->[0,1,0]);
 			connect([my("hitbox")_2,my("hitbox")_4], color->[0,1,0]);
 			drawpoly(getboundingbox(my("label"), offset+my("customlabeloffset"), my("fontsize"), my("fontfamily")));
 		);
 	);
 	obj:"drawafter" := NADA;
-	obj:"ishot" := if(my("show"),inrectangle(my("hitbox"),mouse().xy));
+	obj:"ishot" := if(my("show"),in rectangle(my("hitbox"),mouse().xy));
   obj:"click"	:= my("script");
   obj:"script" := println("Implement obj:script");
 
@@ -2584,22 +2663,15 @@ new ImageButton(coord,width,height,imgpath) := (
 	regional(imgbtn);
 	imgbtn = new Button(coord, width, height, imgpath, NADA);
 
-	imgbtn:"imgscale" := (
-		// scale-> is relative to the image's PIXEL size, so the resulting world
-		// size depends on screenresolution() - the same icon comes out larger
-		// in divomath than in the plain HTML. Therefore we derive the factor from
-		// the button instead.
-		regional(px);
-		px = imagesize(my("label"));
-		my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-	);
+	imgbtn:"imgscale" := image scale fit(my("label"), my("imgfill") * [my("width"), my("height")]);
+	
 	imgbtn:"imgfill" = .9; // how much of the button the image should fill
 
 	imgbtn:"draw" := if(my("show"),
 		// Draw shadow
 		if(my("hasshadow"),
 			fill(roundedrectangle(
-				my("coord")+[0.03,-0.05],
+				my("coord")+my("shadowoffset"),
 				my("width"),
 				my("height"),
 				my("cornerradius")
@@ -2619,7 +2691,7 @@ new ImageButton(coord,width,height,imgpath) := (
 			my("shape"),
 			color->my("bordercolor");
 		));
-
+		
 		// Draw image
 		drawimage(my("coord") + .5*[my("width"), my("height")], my("label"),
 			scale->my("imgscale"), rendering->"nice");
@@ -2827,137 +2899,223 @@ new CoordinateSystem(coord) := (
 
 ;
 //[C] Keyboard
-/** v3 ******************************************************************************************
+/** v5 ******************************************************************************************
 * Classes for key and keyboard.
 *
 * Recent changes:
 * 2026-07-13 Add similar fix as in Toggle class for iPad pen issue
+* 2026-08-15 Add "full" layout (QWERTZ with shift), taken over from divoVAM 3.1.0 for the
+*            doublenumberline VAM. The numeric layout is untouched, so existing VAMs keep
+*            working exactly as before.
+* 2026-08-17 Add UISCALE
 ************************************************************************************************/
 // Global config
-'fontsize = 16 * FONTSCALE;
+'fontsize = 16;
 'size = 1;
+
+// Special keys. They carry a marker label instead of the character they insert,
+// so the click handler can tell them apart from ordinary keys.
+'keyshift = unicode("21E7"); // shift
+'keyspace = unicode("2423"); // space
 
 // Key for Keyboard
 new Key(coord, width, height, label) := (
-	regional(o);
-	o = new Button(coord, width, height, label, 'fontsize);
-	o:"type" = "key";
-	o:"target" = target;
-	o:"bordercolor" = o:"color" * .8;
-	o:"cornerradius" = 0;
-	o:"hasshadow" = false;
+	regional(key);
+	key = new Button(coord, width, height, label, 'fontsize);
+	key:"type" = "key";
+	key:"target" = target;
+	key:"bordercolor" = key:"color" * .8;
+	key:"cornerradius" = 0;
+	key:"hasshadow" = false;
 
-	o:"script" := my("label"); // Return label
+	key:"script" := my("label"); // Return label
 
-	o; // Return Key;
+	key; // Return Key;
 );
 
 new Key(coord, size, label) := new Key(coord, size, size, label);
 
 // Keyboard
 new Keyboard(coord, subtype, keysize, target) := (
-	regional(o, subtypes);
-	o = new VAMobject("keyboard");
+	regional(board, subtypes);
+	board = new VAMobject("keyboard");
 	subtypes = ["full", "numeric"];
-	o:"subtype" = if(contains(subtypes,subtype),subtype,"full");
-	o:"coord" = coord;
-	o:"keysize" = keysize;
-	o:"keys" = [];
-	o:"margin" = .2;
-	o:"ismoveable" = false;
+	board:"subtype" = if(contains(subtypes,subtype),subtype,"full");
+	board:"coord" = coord;
+	board:"keysize" = keysize; // Don't scale with UISCALE, since keys already do.
+	board:"keys" = [];
+	board:"margin" = .2 * UISCALE;
+	board:"ismoveable" = false;
 
-	o:"target" = target;
-	o:"value" = "";
+	board:"target" = target;
+	board:"value" = "";
 
-	o:"ishot" := length(select(my("keys"),#:"ishot")) > 0;
+	// Only used by the "full" layout: whether the shift key is engaged.
+	board:"shift" = false;
+
+	board:"ishot" := length(select(my("keys"),#:"ishot")) > 0;
 
 	// for iPad pen fix
-	o:"ipadpentimestampfix" = -1;
-	o:"lastkeypressed" = "";
+	board:"ipadpentimestampfix" = -1;
+	board:"lastkeypressed" = "";
 
-	o:"click" := (
+	/**
+	* Rows of the "full" layout, top to bottom.
+	* 	"indent" shifts the whole row to the right, in key widths
+	*   "keys"   is a list of labels or [label, widthfactor] pairs
+	* Both layouts must have the same shape.
+	*/
+	board:"fulllayout" = [
+		{"indent": 0, "keys": ["1","2","3","4","5","6","7","8","9","0","ß",[LEFTARROW, 2]]}, // for keyboard layout use indent 0
+		{"indent": 0, "keys": ["q","w","e","r","t","z","u","i","o","p","ü"]}, // for keyboard layout use indent .5
+		{"indent": 0, "keys": ["a","s","d","f","g","h","j","k","l","ö","ä"]}, // for keyboard layout use indent .75
+		{"indent": 0, "keys": [['keyshift, 2], "y","x","c","v","b","n","m"]}, // for keyboard layout use indent .25
+		{"indent": 3,  "keys": [['keyspace, 5]]}
+	];
+	board:"fulllayoutshift" = [
+		{"indent": 0, "keys": ["!",QUOTE,"§","$","%","&","/","(",")","=","?",[LEFTARROW, 2]]},
+		{"indent": 0, "keys": ["Q","W","E","R","T","Z","U","I","O","P","Ü"]},
+		{"indent": 0, "keys": ["A","S","D","F","G","H","J","K","L","Ö","Ä"]},
+		{"indent": 0, "keys": [['keyshift, 2], "Y","X","C","V","B","N","M"]},
+		{"indent": 3, "keys": [['keyspace, 5]]}
+	];
+
+	/**
+	* (Re)build the keys. Called once at construction and again whenever shift
+	* is toggled - the labels change, so the keys have to be recreated.
+	*/
+	board:"buildkeyboard" := (
+		regional(rows, keys, y, x, rowindex, entry, label, factor, ksize, margin);
+
+		ksize = my("keysize");
+		ksizedrawn = ksize * UISCALE;
+		margin = my("margin");
+		keys = [];
+
+		if(my("subtype") == "numeric",
+			// --- numeric: unchanged from v3, positions must stay identical ---
+			// row 4 (bottom)
+			keys = keys :> new key(my("coord") + [margin, margin], ksize, "0");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, margin], ksize, ".");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, margin], ksize, LEFTARROW);
+
+			// row 3
+			keys = keys :> new key(my("coord") + [margin, 2*margin+ksizedrawn], ksize, "1");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, 2*margin+ksizedrawn], ksize, "2");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, 2*margin+ksizedrawn], ksize, "3");
+
+			// row 2
+			keys = keys :> new key(my("coord") + [margin, 3*margin+2*ksizedrawn], ksize, "4");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, 3*margin+2*ksizedrawn], ksize, "5");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, 3*margin+2*ksizedrawn], ksize, "6");
+
+			// row 1 (top)
+			keys = keys :> new key(my("coord") + [margin, 4*margin+3*ksizedrawn], ksize, "7");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, 4*margin+3*ksizedrawn], ksize, "8");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, 4*margin+3*ksizedrawn], ksize, "9");
+
+			// Return key, two rows high
+			keys = keys :> new key(my("coord") + [4*margin+3*ksizedrawn, margin], ksize, 2*ksize + margin/UISCALE, DOWNARROWTIPLEFT);
+		,
+			// --- full: built from the layout table, bottom row first ---
+			rows = if(my("shift"), my("fulllayoutshift"), my("fulllayout"));
+
+			forall(1..length(rows), rowindex,
+				regional(row);
+				row = rows_rowindex;
+				y = margin + (length(rows) - rowindex) * (ksize + margin);
+				x = margin + row:"indent" * (ksize + margin);
+
+				forall(row:"keys", entry,
+					if(islist(entry), label = entry_1; factor = entry_2;
+					,                 label = entry;   factor = 1;);
+
+					// a blank label is a spacer, not a key
+					if(label != " ",
+						keys = keys :> new key(my("coord") + [x, y],
+							factor*ksize + (factor-1)*margin, ksize, label);
+					);
+
+					x = x + factor*ksize + factor*margin;
+				);
+			);
+
+			// Return key, spanning the two middle rows on the right
+			keys = keys :> new key(
+				my("coord") + [margin + 11*(ksize+margin), margin + 2*(ksize+margin)],
+				2*ksize+margin, 2*ksize + margin, DOWNARROWTIPLEFT);
+		);
+
+		self():"keys" = keys;
+	);
+
+	board:"click" := (
 		regional(key, value);
 		value = my("value");
 		key = select(my("keys"),#:"ishot"); // Get all the hot keys (should be exactly one)
 		if(length(key) > 0, key = key_1:"label");
 
 		// fix for iPad pen issue: swallow duplicate fire of the SAME key
-    if(key == my("lastkeypressed") & timestamp() - my("ipadpentimestampfix") < 100,
-        // duplicate -> ignore
-    ,
-        self():"ipadpentimestampfix" = timestamp();
-        self():"lastkeypressed" = key;
+		if(key == my("lastkeypressed") & timestamp() - my("ipadpentimestampfix") < 100,
+			// duplicate -> ignore
+		,
+			self():"ipadpentimestampfix" = timestamp();
+			self():"lastkeypressed" = key;
 
-        // Add character if not clicked on an arrow key 
-			if(!contains([DOWNARROWTIPLEFT,LEFTARROW], key),
-				value = value + key;
+			// Shift: flip the state and rebuild with the other labels.
+			// Handled first, it must not end up in the value.
+			if(key == 'keyshift,
+				self():"shift" = !my("shift");
+				my("buildkeyboard");
+			,
+				// Add character if not clicked on an arrow key
+				if(!contains([DOWNARROWTIPLEFT, LEFTARROW], key),
+					// the space key carries a marker label, insert a real space
+					value = value + if(key == 'keyspace, " ", key);
+				);
+
+				// Execute targets onupdate script on Enter press
+				if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
+					eval(my("target"):"onupdate", value->my("value"));
+				);
+
+				// Remove last character if any on leftarrow press
+				if(key == LEFTARROW & length(value) > 0,
+					// Remove last char
+					value = value_(1..(length(value)-1)); // is list now :(
+
+					// Rebuild string from list
+					regional(temp);
+					temp = "";
+					forall(value, temp = temp + #);
+					value = temp;
+				);
+
+				// Reassign new value
+				self():"value" = value;
+
+				// Execute targets onkeypress script
+				if(!isundefined(my("target")),
+					eval(my("target"):"onkeypress", key->key);
+				);
 			);
-	
-			// Execute targets onupdate script on Enter press
-			if(key == DOWNARROWTIPLEFT & !isundefined(my("target")),
-				eval(my("target"):"onupdate", value->my("value"));
-			);
-	
-			// Remove last character if any on leftarrow press
-			if(key == LEFTARROW & length(value) > 0,
-				// Remove last char
-				value = value_(1..(length(value)-1)); // is list now :(
-	
-				// Rebuild string from list
-				regional(temp);
-				temp = "";
-				forall(value, temp = temp + #);
-				value = temp;
-			);
-	
-			// Reassign new value
-			self():"value" = value;
-			
-			// Execute targets onkeypress script
-			if(!isundefined(my("target")),
-				eval(my("target"):"onkeypress", key->key);
-			);
-    );
+		);
 
 		key; // Return the key label
 	);
 
-	o:"draw" := (
+	board:"draw" := (
 		forall(my("keys"), #:"draw");
-		
+
 		// debug
 		if(LOGLEVEL > 0, draw(my("coord")));
 	);
 
 	// Build keyboard
-	if(o:"subtype" == "numeric",
-		// row 4
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", o:"margin"], o:"keysize", "0");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", o:"margin"], o:"keysize", ".");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", o:"margin"], o:"keysize", LEFTARROW);
-		
-		// row 3
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", 2*o:"margin"+o:"keysize"], o:"keysize", "1");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", 2*o:"margin"+o:"keysize"], o:"keysize", "2");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", 2*o:"margin"+o:"keysize"], o:"keysize", "3");
+	board:"buildkeyboard";
 
-		// row 2
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", 3*o:"margin"+2*o:"keysize"], o:"keysize", "4");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", 3*o:"margin"+2*o:"keysize"], o:"keysize", "5");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", 3*o:"margin"+2*o:"keysize"], o:"keysize", "6");
-
-		// row 1
-		o:"keys" = o:"keys" :> new key(o:"coord" + [o:"margin", 4*o:"margin"+3*o:"keysize"], o:"keysize", "7");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [2*o:"margin"+o:"keysize", 4*o:"margin"+3*o:"keysize"], o:"keysize", "8");
-		o:"keys" = o:"keys" :> new key(o:"coord" + [3*o:"margin"+2*o:"keysize", 4*o:"margin"+3*o:"keysize"], o:"keysize", "9");
-
-		// Return key
-		o:"keys" = o:"keys" :> new key(o:"coord" + [4*o:"margin"+3*o:"keysize", o:"margin"], o:"keysize", 2*o:"keysize" + o:"margin", DOWNARROWTIPLEFT);
-	);
-
-	o; // Return Keyboard
+	board; // Return Keyboard
 );
-
 ;
 //[C] ProgressCircle
 /** v1 ******************************************************************************************
@@ -3282,11 +3440,13 @@ new HorizontalScrollbar(coord, width) := (
 
 ;
 //[C] TextInput
-/** v6 ******************************************************************************************
+/** v7 ******************************************************************************************
 * Class for a TextInput UI element and a TextInputFactory for more convenient handling.
 *
 * Recent changes:
 * 2026-07-13 Apply iPad fix from Toggle
+* 2026-08-26 Adjust to be able to get a full keyboard
+						 Add "keysize" attribute depending on "keyboardtype"
 ************************************************************************************************/
 
 new TextInput(coord, label, keyboardtype) := (
@@ -3294,8 +3454,8 @@ new TextInput(coord, label, keyboardtype) := (
 	o = new VAMobject("textinput");
 	o:"coord" = coord;
 	o:"label" = label;
-	o:"width" = 2;
-	o:"height" = .6;
+	o:"width" = 2 * UISCALE;
+	o:"height" = .6 * UISCALE;
 	o:"value" = "";
 
 	o:"fill-color" = DZLMCOLORGOLD;
@@ -3306,12 +3466,12 @@ new TextInput(coord, label, keyboardtype) := (
 
 	o:"keyboardcoord" = coord;
 	o:"keyboardbehavior" = "clear"; // ["clear"]
+	o:"keysize" := if(my("keyboardtype") == "full", .6, 1);
 	o:"keyboardtype" = keyboardtype; // see Keyboard class
-	o:"keyboard" = nada;
+	o:"keyboard" = NADA;
 	o:"keyboardoffset" = [5,0];
-	o:"keysize" = 1;
-	o:"fontsize" = 14 * FONTSCALE;
-	o:"fontfamily" = nada;
+	o:"fontsize" = 14 * FONTSCALE * UISCALE;
+	o:"fontfamily" = NADA;
 	o:"labelpadding" = .2;
 
 	o:"isclickable" = true;
@@ -3362,7 +3522,7 @@ new TextInput(coord, label, keyboardtype) := (
             obj = obj -- [my("keyboard")];
             self():"keyboard" = NADA;
         ,
-            self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), "numeric", my("keysize"), self());
+            self():"keyboard" = new Keyboard(my("keyboardcoord") + my("keyboardoffset"), my("keyboardtype"), my("keysize"), self());
             my("keyboard"):"value" = 
                 if(my("keyboardbehavior") == "append", my("value"), 
                 if(my("keyboardbehavior") == "clear", "";
@@ -3382,7 +3542,7 @@ new TextInput(coord, label, keyboardtype) := (
 
 	// gets evaled with "value"
 	o:"onupdate" := (	// Destroy keyboard
-		self():"keyboard" = nada;
+		self():"keyboard" = NADA;
 	);
 
 	o:"customclickscript" := (
@@ -3435,11 +3595,13 @@ new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
 	o:"type" = "Toggle";
+	o:"labelpad" = .2 * UISCALE;
+	o:"labelcoord" = o:"coord"+[o:"width" + o:"labelpad",.5*o:"height"/3];
 
 	o:"circleoffset" = if(state,.5*[o:"width",0], [0,0]);
 	o:"animationtiming" = .05;
 
-	o:"cornerradius" = width;
+	o:"cornerradius" = width * UISCALE;
 	o:"state" = if(!isundefined(state),state,false);
 	o:"highlightcolor" = DARKBLUE;
 
@@ -3470,7 +3632,7 @@ new Toggle(coord,width,state,label,fontsize) := (
 
 		// Draw label
 		drawtext(
-			my("coord")+[my("width")*1.2,.5*my("height")/3],
+			my("labelcoord"),
 			my("label"),
 			align->"left",
 			color->dzlmcolordark,
@@ -3481,8 +3643,10 @@ new Toggle(coord,width,state,label,fontsize) := (
 		my("drawafter");
 
 		// Debug stuff
-		if(LOGLEVEL > 2,
+		if(LOGLEVEL > LOGWARN,
 			drawpoly(my("hitbox"), color->[1,0,0]);
+			//drawpoly(getboundingbox(my("label"), my("labelcoord"), my("fontsize"), my("fontfamily")));
+			drawpoly(rectangle(my("labelcoord"), my("labelwidth"), my("labelheight")));
 		);
 	);
 	
@@ -3924,6 +4088,7 @@ obj = obj :> adifferentdummy;
 * 2026-08-05: Change rounded rectangles to be approximated by polygons to increase performance
 * 2026-08-05: Introduce base rounded rectangle poly which all Atoms just translate for EVEN MOAR PERFORMANCE
 * 2026-08-09: Adjust divomath functions to new json serialization pipeline
+* 2026-08-19: Change tool button to be proper ImageButton
 ************************************************************************************************/
 
 // Rechteckfeld
@@ -5001,26 +5166,18 @@ new Grid(c, rows, cols) := (
 		c = VRTOPRIGHT - ('buttonsize+'buttonpadding) * [1,1];
 		if(!isundefined('toolbuttonx), c_1 = 'toolbuttonx);
 		if(!isundefined('toolbuttony), c_2 = 'toolbuttony);
-		btn = new Button(c, 'buttonsize, 'buttonsize, "", 14);
+		btn = new ImageButton(c, 'buttonsize, 'buttonsize, NADA);
 
 		btn:"parent" = self();
+		btn:"label" := ICONS:(my("tool"));
 		btn:"center" := my("coord") + .5*[my("width"),my("height")];
-		btn:"imgfill" = 2;
-		btn:"imgscale" := ( // scale relative to images pixelsize
-			regional(px);
-			px = imagesize(ICONS:(my("tool")));
-			my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-		);
+		
 		btn:"value" = {"hand":1,"bucket":2,"scissors":3}:'tool;
 		btn:"tool" := ["hand", "bucket", "scissors"]_(my("value"));
 		btn:"ishot" := if('picturemode, false, if(my("show"),inrectangle(my("hitbox"),mouse().xy))); 
 
 		btn:"color" := if(my("parent"):"toolsallowed", DZLMCOLORLIGHT, grey(.93));
 		btn:"bordercolor" := if(my("parent"):"toolsallowed", DZLMCOLORDARK, grey(.75));
-
-		btn:"drawafter" := (
-			drawimage(my("center"), ICONS:(my("tool")), scale->my("imgscale"));
-		);
 	
 		btn:"script" := (
 			if(my("parent"):"toolsallowed",
@@ -6123,6 +6280,2001 @@ if(drawdivbuttons,
 ); // end vam-if
 
 ;
+//[VAM*] doublenumberline
+/** v2 *******************************************************************************************
+* Double number line for proportional reasoning.
+* (not yet fully functional, port from standalone version of some random guy)
+*
+* Recent changes:
+* 2026-08-14 Adopted from divoVAM 3.1.0 into the v7 framework: configuration via "default to",
+*            dropped parseURLParameters/urlparameter (ENVIRONMENTALPARAMS covers both), renamed
+*            the helper calls, layout anchored at VISIBLERECT.
+************************************************************************************************/
+
+// Doppelter Zahlenstrahl
+if(VAM == "doublenumberline",
+
+// ================= //
+// A | Documentation //
+// ================= //
+
+//DOCTEXTPOS = [9,15.5];
+DOCTEXT = "...";
+
+
+// ================= //
+// B | Configuration //
+// ================= //
+
+// --- Bar ---
+'barposition					= default to(ENVIRONMENTALPARAMS:"barposition", [1,15], true);
+'barwidth							= default to(ENVIRONMENTALPARAMS:"barwidth", 16, true); // initial width of bar
+'barheight						= default to(ENVIRONMENTALPARAMS:"barheight", 2, true); // height of bar
+'barvalue							= default to(ENVIRONMENTALPARAMS:"barvalue", 0, true); // initial bar value in [0,1]
+'basevalue						= default to(ENVIRONMENTALPARAMS:"basevalue", 1000, true); // bars initial base value
+'subdivisions					= default to(ENVIRONMENTALPARAMS:"subdivisions", 3, true); // initial number of subdivisions
+'isbardraggable				= default to(ENVIRONMENTALPARAMS:"isbardraggable", true, true);
+'barprecision					= default to(ENVIRONMENTALPARAMS:"barprecision", 1, true) / 100; // Precision of the bar's drag action, given in percent, used as a fraction.
+
+// --- Units ---
+'unit									= default to(ENVIRONMENTALPARAMS:"unit", "", false); // displayed unit for values
+'upperunit						= default to(ENVIRONMENTALPARAMS:"upperUnit", "", false); // unit on the upper number line
+'lowerunit						= default to(ENVIRONMENTALPARAMS:"lowerUnit", "", false); // unit on the lower number line
+
+// --- Increasing mode ("Hochrechnen") ---
+'incuppersizesteps		= default to(ENVIRONMENTALPARAMS:"incUpperSizeSteps", NADA, true);
+'inclowersizesteps		= default to(ENVIRONMENTALPARAMS:"incLowerSizeSteps", NADA, true);
+'incgivenvalue				= default to(ENVIRONMENTALPARAMS:"incGivenValue", NADA, true);
+ 
+// --- Decreasing mode ("Runterrechnen") ---
+'decuppertargetvalue	= default to(ENVIRONMENTALPARAMS:"decUpperTargetValue", NADA, true);
+'declowertargetvalue	= default to(ENVIRONMENTALPARAMS:"decLowerTargetValue", NADA, true);
+'decnumbersteps				= default to(ENVIRONMENTALPARAMS:"decNumberSteps", NADA, true);
+'decuppersizesteps		= default to(ENVIRONMENTALPARAMS:"decUpperSizeSteps", NADA, true);
+'declowersizesteps		= default to(ENVIRONMENTALPARAMS:"decLowerSizeSteps", NADA, true);
+
+// --- Value marks ---
+// Five marks per number line and per mode. Read as a list first; the old build had 20 single parameters (incUpperValueMark1 ... decLowerValueMark5), 
+// which are still accepted for compatibility and fill the list entry by entry.
+'incuppervaluemarks		= default to(ENVIRONMENTALPARAMS:"incUpperValueMarks", apply(1..5, NADA), true);
+'inclowervaluemarks		= default to(ENVIRONMENTALPARAMS:"incLowerValueMarks", apply(1..5, NADA), true);
+'decuppervaluemarks		= default to(ENVIRONMENTALPARAMS:"decUpperValueMarks", apply(1..5, NADA), true);
+'declowervaluemarks		= default to(ENVIRONMENTALPARAMS:"decLowerValueMarks", apply(1..5, NADA), true);
+
+forall(1..5, i,
+	regional(single);
+ 
+	single = default to(ENVIRONMENTALPARAMS:("incUpperValueMark" + i), NADA, true);
+	if(!isundefined(single), 'incuppervaluemarks_i = single);
+ 
+	single = default to(ENVIRONMENTALPARAMS:("incLowerValueMark" + i), NADA, true);
+	if(!isundefined(single), 'inclowervaluemarks_i = single);
+ 
+	single = default to(ENVIRONMENTALPARAMS:("decUpperValueMark" + i), NADA, true);
+	if(!isundefined(single), 'decuppervaluemarks_i = single);
+ 
+	single = default to(ENVIRONMENTALPARAMS:("decLowerValueMark" + i), NADA, true);
+	if(!isundefined(single), 'declowervaluemarks_i = single);
+);
+
+// WARNING: upperValueMarks and lowerValueMarks are being abused slightly in the
+// implementation of the dual number line - adding numbers to these lists may result in undesired behaviour.
+'uppervaluemarks			= default to(ENVIRONMENTALPARAMS:"upperValueMarks", apply(1..5, NADA), true);
+'lowervaluemarks			= default to(ENVIRONMENTALPARAMS:"lowerValueMarks", apply(1..5, NADA), true);
+
+// --- Labels ---
+// NOTE: the key is misspelled ("percenteges") in the original build. Both are accepted so existing links keep working.
+'leftoutpercentages		= default to(ENVIRONMENTALPARAMS:"leftoutpercentages", default to(ENVIRONMENTALPARAMS:"leftoutpercenteges", [], true), false);
+'leftoutvalues				= default to(ENVIRONMENTALPARAMS:"leftoutvalues", [], true); // as percentage of the base value
+
+// --- Look and feel ---
+'barcolor							= default to(ENVIRONMENTALPARAMS:"barcolor", DZLMCOLORBLUE, true);
+'archcolor						= default to(ENVIRONMENTALPARAMS:"archcolor", DZLMCOLORGOLD, true);
+'fontfamily						= default to(ENVIRONMENTALPARAMS:"fontfamily", NADA, false);
+ 
+// --- Scaffolds ---
+'scaffoldvalue				= default to(ENVIRONMENTALPARAMS:"scaffoldvalue", false, true);
+'scaffoldpercentage		= default to(ENVIRONMENTALPARAMS:"scaffoldpercentage", false, true);
+'scaffoldbasevalue		= default to(ENVIRONMENTALPARAMS:"scaffoldbasevalue", false, true);
+ 
+// Normalize booleans (divomath reports back "" instead of false)
+'isbardraggable = tobool('isbardraggable);
+'scaffoldvalue = tobool('scaffoldvalue);
+'scaffoldpercentage = tobool('scaffoldpercentage);
+'scaffoldbasevalue = tobool('scaffoldbasevalue);
+ 
+// Colors of the value marks
+'valuemarkcolors = [
+	COLORSPLASMA16_3,
+	COLORSPLASMA16_5,
+	COLORSPLASMA16_8,
+	COLORSPLASMA16_11,
+	COLORSPLASMA16_13
+];
+
+
+// ================= //
+// Divomath settings //
+// ================= //
+
+divomath update results() := if(ISDIVOMATH, // @overwrite
+	warn at("doublenumberline, divomath update results()", "Not implemented.");
+
+	//divomath clear results(); // Clear last results.
+	//divomath put result(#, dmstate:#); // Put some results in.
+	//divomath post results(); // Submit results to divomath.
+);
+
+divomath set state() := if(ISDIVOMATH, // @overwrite
+	warn at("doublenumberline, divomath update results()", "Not implemented.");
+	
+	// Build state object.
+	state = {
+		"thing": 42;
+	};
+
+	state; // Return state.
+);
+
+
+// ===================== //
+// C | Class Definitions //
+// ===================== //
+
+/**
+* Double number line for proportional reasoning.
+*
+* Two number lines share one bar. One of them carries the value the task gives
+* ("given"), the other one is derived from it ("dependent"). Which is which is
+* decided by the user via the unit toggles.
+*
+* Modes:
+*   "increasing" ("Hochrechnen")  - a given value and a step size determine how
+*                                   far the bar reaches
+*   "decreasing" ("Runterrechnen")- a target value is fixed at the end of the bar
+*                                   and gets divided, either by a number of steps
+*                                   ("submode" = "number") or by a step size
+*                                   ("submode" = "size")
+*/
+new Doublenumberline(coord, width, height, value, precision, divisions, baseval, unit) := (
+	regional(line);
+	line = new VAMobject("Dualnumberline");
+
+	// --- Look and feel ---
+	line:"coord"						= coord;
+	line:"color"						= 'barcolor;
+	line:"width"						= width;
+	line:"height"						= height;
+	line:"margin"						= 0; // margin of bar shape to surrounding box
+	line:"precision"				= precision; // precision of movement of bar (in [0,1])
+	line:"fontsize"					= 14 * FONTSCALE;
+	line:"fontfamily"				= 'fontfamily; // set globally
+	line:"labelpadding"			= .55;
+	line:"isclickable"			= 'isbardraggable;
+	line:"ismoveable"				= 'isbardraggable;
+
+	// --- Mode ---
+	line:"mode"				= NADA; // "increasing", "decreasing" or "none"
+	line:"submode"		= NADA; // for decreasing: "number" or "size"
+
+	// --- Visibility, set from the toggles after init ---
+	line:"drawupperticks"							= false;
+	line:"drawlowerticks"							= false;
+	line:"drawuppernumberlinelabels"	= false;
+	line:"drawlowernumberlinelabels"	= false;
+	line:"drawbasevaluelabel"					= false;
+	line:"drawcurrentpercentage"			= false;
+	line:"drawcurrentvalue"						= false;
+	line:"drawarches"									= false;
+	line:"drawtotalarc"								= false;
+	line:"canoverflow"								= false;
+	line:"arcslabels"									= NADA;
+	line:"totalarclabel"							= NADA;
+
+	line:"scaffoldvalue"							= 'scaffoldvalue;
+	line:"scaffoldpercentage"					= 'scaffoldpercentage;
+	line:"scaffoldbasevalue"					= 'scaffoldbasevalue;
+
+	// --- Handles for the interface, set at init ---
+	line:"toggles"			= NADA;
+	line:"textfields"		= NADA;
+	line:"buttons"			= NADA;
+ 
+	// --- Values ---
+	line:"unit"				= unit;
+	line:"value"			= value; // between 0 and 1
+	line:"basevalue"	= baseval;
+	line:"units"			= {"lower": NADA, "upper": NADA};
+ 
+	// The value the task gives, entered by the user
+	line:"givenvalue"						= NADA;
+	line:"inputdependentvalue"	= NADA;
+	line:"inputdivisions"				= NADA;
+	line:"sizesteps"						= {"lower": NADA, "upper": NADA};
+	line:"dependentunit"				= NADA;
+
+	/**
+	* Which number line carries the given value.
+	* In "increasing" mode the user picks it via the unit toggles, so it stays
+	* undefined until then. In "decreasing" mode the maximum is set by the user
+	* anyway, so either line will do and "upper" is picked.
+	*/
+	line:"givenunit" := if(my("mode") == "increasing", NADA, "upper");
+
+	/**
+	* The given value rounded up to the next integer multiple of the step size,
+	* plus two extra steps so there is room to drag beyond it.
+	* In "decreasing" mode the given value sits at the very end of the bar.
+	*/
+	line:"maxgivenvalue" := if(my("mode") == "increasing",
+		(floor(my("givenvalue") / my("sizesteps"):(my("givenunit"))) + 2)	* my("sizesteps"):(my("givenunit"));
+	, // decreasing
+		my("givenvalue");
+	);
+
+	/**
+	* Number of subdivisions of the bar. Derived differently per mode.
+	*/
+	line:"divisions" := if(my("mode") == "increasing",
+		my("maxgivenvalue") / my("sizesteps"):(my("givenunit"));
+	, // decreasing
+		if(my("submode") == "number",
+			my("inputdivisions");
+		,
+			if(my("submode") == "size",
+				if(my("checksizestepsconsistency"),
+					if(!isundefined(my("sizesteps"):"upper"),
+						my("maxgivenvalue") / my("sizesteps"):"upper";
+					,
+						my("maxdependentvalue") / my("sizesteps"):"lower";
+					);
+				);
+			);
+		);
+	);
+
+	/**
+	* Tick positions as fractions of the bar width.
+	* Guarded: divisions can be undefined or 0 while the user is still entering values, and apply(1..___) would fail.
+	*/
+	line:"ticks" := (
+		regional(n);
+		n = my("divisions");
+		if(isundefined(n) % (n < 1), [], apply(1..n, #/n));
+	);
+
+	/**
+	* The value on the other number line. Both fields are defined identically in "increasing" mode
+	* - kept separate because "decreasing" uses them differently.
+	*/
+	line:"dependentvalue" := if(my("mode") == "increasing",
+		my("divisions") * my("sizesteps"):(my("dependentunit"));
+	, // decreasing
+		my("inputdependentvalue");
+	);
+
+	line:"maxdependentvalue" := if(my("mode") == "increasing",
+		my("divisions") * my("sizesteps"):(my("dependentunit"));
+	, // decreasing
+		my("dependentvalue");
+	);
+
+	// --- Consistency checks for the user's input ---
+ 
+	/**
+	* True unless BOTH step sizes are given and they disagree about how many
+	* steps fit on the bar.
+	*/
+	line:"checksizestepsconsistency" := (
+		regional(bothpresent, result);
+		result = true;
+ 
+		bothpresent = list and([
+			!isundefined(my("sizesteps"):"lower"),
+			!isundefined(my("sizesteps"):"upper")
+		]);
+ 
+		if(bothpresent,
+			// @refactor: comparison with == might be error prone on floats
+			result = (my("maxgivenvalue") / my("sizesteps"):"upper"
+				== my("maxdependentvalue") / my("sizesteps"):"lower");
+		);
+ 
+		result;
+	);
+ 
+	/**
+	* True if the number of steps the user entered divides both number lines
+	* into whole numbers. Eval with 'inputvalue.
+	*/
+	line:"checknumberstepsconsistency" := (
+		regional(result, uppersize, lowersize);
+		result = true;
+ 
+		if(!isundefined('inputvalue),
+			uppersize = my("maxgivenvalue") / 'inputvalue;
+			lowersize = my("maxdependentvalue") / 'inputvalue;
+			result = list and([isinteger(uppersize), isinteger(lowersize)]);
+		);
+ 
+		result;
+	);
+
+	// --- Label metrics ---
+ 
+	line:"standardticks" = [0];
+ 
+	/**
+	* Smallest distance between two adjacent ticks, in world units. Used to
+	* decide whether the labels still fit next to each other.
+	*/
+	line:"ticksdistance" := (
+		regional(allticks, customupper, customlower, mindistances);
+ 
+		if(my("givenunit") == "upper",
+			customupper = ('uppervaluemarks ++ [my("givenvalue")]) / my("maxgivenvalue");
+			customlower = 'lowervaluemarks / my("maxdependentvalue");
+		,
+			customupper = 'uppervaluemarks / my("maxdependentvalue");
+			customlower = ('lowervaluemarks ++ [my("givenvalue")]) / my("maxgivenvalue");
+		);
+ 
+		// The regular ticks are the same on both number lines, so they are
+		// simply doubled up and the custom marks added per line.
+		allticks = [my("ticks"), my("ticks")];
+		allticks_1 = sort(allticks_1 ++ select defined(customupper));
+		allticks_2 = sort(allticks_2 ++ select defined(customlower));
+ 
+		mindistances = apply(allticks, ticks,
+			regional(gaps);
+			gaps = select(apply(consecutive(ticks), |#_2 - #_1|), # > 0);
+			if(length(gaps) == 0, 1, min(gaps));
+		);
+ 
+		min(mindistances) * my("width");
+	);
+ 
+	/**
+	* Smallest and largest label size that occurs, as {"min": {...}, "max": {...}}.
+	*
+	* NOTE: the original read bar:"..." (the global) instead of my("..."), and
+	* passed the arguments to textBoxSize in the wrong order - the signature is
+	* (text, fontsize, fontfamily), it was called with (text, family, size).
+	*/
+	line:"ticklabelsizelimits" := (
+		regional(alllabels, widths, heights);
+ 
+		alllabels = my("ticks") * my("maxgivenvalue") ++ my("ticks") * my("maxdependentvalue");
+		alllabels = alllabels ++ select defined('lowervaluemarks) ++ select defined('uppervaluemarks);
+ 
+		widths  = apply(alllabels, text box size(# + "", my("fontsize"), my("fontfamily")):"w");
+		heights = apply(alllabels, text box size(# + "", my("fontsize"), my("fontfamily")):"h");
+ 
+		if(length(alllabels) == 0,
+			{"min": {"w": 0, "h": 0}, "max": {"w": 0, "h": 0}};
+		,
+			{
+				"min": {"w": min(widths), "h": min(heights)},
+				"max": {"w": max(widths), "h": max(heights)}
+			};
+		);
+	);
+ 
+	/**
+	* Width of a single digit. All digits are assumed to be equally wide, which
+	* holds for the fonts in use; a warning is issued if they are not.
+	*
+	* NOTE: the original had a typo here - it assigned "labelDigitsWidths" but
+	* read "labelDigitWidths" (without the s), so the check never ran.
+	*/
+	line:"labeldigitwidths" = apply(0..9, text box size(# + "", line:"fontsize", line:"fontfamily"):"w");
+	if(!list and(apply(line:"labeldigitwidths", # == line:"labeldigitwidths"_1)),
+		warn at("doublenumberline", "The digits of the chosen font are not equally wide. "
+			+ "The width of '0' is used for all of them.");
+	);
+	line:"labeldigitwidth" = line:"labeldigitwidths"_1;
+ 
+	/**
+	* True if labels can be drawn horizontally without overlapping.
+	*/
+	line:"isticksdistanceenough" :=
+		(my("ticksdistance") - my("ticklabelsizelimits"):"max":"w") > 1.25 * my("labeldigitwidth");
+ 
+	/**
+	* Index of and distance to the tick closest to a given position.
+	* Eval with 'tick (position as a fraction of the bar width) and
+	* 'maxvaluekey ("maxgivenvalue" or "maxdependentvalue").
+	*
+	* Returns [index, distance in world units]; the value of that neighbour is
+	* available as 'closestneighbourvalue afterwards.
+	*/
+	line:"closestneighbourtickindexanddistance" := (
+		regional(otherticks, best, distance, index);
+
+		if(isundefined('tick),
+			err("closestneighbourtickindexanddistance(): eval with 'tick->...");
+			'tick = 0;
+		);
+
+		otherticks = my("ticks");
+		if(length(my("standardticks")) > 1, otherticks = otherticks ++ [my("standardticks")_2]);
+
+		// NOTE: CindyScript has no destructuring assignment - "[a,b] = list"
+		// silently leaves both undefined, which is what the original did.
+		best = min with index(apply(otherticks, othertick, |othertick - 'tick|));
+		distance = best_1 * my("width");
+		index = best_2;
+
+		'closestneighbourvalue = otherticks_index * my('maxvaluekey);
+
+		[index, distance];
+	);
+
+	// --- Shape and hitbox ---------------------------------------------------
+	line:"box" = rectangle(
+		coord - [line:"margin", line:"margin"],
+		width + 2*line:"margin",
+		height + 2*line:"margin"
+	);
+ 
+	line:"shapeupper" := rounded rectangle(
+		[my("coord").x, my("coord").y + my("height")*0.9],
+		my("value")*my("width"), my("height")*0.1, .1
+	);
+	line:"shapelower" := rounded rectangle(
+		my("coord"),
+		my("value")*my("width"), my("height")*0.1, .1
+	);
+ 
+	/**
+	* The vertical edge at the current value. Drawn on top of the ticks, so it
+	* is a separate shape rather than part of the bar.
+	*
+	* NOTE: the original forgot to add my("coord")_1 to the x component, so the
+	* edge sat at the wrong place whenever the bar was not at x = 0.
+	*/
+	line:"shapefrontedge" := [
+		[my("coord")_1 + my("value")*my("width"), my("coord")_2 - 0.25],
+		[my("coord")_1 + my("value")*my("width"), my("coord")_2 + my("height") + 0.25]
+	];
+ 
+	// NOTE: three times the width on purpose - the bar can be dragged beyond
+	// its own end, see "canoverflow".
+	line:"hitbox" := rectangle(my("coord"), 3*my("width"), my("height"));
+	line:"ishot" := inrectangle(my("hitbox"), mouse().xy);
+ 
+	/**
+	* Whether a tick is drawn at the far right end of the bar.
+	* In "decreasing" mode the given value always sits there, in "increasing"
+	* mode only once a unit has been chosen.
+	*/
+	line:"handlegivenvaluetick" := (
+		if(my("mode") == "increasing",
+			if(list and([
+					!isundefined(my("maxgivenvalue")),
+					contains(["lower", "upper"], my("givenunit"))
+				]),
+				self():"standardticks" = [0,1];
+			,
+				self():"standardticks" = [0];
+			);
+		, // decreasing ... in this mode my("givenvalue")/my("maxgivenvalue") == 1
+			self():"standardticks" = [0,1];
+		);
+	);
+ 
+	// --- Drawing ------------------------------------------------------------
+	line:"tickovershoot" = 0.25;  // how far the ticks stick out beyond the bar
+	line:"markovershoot" = 0.4;   // same for standard ticks and value marks
+
+	line:"draw" := (
+		regional(p1, upperend, lowerend, overshoot, maxvaluekey, maxvaluekeyother, counter);
+ 
+		// Background box
+		fillpoly(my("box"), color->grey(1));
+ 
+		// --- The two number lines with arrow heads ---
+		gsave();
+		linesize(2);
+ 
+		upperend = [my("coord").x + my("width") + 0.5, my("coord").y + my("height")];
+		draw([my("coord").x - 0.25, my("coord").y + my("height")], upperend, color->grey(0));
+		draw(upperend, upperend + c2v(0.25*exp(i*PI*155/180)), color->grey(0));
+		draw(upperend, upperend + c2v(0.25*exp(i*PI*205/180)), color->grey(0));
+ 
+		lowerend = [my("coord").x + my("width") + 0.5, my("coord").y];
+		draw([my("coord").x - 0.25, my("coord").y], lowerend, color->grey(0));
+		draw(lowerend, lowerend + c2v(0.25*exp(i*PI*155/180)), color->grey(0));
+		draw(lowerend, lowerend + c2v(0.25*exp(i*PI*205/180)), color->grey(0));
+ 
+		grestore();
+ 
+		// --- The draggable bar ---
+		// The front edge is drawn later so it sits on top of the ticks.
+		fill(my("shapeupper"), color->my("color"));
+		fill(my("shapelower"), color->my("color"));
+ 
+		// --- Ticks between the number lines ---
+		overshoot = my("tickovershoot");
+ 
+		forall(1..length(my("ticks")), idx,
+			regional(tick, islast);
+			tick = my("ticks")_idx;
+ 
+			if(tick < my("value") + 0.001,
+				p1 = my("coord") + [tick,0]*my("width") - [0, overshoot];
+ 
+				if(my("mode") == "increasing",
+					if(list or([my("drawarches"),
+							list and([my("drawlowerticks"), !my("drawtotalarc")])]),
+						draw(p1, p1 + [0, my("height") + 2*overshoot], size->2, color->grey(0));
+					,
+						// With a total arc only the outermost ticks are drawn.
+						if(my("drawtotalarc"),
+							islast = (tick == max(select(my("ticks"), # < my("value") + 0.001)));
+							if(islast % list and([my("drawlowerticks"), idx == 1]),
+								draw(p1, p1 + [0, my("height") + 2*overshoot], size->2, color->grey(0));
+							);
+						);
+					);
+				,
+					draw(p1, p1 + [0, my("height") + 2*overshoot], size->2, color->grey(0));
+				);
+			);
+		);
+ 
+		// --- Standard ticks (left and right end) ---
+		my("handlegivenvaluetick");
+		overshoot = my("markovershoot");
+ 
+		forall(my("standardticks"),
+			p1 = my("coord") + [#,0]*my("width") - [0, overshoot];
+			draw(p1, p1 + [0, my("height") + 2*overshoot], size->2, color->grey(.3));
+		);
+ 
+		// --- Value marks ---
+		// A mark that coincides with one on the other number line is drawn only half as long, so both stay visible.
+		if(my("givenunit") == "upper",
+			maxvaluekey = "maxgivenvalue";      maxvaluekeyother = "maxdependentvalue";
+		,
+			maxvaluekey = "maxdependentvalue";  maxvaluekeyother = "maxgivenvalue";
+		);
+ 
+		counter = 0;
+		forall('uppervaluemarks,
+			regional(deltay);
+			counter = counter + 1;
+			deltay = 2*overshoot;
+ 
+			if(length('lowervaluemarks) >= counter,
+				if(|#/my(maxvaluekey) - ('lowervaluemarks_counter)/my(maxvaluekeyother)| < 0.0001,
+					deltay = overshoot + my("height")/2;
+				);
+			);
+ 
+			p1 = my("coord") + [#/my(maxvaluekey)*my("width"), my("height")] + [0, overshoot];
+			draw(p1, p1 - [0, deltay], size->2, color->'valuemarkcolors_counter);
+		);
+ 
+		// The keys swap for the lower marks.
+		if(my("givenunit") == "lower",
+			maxvaluekey = "maxgivenvalue";      maxvaluekeyother = "maxdependentvalue";
+		,
+			maxvaluekey = "maxdependentvalue";  maxvaluekeyother = "maxgivenvalue";
+		);
+ 
+		counter = 0;
+		forall('lowervaluemarks,
+			regional(deltay);
+			counter = counter + 1;
+			deltay = 2*overshoot;
+ 
+			if(length('uppervaluemarks) >= counter,
+				if(|#/my(maxvaluekey) - ('uppervaluemarks_counter)/my(maxvaluekeyother)| < 0.0001,
+					deltay = overshoot + my("height")/2;
+				);
+			);
+ 
+			p1 = my("coord") + [#/my(maxvaluekey),0]*my("width") - [0, overshoot];
+			draw(p1, p1 + [0, deltay], size->2, color->'valuemarkcolors_counter);
+		);
+ 
+		// --- Front edge of the bar, on top of the ticks ---
+		gsave();
+		linesize(2);
+		draw(my("shapefrontedge")_1, my("shapefrontedge")_2, color->my("color"), size->1.4);
+		grestore();
+ 
+		// @improvement: rotate the labels if they get too close to each other -
+		// use text box size to get the width of two centre labels and calculate
+		// whether they overlap.
+ 
+		if(my("givenunit") == "upper",
+			maxvaluekey = "maxgivenvalue";
+		,
+			maxvaluekey = "maxdependentvalue";
+		);
+ 
+		yoffset = my("height") + my("labelpadding"); // move up by the height of the bar
+ 
+		// --- Standard ticks (0 and, depending on the mode, the far end) ---
+		my("handlegivenvaluetick");
+ 
+		regional(currentstandardticks);
+		currentstandardticks = if(contains(["increasing", "none"], my("mode")),
+			my("standardticks") -- [1];
+		,
+			my("standardticks");
+		);
+ 
+		forall(currentstandardticks, tick,
+			regional(labelsize, angle, alignment, currentsize, dolabel);
+ 
+			dolabel = list or([
+				my("mode") == "increasing",
+				list and([
+					my("mode") == "decreasing",
+					list or([my("drawuppernumberlinelabels"), tick == 1])
+				])
+			]);
+ 
+			currentsize = size;
+			alignment = "center";
+ 
+			// @refactor: copy-paste, move to a function
+			text = if(tick == 0,
+				"0";
+			,
+				if(maxvaluekey == "maxgivenvalue",
+					tick * my(maxvaluekey);
+				,
+					// the dependent value is not labelled in "increasing" mode
+					if(my("mode") == "increasing", "", tick * my(maxvaluekey));
+				);
+			);
+			if(isundefined(text), text = "");
+ 
+			box = get boundingbox(text, [0,0], size, family); // only the size is used
+			xoffset = tick * my("width");
+			position = my("coord") + [xoffset, yoffset];
+ 
+			// Arches
+				if(list or([
+						my("drawarches"),
+						list and([
+							my("mode") == "increasing",
+							my("drawtotalarc"),
+							my("drawuppernumberlinelabels")
+						])
+					]),
+					eval(my("drawupperarches"), 'yoffset->yoffset + box_4_2 - box_1_2);
+				);
+	 
+				if(my("drawtotalarc"),
+					eval(my("drawupperarches"), 'yoffset->yoffset + box_4_2 - box_1_2, 'istotalarc->true);
+				);
+ 
+			// Rotate the label if the ticks are too close together
+			labelsize = text box size(text, size, family);
+			if(my("isticksdistanceenough"),
+				angle = 0°;
+				alignment = "center";
+			,
+				angle = 90°;
+				// @refactor: this magic formula works-for-now but is not perfect
+				if(my("ticklabelsizelimits"):"max":"h" > my("ticksdistance") - 0.25,
+					currentsize = floor(size * 0.9);
+				);
+				position = position + [labelsize:"h"/2, my("ticklabelsizelimits"):"min":"w" + 0.35];
+				alignment = "right";
+			);
+ 
+			if(dolabel,
+				drawtext(position, text, size->currentsize, family->family,
+					color->grey(.5), angle->angle, align->alignment);
+			);
+		);
+ 
+		// --- Labels of the regular ticks ---
+		if(my("drawuppernumberlinelabels"),
+			forall(1..length(my("ticks") -- [1]), idx,
+				regional(tick, labelsize, angle, alignment, currentsize, isstandardtick);
+				tick = (my("ticks") -- [1])_idx;
+				currentsize = size;
+ 
+				// NOTE: the original read bar:"standardticks" here, i.e. the global
+				// instead of the object's own field.
+				isstandardtick = list or(
+					apply(my("standardticks"), stdtick, |stdtick - tick| < 0.0001));
+ 
+				if(list and([
+						tick < my("value") + 0.001,
+						// do not draw the tick if it is the given value tick -
+						// unless the lower unit is the given one
+						list or([!isstandardtick, my("givenunit") == "lower"])
+					]),
+ 
+					// @improvement: if the step size is missing, "___" shows up as a label
+					text = tick * my(maxvaluekey);
+					box = get boundingbox(text, [0,0], size, family);
+					xoffset = tick * my("width");
+					position = my("coord") + [xoffset, yoffset];
+ 
+					labelsize = text box size(text, size, family);
+					if(my("isticksdistanceenough"),
+						angle = 0°;
+						currentsize = size;
+						alignment = "center";
+					,
+						angle = 90°;
+						// @refactor: this magic formula works-for-now but is not perfect
+						if(my("ticklabelsizelimits"):"max":"h" > my("ticksdistance") - 0.25,
+							currentsize = floor(size * 0.9);
+						);
+						position = position + [labelsize:"h"/2, my("ticklabelsizelimits"):"max":"w"];
+						alignment = "right";
+					);
+ 
+					// With a total arc and no arches only the outermost labels are drawn.
+					if(my("mode") == "increasing",
+						if(my("drawtotalarc"),
+							if(!my("drawarches"),
+								if(tick == max(select(my("ticks"), # < my("value") + 0.001)),
+									drawtext(position, text, size->currentsize, family->family,
+										color->grey(.5), angle->angle, align->alignment);
+								);
+								if(idx == 1,
+									drawtext(position, text, size->currentsize, family->family,
+										color->grey(.5), angle->angle, align->alignment);
+								);
+							,
+								drawtext(position, text, size->currentsize, family->family,
+									color->grey(.5), angle->angle, align->alignment);
+							);
+						,
+							drawtext(position, text, size->currentsize, family->family,
+								color->grey(.5), angle->angle, align->alignment);
+						);
+					,
+						drawtext(position, text, size->currentsize, family->family,
+							color->grey(.5), angle->angle, align->alignment);
+					);
+				);
+			);
+		);
+ 
+		// --- Labels for the custom marks on the UPPER line -------------------
+		// @refactor: 'percentages' suffix should be 'upper'
+		yoffset = my("height") + my("labelpadding");
+		counter = 0;
+ 
+		forall('uppervaluemarks, mark,
+			regional(labelsize, angle, alignment, currentsize, neighbour, shrunksize);
+			currentsize = size;
+			counter = counter + 1;
+ 
+			// NOTE: undefined marks used to fall through and draw "___".
+			if(!isundefined(mark),
+				text = mark + "";
+				box = get boundingbox(text, [0,0], size, family);
+				xoffset = mark/my(maxvaluekey) * my("width");
+				position = my("coord") + [xoffset, yoffset];
+ 
+				labelsize = text box size(text, size, family);
+ 
+				if(tobool(my("isticksdistanceenough")),
+					angle = 0°;
+					alignment = "center";
+				,
+					angle = 90°;
+					// @refactor: this magic formula works-for-now but is not perfect
+					if(my("ticklabelsizelimits"):"max":"h" > my("ticksdistance") - 0.25,
+						currentsize = floor(size * 0.9);
+ 
+						// NOTE: CindyScript has no destructuring assignment, the original
+						// "[a, b] = eval(...)" silently left both undefined.
+						neighbour = eval(my("closestneighbourtickindexanddistance"),
+							'tick->mark/my(maxvaluekey), 'maxvaluekey->maxvaluekey);
+						shrunksize = text box size('closestneighbourvalue + "", currentsize, family);
+ 
+						if(list and([
+								neighbour_2 != 0,
+								neighbour_2 < shrunksize:"h"
+							]),
+							position = position + [0, 1.075 * shrunksize:"w"];
+						);
+					);
+ 
+					position = position + [labelsize:"h"/2, my("ticklabelsizelimits"):"min":"w" + 0.35];
+					alignment = "right";
+				);
+ 
+				drawtext(position, text, size->currentsize, family->family,
+					color->'valuemarkcolors_counter, align->alignment, angle->angle);
+			);
+		);
+ 
+		// --- Labels for the LOWER number line --------------------------------
+		if(my("givenunit") == "lower",
+			maxvaluekey = "maxgivenvalue";
+		,
+			maxvaluekey = "maxdependentvalue";
+		);
+ 
+		my("handlegivenvaluetick");
+ 
+		currentstandardticks = if(contains(["increasing", "none"], my("mode")),
+			my("standardticks") -- [1];
+		,
+			my("standardticks");
+		);
+ 
+		forall(currentstandardticks, tick,
+			regional(labelsize, angle, alignment, currentsize, dolabel);
+			currentsize = size;
+			alignment = "center";
+ 
+			dolabel = list or([
+				my("mode") == "increasing",
+				list and([
+					my("mode") == "decreasing",
+					list or([my("drawlowernumberlinelabels"), tick == 1])
+				])
+			]);
+ 
+			// @refactor: copy-paste, move to a function
+			text = if(tick == 0,
+				"0";
+			,
+				if(maxvaluekey == "maxgivenvalue",
+					tick * my(maxvaluekey);
+				,
+					if(my("mode") == "increasing", "", tick * my(maxvaluekey));
+				);
+			);
+			if(isundefined(text), text = "");
+ 
+			box = get boundingbox(text, [0,0], size, family);
+			xoffset = tick * my("width");
+			yoffset = -(box_3_2 - box_2_2) - my("labelpadding"); // move down by the text height
+			position = my("coord") + [xoffset, yoffset];
+ 
+			labelsize = text box size(text, size, family);
+			if(tobool(my("isticksdistanceenough")),
+				angle = 0°;
+			,
+				angle = 90°;
+				if(my("ticklabelsizelimits"):"max":"h" > my("ticksdistance") - 0.25,
+					currentsize = floor(size * 0.9);
+				);
+				position = position + [labelsize:"h"/2, 1 - 1.5*my("labeldigitwidth")];
+				alignment = "right";
+			);
+ 
+			if(dolabel,
+				drawtext(position, text, size->currentsize, family->family,
+					color->grey(.5), angle->angle, align->alignment);
+			);
+		);
+ 
+		// --- Arches below the bar ---
+		if(!isundefined(my("drawvaluearches")),
+			if(list or([
+					my("drawarches"),
+					list and([
+						my("mode") == "increasing",
+						my("drawtotalarc"),
+						my("drawlowernumberlinelabels")
+					])
+				]),
+				eval(my("drawvaluearches"), 'yoffset->yoffset);
+			);
+ 
+			if(tobool(my("drawtotalarc")),
+				eval(my("drawvaluearches"), 'yoffset->yoffset, 'istotalarc->true);
+			);
+		);
+ 
+		// --- Labels of the regular ticks on the LOWER line ---
+		if(my("drawlowernumberlinelabels"),
+			forall(1..length(my("ticks") -- [1]), idx,
+				regional(tick, labelsize, angle, alignment, currentsize, isstandardtick);
+				tick = (my("ticks") -- [1])_idx;
+				currentsize = size;
+ 
+				// NOTE: the original read bar:"standardticks", i.e. the global.
+				isstandardtick = list or(
+					apply(my("standardticks"), stdtick, |stdtick - tick| < 0.0001));
+ 
+				if(list and([
+						tick < my("value") + 0.001,
+						// do not draw the given value tick - unless the upper unit is given
+						list or([!isstandardtick, my("givenunit") == "upper"])
+					]),
+ 
+					// @improvement: if the step size is missing, "___" shows up as a label
+					text = tick * my(maxvaluekey) + "";
+					box = get boundingbox(text, [0,0], size, family);
+					xoffset = tick * my("width");
+					yoffset = -(box_3_2 - box_2_2) - my("labelpadding");
+					position = my("coord") + [xoffset, yoffset];
+ 
+					labelsize = text box size(text, size, family);
+					if(tobool(my("isticksdistanceenough")),
+						angle = 0°;
+						alignment = "center";
+					,
+						angle = 90°;
+						if(my("ticklabelsizelimits"):"max":"h" > my("ticksdistance") - 0.25,
+							currentsize = floor(size * 0.9);
+						);
+						position = position + [labelsize:"h"/2, 1 - 1.5*my("labeldigitwidth")];
+						alignment = "right";
+					);
+ 
+					// exclude the base value label
+					if(tick != 1,
+						if(my("mode") == "increasing",
+							if(tobool(my("drawtotalarc")),
+								if(!tobool(my("drawarches")),
+									if(tick == max(select(my("ticks"), # < my("value") + 0.001)),
+										drawtext(position, text, size->currentsize, family->family,
+											color->grey(.5), angle->angle, align->alignment);
+									);
+									if(idx == 1,
+										drawtext(position, text, size->currentsize, family->family,
+											color->grey(.5), angle->angle, align->alignment);
+									);
+								,
+									drawtext(position, text, size->currentsize, family->family,
+										color->grey(.5), angle->angle, align->alignment);
+								);
+							,
+								drawtext(position, text, size->currentsize, family->family,
+									color->grey(.5), angle->angle, align->alignment);
+							);
+						,
+							drawtext(position, text, size->currentsize, family->family,
+								color->grey(.5), angle->angle, align->alignment);
+						);
+					);
+				);
+			);
+		);
+ 
+		// --- Labels for the custom marks on the LOWER line -------------------
+		// @refactor: 'values' suffix should be 'lower'
+		counter = 0;
+ 
+		forall('lowervaluemarks, mark,
+			regional(labelsize, angle, alignment, currentsize, neighbour, shrunksize);
+			currentsize = size;
+ 
+			// NOTE: the original used "continue;" here, which does not exist in
+			// CindyScript - the body is wrapped in a guard instead.
+			if(!isundefined(mark),
+				counter = counter + 1;
+ 
+				text = mark + "";
+				box = get boundingbox(text, [0,0], size, family);
+				xoffset = mark/my(maxvaluekey) * my("width");
+				yoffset = -(box_3_2 - box_2_2) - my("labelpadding");
+				position = my("coord") + [xoffset, yoffset];
+ 
+				labelsize = text box size(text, size, family);
+				if(tobool(my("isticksdistanceenough")),
+					angle = 0°;
+					alignment = "center";
+				,
+					angle = 90°;
+					if(my("ticklabelsizelimits"):"max":"h" > my("ticksdistance") - 0.25,
+						currentsize = floor(size * 0.9);
+ 
+						neighbour = eval(my("closestneighbourtickindexanddistance"),
+							'tick->mark/my(maxvaluekey), 'maxvaluekey->maxvaluekey);
+						shrunksize = text box size('closestneighbourvalue + "", currentsize, family);
+ 
+						if(list and([
+								neighbour_2 != 0,
+								neighbour_2 < shrunksize:"h"
+							]),
+							position = position + [0, -1.075 * shrunksize:"w"];
+						);
+					);
+ 
+					position = position + [labelsize:"h"/2, 1 - 1.5*my("labeldigitwidth")];
+					alignment = "right";
+				);
+ 
+				drawtext(position, text, size->currentsize, family->family,
+					color->'valuemarkcolors_counter, angle->angle, align->alignment);
+			);
+		);
+ 
+		// --- Current percentage ----------------------------------------------
+		if(my("drawcurrentpercentage"),
+			text = round(my("value")*1000)/10 + " %";
+			box = get boundingbox(text, [0,0], size, family);
+			position = my("coord") + [
+				my("value")*my("width") - .5*(box_2_1 - box_1_1),
+				my("height") + my("labelpadding")
+			];
+ 
+			draw label(position, text, size, mod'font->family, mod'bold->true);
+ 
+			if(my("scaffoldpercentage"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1 - box_1_1, box_4_2 - box_1_2, .05);
+				draw(scaffoldbox, color->grey(.5));
+				fill(scaffoldbox, color->grey(.9));
+			);
+		);
+ 
+		// --- Current value ----------------------------------------------------
+		if(my("drawcurrentvalue"),
+			text = round(my("value")*my("basevalue")*100)/100 + " " + my("unit");
+			box = get boundingbox(text, [0,0], size, family);
+			position = my("coord") + [
+				my("value")*my("width") - .5*(box_2_1 - box_1_1),
+				-(box_3_2 - box_2_2) - my("labelpadding")
+			];
+ 
+			draw label(position, text, size, mod'font->family, mod'bold->true);
+ 
+			if(my("scaffoldvalue"),
+				regional(scaffoldbox);
+				scaffoldbox = roundedrectangle(position, box_2_1 - box_1_1, box_4_2 - box_1_2, .05);
+				draw(scaffoldbox, color->grey(.5));
+				fill(scaffoldbox, color->grey(.9));
+			);
+		);
+ 
+		// --- Debug draw --------------------------------------------------------
+		if(LOGLEVEL > 0,
+			drawtext(my("coord") + [0.3, 0], my("value"));
+			draw(my("coord"));
+		);
+		if(LOGLEVEL > 1, drawpoly(my("hitbox"), color->[0,1,0]));
+	);
+
+	/**
+	* Arches above the bar. Eval with 'yoffset and optionally 'istotalarc.
+	* @refactor: rename to "upper" instead of "percentage" everywhere
+	*/
+	line:"drawupperarches" := (
+		regional(ticks, archwidth, archheight, todraw, position, deltay, angle,
+			labeltext, labelsize, size, family, arccolor, ticksundervalue, maxtick);
+ 
+		if(isundefined('yoffset), 'yoffset = 0);
+		if(isundefined('istotalarc), 'istotalarc = false);
+ 
+		// NOTE: size and family used to be read from the surrounding "draw" scope.
+		size = my("fontsize");
+		family = my("fontfamily");
+ 
+		ticks = 0 <: my("ticks"); // ticks with start (0) and end value (1) added
+ 
+		if(!'istotalarc,
+			archwidth = my("width") / my("divisions"); // ellipse major axis
+			archheight = archwidth / PHI;             // ellipse minor axis
+ 
+			forall(2..length(ticks), idx,
+				todraw = false;
+ 
+				// Special case: draw the first small arc even with drawarches = false,
+				// as long as labels and the total arc are switched on.
+				if(list and([tobool(my("drawtotalarc")), tobool(my("drawuppernumberlinelabels"))]),
+					if(list and([idx == 2, ticks_idx < my("value") + 0.001]),
+						todraw = true;
+					,
+						if(tobool(my("drawarches")),
+							todraw = (my("value") >= ticks_idx - 0.001);
+						);
+					);
+				,
+					todraw = (my("value") >= ticks_idx - 0.001);
+				);
+ 
+				position = my("coord") + [(idx - 1.5)*archwidth, 'yoffset];
+				deltay = [0,0];
+				if(list and([tobool(my("drawupperticks")), !tobool(my("isticksdistanceenough"))]),
+					deltay = [0, my("ticklabelsizelimits"):"max":"w" - 1.25*my("labeldigitwidth")];
+				);
+ 
+				if(todraw,
+					connect(ellipse(position + deltay, archwidth/2, archheight/2, 0, PI),
+						color->my("color"));
+ 
+					if(tobool(my("arcslabels")),
+						// NOTE: the original assigned "angel" (typo) and then read "angle",
+						// so the rotation never took effect.
+						angle = 0°;
+						labeltext = my("sizesteps"):"upper" + "er";
+						labelsize = text box size(labeltext, size, family);
+						position = my("coord") + [(idx - 1.5)*archwidth, 'yoffset + archheight/2 + 0.1] + deltay;
+ 
+						if(!tobool(my("isticksdistanceenough")),
+							angle = 90°;
+							position = position + [labelsize:"h"/2, labelsize:"w"/2];
+						);
+ 
+						drawtext(position, labeltext, align->"center", color->my("color"), angle->angle);
+					);
+				);
+			);
+		,
+			// @incomplete: height should scale with width and start higher than a single arc
+			arccolor = my("color") + [100,0,0]/255;
+			ticksundervalue = select(ticks, # < my("value") + 0.005);
+			maxtick = max(ticksundervalue);
+ 
+			archwidth = my("width") * maxtick;
+			archheight = 0.5 * archwidth / PHI;
+			position = my("coord") + [0.5*archwidth, 'yoffset];
+			deltay = [0,0];
+ 
+			if(!tobool(my("isticksdistanceenough")), archheight = archheight * 1.5);
+			if(list and([tobool(my("drawupperticks")), !tobool(my("isticksdistanceenough"))]),
+				deltay = [0, my("ticklabelsizelimits"):"max":"w" - 1.25*my("labeldigitwidth")];
+			);
+ 
+			connect(ellipse(position + deltay, archwidth/2, archheight/2, 0, PI), color->arccolor);
+ 
+			if(list and([tobool(my("totalarclabel")), length(ticksundervalue) > 1]),
+				labeltext = numeral(length(ticksundervalue) - 1) + " " + my("sizesteps"):"upper" + "er";
+				drawtext(my("coord") + [0.5*archwidth, 'yoffset + archheight/2 + 0.1] + deltay,
+					labeltext, align->"center", color->arccolor);
+			);
+		);
+	);
+ 
+	/**
+	* Arches below the bar. Mirror image of "drawupperarches".
+	*/
+	line:"drawvaluearches" := (
+		regional(ticks, archwidth, archheight, todraw, position, deltay, angle,
+			labeltext, labelsize, size, family, arccolor, ticksundervalue, maxtick);
+ 
+		if(isundefined('yoffset), 'yoffset = 0);
+		if(isundefined('istotalarc), 'istotalarc = false);
+ 
+		size = my("fontsize");
+		family = my("fontfamily");
+ 
+		ticks = 0 <: my("ticks");
+ 
+		if(!'istotalarc,
+			archwidth = my("width") / my("divisions");
+			archheight = archwidth / PHI;
+ 
+			forall(2..length(ticks), idx,
+				todraw = false;
+ 
+				if(list and([tobool(my("drawtotalarc")), tobool(my("drawuppernumberlinelabels"))]),
+					if(list and([idx == 2, ticks_idx < my("value") + 0.001]),
+						todraw = true;
+					,
+						if(tobool(my("drawarches")),
+							todraw = (my("value") >= ticks_idx - 0.001);
+						);
+					);
+				,
+					todraw = (my("value") >= ticks_idx - 0.001);
+				);
+ 
+				position = my("coord") + [(idx - 1.5)*archwidth, 'yoffset];
+				deltay = [0,0];
+				if(list and([tobool(my("drawupperticks")), !tobool(my("isticksdistanceenough"))]),
+					deltay = [0, my("ticklabelsizelimits"):"max":"w" - 1.25*my("labeldigitwidth")];
+				);
+ 
+				if(todraw,
+					connect(ellipse(position - deltay, archwidth/2, archheight/2, PI, 2*PI),
+						color->my("color"));
+ 
+					if(tobool(my("arcslabels")),
+						angle = 0°;
+						labeltext = my("sizesteps"):"lower" + "er";
+						labelsize = text box size(labeltext, size, family);
+						position = my("coord") + [(idx - 1.5)*archwidth, 'yoffset - archheight/2 - 0.55];
+ 
+						if(!tobool(my("isticksdistanceenough")),
+							angle = 90°;
+							position = position + [labelsize:"h"/2, -labelsize:"w"*0.6];
+						);
+ 
+						drawtext(position, labeltext, align->"center", color->my("color"), angle->angle);
+					);
+				);
+			);
+		,
+			arccolor = my("color") + [100,0,0]/255;
+			ticksundervalue = select(ticks, # < my("value") + 0.005);
+			maxtick = max(ticksundervalue);
+ 
+			archwidth = my("width") * maxtick;
+			archheight = 0.5 * archwidth / PHI;
+			position = my("coord") + [0.5*archwidth, 'yoffset];
+			deltay = [0,0];
+ 
+			if(!tobool(my("isticksdistanceenough")), archheight = archheight * 1.5);
+			if(list and([tobool(my("drawupperticks")), !tobool(my("isticksdistanceenough"))]),
+				deltay = -[0, my("ticklabelsizelimits"):"max":"w" - 1.25*my("labeldigitwidth")];
+			);
+ 
+			connect(ellipse(position + deltay, archwidth/2, archheight/2, PI, 2*PI), color->arccolor);
+ 
+			if(list and([tobool(my("totalarclabel")), length(ticksundervalue) > 1]),
+				labeltext = numeral(length(ticksundervalue) - 1) + " " + my("sizesteps"):"lower" + "er";
+				drawtext(my("coord") + [0.5*archwidth, 'yoffset - archheight/2 - 0.55] + deltay,
+					labeltext, align->"center", color->arccolor);
+			);
+		);
+	);
+ 
+	// --- Interaction ---------------------------------------------------------
+ 
+	line:"move" := if(my("ismoveable"), my("setvalue"));
+	line:"click" := if(my("isclickable"), my("setvalue"));
+ 
+	line:"moveend" := if(my("ismoveable"),
+		// Keep the text fields in sync. Guarded: they only exist after init.
+		if(!isundefined(my("textfields")),
+			my("textfields"):"value":"value" = 100 * my("value") + "";
+			my("textfields"):"percentage":"value" = my("value") + "";
+		);
+	);
+ 
+	/**
+	* Set the value from the mouse position, snapping to a nearby tick.
+	*/
+	line:"setvalue" := (
+		regional(newvalue, nearest, mindistance, argmin);
+ 
+		newvalue = (mouse().xy - my("coord"))_1 / my("width");
+ 
+		// NOTE: CindyScript has no destructuring assignment - the original
+		// "[a, b] = minargmin(...)" left both undefined, so the snapping never
+		// worked and the first branch was always taken.
+		if(length(my("ticks")) > 0,
+			nearest = min with index(apply(my("ticks"), |# - newvalue|));
+			mindistance = nearest_1;
+			argmin = nearest_2;
+		,
+			mindistance = 999;
+		);
+ 
+		// @incomplete: find the right threshold
+		if(mindistance > 0.005,
+			self():"value" = newvalue;
+		,
+			self():"value" = my("ticks")_argmin;
+		);
+ 
+		// For the double number line: never cut at the upper end, always cut at 0.
+		self():"value" = max(my("value"), 0);
+ 
+		// Round according to the given precision
+		self():"value" = my("precision") * round(my("value")/my("precision"));
+	);
+
+	line; // Return Doublenumberline object
+);
+
+
+// ================== //
+// D | Initialization //
+// ================== //
+
+/**
+* Position relative to the bar, in bar widths and heights.
+* Anchored at 'barposition, so moving the bar moves the whole interface with it.
+*/
+barcoord(x, y) := 'barposition + [x * 'barwidth, y * 'barheight];
+
+
+// D.1 | Toggle switches
+// new Toggle(coord, width, state, label, fontsize)
+// =====================================================================
+regional(toggles);
+
+toggles = {
+	// --- increasing ("Hochrechnen") ---
+	"increasing"          : new Toggle(barcoord(0.125,1) + [0,5],   1, false, "Hochrechnen", 14*FONTSCALE),
+	"incNumberlineLabels" : new Toggle(barcoord(0,0) + [1,-11],     1, false, "Zahlenstrahl-Beschriftung", 14*FONTSCALE),
+	"incArcs"             : new Toggle(barcoord(0,0) + [14,-7],     1, false, "Bögen", 14*FONTSCALE),
+	"incArcsLabels"       : new Toggle(barcoord(0,0) + [15,-8],     1, false, "Bögen-Beschriftung", 14*FONTSCALE),
+	"incTotalArc"         : new Toggle(barcoord(0,0) + [14,-9],     1, false, "Gesamtbogen", 14*FONTSCALE),
+	"incTotalArcLabel"    : new Toggle(barcoord(0,0) + [15,-10],    1, false, "Gesamtbogen-Beschriftung", 14*FONTSCALE),
+	"incValuesInput"      : new Toggle(barcoord(0,0) + [14,-11],    1, false, "Werte eingeben", 14*FONTSCALE),
+	"incUpperGivenUnit"   : new Toggle(barcoord(0,0) + [8.5,-9],    1, false, "", 14*FONTSCALE),
+	"incLowerGivenUnit"   : new Toggle(barcoord(0,0) + [8.5,-10],   1, false, "", 14*FONTSCALE),
+
+	// --- decreasing ("Runterrechnen") ---
+	"decreasing"          : new Toggle(barcoord(0.6,1) + [0,5],     1, false, "Runterrechnen", 14*FONTSCALE),
+	"decUseNumberSteps"   : new Toggle(barcoord(0,0) + [2,-9],      1, false, "Anzahl Schritte", 14*FONTSCALE),
+	"decUseSizeSteps"     : new Toggle(barcoord(0,0) + [2,-10],     1, false, "Größe der Schritte", 14*FONTSCALE),
+	"decNumberlineLabels" : new Toggle(barcoord(0,0) + [15.5,-7],   1, false, "Zahlenstrahl-Beschriftung", 14*FONTSCALE),
+	"decArcs"             : new Toggle(barcoord(0,0) + [15.5,-8],   1, false, "Bögen", 14*FONTSCALE),
+	"decArcsLabels"       : new Toggle(barcoord(0,0) + [16.5,-9],   1, false, "Bögen-Beschriftung", 14*FONTSCALE),
+	"decValuesInput"      : new Toggle(barcoord(0,0) + [15.5,-10],  1, false, "Werte eingeben", 14*FONTSCALE)
+};
+
+// NOTE: the label of "incTotalArcLabel" was "Bögen-Beschriftung" in the
+// original, same as "incArcsLabels" - almost certainly a copy-paste slip,
+// renamed to "Gesamtbogen-Beschriftung".
+
+
+// D.2 | The bar itself
+// new Doublenumberline(coord, width, height, value, precision, divisions, baseval, unit)
+// =====================================================================
+bar = new Doublenumberline('barposition, 'barwidth, 'barheight, 'barvalue, 'barprecision, 'subdivisions, 'basevalue, 'unit);
+
+/**
+* Which mode is active. Derived from the two main toggles, so the bar does not
+* have to be told about mode changes.
+*/
+bar:"mode" := if(toggles:"increasing":"state",
+	"increasing";
+,
+	if(toggles:"decreasing":"state", "decreasing", "none");
+);
+
+// --- Visibility, all derived from the toggles ---
+// NOTE: upper and lower ticks share one toggle, they are listed separately
+// so they can be split later without touching the draw code.
+bar:"drawupperticks" := if(my("mode") == "increasing",
+	toggles:"incNumberlineLabels":"state";
+,
+	toggles:"decNumberlineLabels":"state";
+);
+bar:"drawlowerticks" := if(my("mode") == "increasing",
+	toggles:"incNumberlineLabels":"state";
+,
+	toggles:"decNumberlineLabels":"state";
+);
+
+/**
+* In "decreasing" mode the labels only appear once the step size is actually
+* known - either because the number of steps was given, or because the size
+* was entered.
+*/
+bar:"drawuppernumberlinelabels" := if(my("mode") == "increasing",
+	toggles:"incNumberlineLabels":"state";
+,
+	list and([
+		toggles:"decNumberlineLabels":"state",
+		list or([
+			my("submode") == "number",
+			list and([
+				!isundefined(textfields:"decUpperSizeSteps":"value"),
+				textfields:"decUpperSizeSteps":"value" != ""
+			])
+		])
+	]);
+);
+
+bar:"drawlowernumberlinelabels" := if(my("mode") == "increasing",
+	toggles:"incNumberlineLabels":"state";
+,
+	list and([
+		toggles:"decNumberlineLabels":"state",
+		list or([
+			my("submode") == "number",
+			list and([
+				!isundefined(textfields:"decLowerSizeSteps":"value"),
+				textfields:"decLowerSizeSteps":"value" != ""
+			])
+		])
+	]);
+);
+
+bar:"drawarches" := if(my("mode") == "increasing",
+	toggles:"incArcs":"state", toggles:"decArcs":"state");
+
+bar:"arcslabels" := if(my("mode") == "increasing",
+	toggles:"incArcsLabels":"state", toggles:"decArcsLabels":"state");
+
+// Only available in "increasing" mode.
+bar:"drawtotalarc"  := if(my("mode") == "increasing", toggles:"incTotalArc":"state", false);
+bar:"totalarclabel" := if(my("mode") == "increasing", toggles:"incTotalArcLabel":"state", false);
+
+
+// D.3 | Wiring
+// The handles could not be set earlier, the bar did not exist yet.
+// =====================================================================
+
+// Text fields: point them at the bar and apply any preset value.
+forall(textfields, textfield,
+	textfield:"handle" = bar;
+	if(textfield:"value" != "", textfield:"onupdate");
+);
+
+// Toggles: point them at the bar and switch on the ones that are configured.
+//
+// NOTE: the original read the state from urlparameter(name). The values now
+// come from ENVIRONMENTALPARAMS under the toggle's own name, so a link like
+// "?increasing=true&incArcs=true" still works - and so does the same setting
+// coming from divomath.
+forall(keys(toggles), name,
+	regional(togglestate);
+	toggles:name:"handle" = bar;
+
+	togglestate = tobool(default to(ENVIRONMENTALPARAMS:name, false, true));
+
+	// Only click if it is not already in that state - in "decreasing" mode some
+	// toggles default to true.
+	if(list and([togglestate, !toggles:name:"state"]),
+		toggles:name:"click";
+	);
+);
+
+// Give the bar access to the interface
+bar:"toggles" = toggles;
+bar:"textfields" = textfields;
+
+obj = obj :> bar;
+
+// D.4 | Text inputs
+// =====================================================================
+regional(textfields, refToggle);
+ 
+textfields = {};
+ 
+/**
+* Every field does the same three things when it is done: drop the keyboard,
+* forget it and go back to the inactive colour. Kept in one place so the
+* individual "onupdate" scripts only carry what is specific to them.
+*
+* NOTE: this used to be copy-pasted into all 31 fields.
+*/
+closeKeyboard(field) := (
+	obj = obj -- [field:"keyboard"];
+	field:"keyboard" = NADA;
+	field:"color" = field:"inactiveColor";
+);
+ 
+ 
+// --- Units (the only fields with a letter keyboard) -------------------------
+textfields:"upperUnit" = new TextInput(barcoord(1,1) + [0.75,-0.25], "", "full");
+textfields:"upperUnit":"width" = 3;
+textfields:"upperUnit":"handle" = bar;
+textfields:"upperUnit":"selectionToggle" = toggles:"incUpperGivenUnit";
+textfields:"upperUnit":"value" = 'upperunit;
+textfields:"upperUnit":"onupdate" := (
+	my("handle"):"units":"upper" = my("value");
+	my("selectionToggle"):"label" = my("value");
+	closeKeyboard(self());
+);
+ 
+textfields:"lowerUnit" = new TextInput(barcoord(1,0) + [0.75,-0.25], "", "full");
+textfields:"lowerUnit":"width" = 3;
+textfields:"lowerUnit":"handle" = bar;
+textfields:"lowerUnit":"selectionToggle" = toggles:"incLowerGivenUnit";
+textfields:"lowerUnit":"value" = 'lowerunit;
+textfields:"lowerUnit":"onupdate" := (
+	my("handle"):"units":"lower" = my("value");
+	my("selectionToggle"):"label" = my("value");
+	closeKeyboard(self());
+);
+ 
+ 
+// --- Increasing mode --------------------------------------------------------
+textfields:"incUpperSizeSteps" = new TextInput(barcoord(0,0) + [6,-7],
+	["Schrittgröße oben", "er-Schritte"], "numeric");
+textfields:"incUpperSizeSteps":"handle" = bar;
+textfields:"incUpperSizeSteps":"value" = 'incuppersizesteps;
+textfields:"incUpperSizeSteps":"onupdate" := (
+	my("handle"):"sizesteps":"upper" = parse(my("value"));
+	closeKeyboard(self());
+);
+ 
+// NOTE: the original placed this one at a plain [6,-8] instead of relative to
+// the bar, unlike its counterpart above.
+textfields:"incLowerSizeSteps" = new TextInput(barcoord(0,0) + [6,-8],
+	["Schrittgröße unten", "er-Schritte"], "numeric");
+textfields:"incLowerSizeSteps":"handle" = bar;
+textfields:"incLowerSizeSteps":"value" = 'inclowersizesteps;
+textfields:"incLowerSizeSteps":"onupdate" := (
+	my("handle"):"sizesteps":"lower" = parse(my("value"));
+	closeKeyboard(self());
+);
+ 
+textfields:"incGivenValue" = new TextInput(barcoord(0,0) + [6,-9.5], "Gegeben", "numeric");
+textfields:"incGivenValue":"handle" = bar;
+textfields:"incGivenValue":"value" = 'incgivenvalue;
+textfields:"incGivenValue":"onupdate" := (
+	my("handle"):"givenvalue" = parse(my("value"));
+	closeKeyboard(self());
+);
+ 
+ 
+// --- Decreasing mode --------------------------------------------------------
+textfields:"decUpperTargetValue" = new TextInput(barcoord(0,0) + [6,-7],
+	"Zielwert oben", "numeric");
+textfields:"decUpperTargetValue":"handle" = bar;
+textfields:"decUpperTargetValue":"value" = 'decuppertargetvalue;
+textfields:"decUpperTargetValue":"onupdate" := (
+	my("handle"):"givenvalue" = parse(my("value"));
+	my("handle"):"value" = 1.0; // the target sits at the far end of the bar
+	closeKeyboard(self());
+);
+ 
+textfields:"decLowerTargetValue" = new TextInput(barcoord(0,0) + [6,-8],
+	"Zielwert unten", "numeric");
+textfields:"decLowerTargetValue":"handle" = bar;
+textfields:"decLowerTargetValue":"value" = 'declowertargetvalue;
+textfields:"decLowerTargetValue":"onupdate" := (
+	my("handle"):"inputdependentvalue" = parse(my("value"));
+	my("handle"):"value" = 1.0;
+	closeKeyboard(self());
+);
+ 
+/**
+* Position right of a toggle, past its label.
+* @refactor: this was spelled out at every call site in the original.
+*/
+rightOfToggle(toggle, dy) := toggle:"coord"
+	+ [0.5 + toggle:"width" + text box size(toggle:"label", toggle:"fontsize", NADA):"w", dy];
+ 
+refToggle = toggles:"decUseNumberSteps";
+textfields:"decNumberSteps" = new TextInput(rightOfToggle(refToggle, 0), "", "numeric");
+textfields:"decNumberSteps":"handle" = bar;
+textfields:"decNumberSteps":"value" = 'decnumbersteps;
+textfields:"decNumberSteps":"onupdate" := (
+	regional(newColor, value);
+	newColor = my("inactiveColor");
+	value = parse(my("value"));
+ 
+	// Only accept a number of steps that divides both number lines evenly.
+	if(eval(my("handle"):"checknumberstepsconsistency", 'inputvalue->value),
+		my("handle"):"sizesteps":"lower" = my("handle"):"maxdependentvalue"/value;
+		my("handle"):"sizesteps":"upper" = my("handle"):"maxgivenvalue"/value;
+		my("handle"):"inputdivisions" = value;
+	,
+		my("handle"):"inputdivisions" = NADA;
+		newColor = my("warningColor");
+	);
+ 
+	closeKeyboard(self());
+	self():"color" = newColor; // after closeKeyboard, it resets the colour
+);
+ 
+refToggle = toggles:"decUseSizeSteps";
+ 
+textfields:"decUpperSizeSteps" = new TextInput(rightOfToggle(refToggle, -1),
+	["Schrittgröße oben", "er-Schritte"], "numeric");
+textfields:"decUpperSizeSteps":"handle" = bar;
+textfields:"decUpperSizeSteps":"value" = 'decuppersizesteps;
+textfields:"decUpperSizeSteps":"onupdate" := (
+	my("handle"):"sizesteps":"upper" = parse(my("value"));
+	closeKeyboard(self());
+ 
+	// Both step sizes have to agree on the number of steps.
+	if(!my("handle"):"checksizestepsconsistency",
+		self():"color" = my("warningColor");
+		textfields:"decLowerSizeSteps":"color" = my("warningColor");
+	,
+		textfields:"decLowerSizeSteps":"color" = textfields:"decLowerSizeSteps":"inactiveColor";
+	);
+);
+ 
+textfields:"decLowerSizeSteps" = new TextInput(rightOfToggle(refToggle, -2),
+	["Schrittgröße unten", "er-Schritte"], "numeric");
+textfields:"decLowerSizeSteps":"handle" = bar;
+textfields:"decLowerSizeSteps":"value" = 'declowersizesteps;
+textfields:"decLowerSizeSteps":"onupdate" := (
+	my("handle"):"sizesteps":"lower" = parse(my("value"));
+	closeKeyboard(self());
+ 
+	if(!my("handle"):"checksizestepsconsistency",
+		self():"color" = my("warningColor");
+		textfields:"decUpperSizeSteps":"color" = my("warningColor");
+	,
+		textfields:"decUpperSizeSteps":"color" = textfields:"decUpperSizeSteps":"inactiveColor";
+	);
+);
+ 
+ 
+// --- Value marks ------------------------------------------------------------
+// Ten pairs of fields (five per mode), all identical except for their index
+// and position. The original spelled every one of them out.
+//
+// The upper field of each pair draws a coloured dot next to its label so it can
+// be matched to the mark on the number line.
+ 
+'markpositions = {
+	"inc": [[18,-12], [24,-12], [30,-12], [18,-14.5], [24,-14.5]],
+	"dec": [[19.5,-11], [25.5,-11], [31.5,-11], [19.5,-13.5], [25.5,-13.5]]
+};
+'markconfig = {
+	"incUpper": 'incuppervaluemarks, "incLower": 'inclowervaluemarks,
+	"decUpper": 'decuppervaluemarks, "decLower": 'declowervaluemarks
+};
+ 
+forall(["inc", "dec"], mode,
+	forall(1..5, i,
+		regional(uppername, lowername, uppercoord);
+		uppername = mode + "UpperValueMark" + i;
+		lowername = mode + "LowerValueMark" + i;
+		uppercoord = ('markpositions:mode)_i;
+ 
+		// --- upper field ---
+		textfields:uppername = new TextInput(uppercoord, "Wert oben", "numeric");
+		textfields:uppername:"index" = i;
+		textfields:uppername:"handle" = bar;
+		textfields:uppername:"value" = ('markconfig:(mode + "Upper"))_i;
+		textfields:uppername:"drawBackground" := (
+			regional(labelsize);
+			labelsize = text box size(my("label"), my("fontsize"), my("fontfamily"));
+			fillcircle(my("coord") + [-labelsize:"w"/2, -0.2], 0.25,
+				color->'valuemarkcolors_(my("index")));
+		);
+		textfields:uppername:"onupdate" := (
+			'uppervaluemarks_(my("index")) = parse(my("value"));
+			closeKeyboard(self());
+		);
+ 
+		// --- lower field, one line below ---
+		textfields:lowername = new TextInput(uppercoord + [0,-1], "Wert unten", "numeric");
+		textfields:lowername:"index" = i;
+		textfields:lowername:"handle" = bar;
+		textfields:lowername:"value" = ('markconfig:(mode + "Lower"))_i;
+		textfields:lowername:"onupdate" := (
+			'lowervaluemarks_(my("index")) = parse(my("value"));
+			closeKeyboard(self());
+		);
+	);
+);
+
+// D.5 | Buttons
+// new Button(coord, width, height, label, fontsize)
+// =====================================================================
+regional(buttons);
+buttons = {};
+
+/**
+* The plus/minus pairs next to the step size fields. All ten used to be spelled
+* out, they only differ in their target field and position.
+*
+* Symbols are drawn rather than typeset - HEAVYPLUS/HEAVYMINUS are emoji and
+* cannot be centred reliably, see the Button class.
+*/
+makeStepButton(name, coord, target, delta) := (
+	regional(btn);
+
+	btn = new Button(coord, .6, .6, "", NADA);
+	btn:"handle" = target;
+	btn:"cornerradius" = .35;
+	btn:"delta" = delta;
+	btn:"imgfill" = .5;
+	btn:"drawafter" := if(my("delta") > 0, my("drawplus"), my("drawminus"));
+
+	btn:"script" := (
+		regional(newvalue);
+
+		newvalue = parse(my("handle"):"value");
+		if(isundefined(newvalue), newvalue = 0);
+
+		// never below 1 - a step size or step count of 0 makes no sense
+		newvalue = max(1, newvalue + my("delta"));
+
+		my("handle"):"value" = newvalue + "";
+		my("handle"):"onupdate";
+	);
+
+	buttons:name = btn;
+	btn;
+);
+
+// --- increasing: fixed positions --------------------------------------------
+makeStepButton("incUpperSizeStepsMinus", barcoord(0,0) + [11.5,-7],
+	textfields:"incUpperSizeSteps", -1);
+makeStepButton("incUpperSizeStepsPlus", barcoord(0,0) + [12.125,-7],
+	textfields:"incUpperSizeSteps", 1);
+makeStepButton("incLowerSizeStepsMinus", barcoord(0,0) + [11.5,-8],
+	textfields:"incLowerSizeSteps", -1);
+makeStepButton("incLowerSizeStepsPlus", barcoord(0,0) + [12.125,-8],
+	textfields:"incLowerSizeSteps", 1);
+
+// --- decreasing: positioned relative to their text field --------------------
+makeStepButton("decNumberStepsMinus", textfields:"decNumberSteps":"coord" + [2.5, 0],
+	textfields:"decNumberSteps", -1);
+makeStepButton("decNumberStepsPlus", textfields:"decNumberSteps":"coord" + [3.25, 0],
+	textfields:"decNumberSteps", 1);
+makeStepButton("decUpperSizeStepsMinus", textfields:"decUpperSizeSteps":"coord" + [5.25, 0],
+	textfields:"decUpperSizeSteps", -1);
+makeStepButton("decUpperSizeStepsPlus", textfields:"decUpperSizeSteps":"coord" + [6.0, 0],
+	textfields:"decUpperSizeSteps", 1);
+makeStepButton("decLowerSizeStepsMinus", textfields:"decLowerSizeSteps":"coord" + [5.25, 0],
+	textfields:"decLowerSizeSteps", -1);
+makeStepButton("decLowerSizeStepsPlus", textfields:"decLowerSizeSteps":"coord" + [6.0, 0],
+	textfields:"decLowerSizeSteps", 1);
+
+
+/**
+* "Add more values" - reveals the next pair of value mark fields.
+* One per mode; they only differ in the prefix of the fields they reveal.
+*/
+makeAddMarkButton(name, coord, prefix, presetupper) := (
+	regional(btn, i);
+
+	btn = new Button(coord, 7, .7, " weitere Werte hinzufügen", 12*FONTSCALE);
+	btn:"cornerradius" = .35;
+	btn:"prefix" = prefix;
+	btn:"imgfill" = .5;
+	btn:"drawafter" := my("drawplus");
+
+	// Start with as many pairs visible as were preset in the configuration.
+	// NOTE: the original tested the SAME parameter twice (upper both times),
+	// so a preset lower value alone did not reveal its field.
+	btn:"markValueCounter" = 1;
+	forall(1..5, i,
+		if(!isundefined(presetupper_i), btn:"markValueCounter" = i);
+	);
+
+	btn:"script" := (
+		if(my("markValueCounter") < 5,
+			self():"markValueCounter" = my("markValueCounter") + 1;
+			obj = obj ++ [
+				textfields:(my("prefix") + "UpperValueMark" + my("markValueCounter")),
+				textfields:(my("prefix") + "LowerValueMark" + my("markValueCounter"))
+			];
+		);
+
+		// all five pairs shown - the button has done its job
+		if(my("markValueCounter") == 5, obj = obj -- [self()]);
+	);
+
+	buttons:name = btn;
+	btn;
+);
+
+makeAddMarkButton("incAddValueMarkInputs", barcoord(0,0) + [20,-11], "inc", 'incuppervaluemarks);
+makeAddMarkButton("decAddValueMarkInputs", barcoord(0,0) + [21.5,-10], "dec", 'decuppervaluemarks);
+
+// NOTE: "selectUpperUnit" and "selectLowerUnit" were listed but never built -
+// the code was commented out in the original and is left out here.
+
+// Give the bar access to the buttons as well
+bar:"buttons" = buttons;
+
+// D.4 | Toggle scripts - which widgets are visible when
+// =====================================================================
+
+/**
+* Show or hide a list of widgets.
+* @refactor: the original repeated "obj = obj ++ [...]" per widget.
+*/
+setVisible(widgets, visible) := if(visible,
+	obj = obj ++ widgets;
+,
+	obj = obj -- widgets;
+);
+
+/**
+* Switch off a list of toggles, running their scripts so their own sub widgets
+* disappear too.
+*/
+switchOffAll(toggleList) := forall(toggleList, toggle,
+	if(toggle:"state", toggle:"click");
+);
+
+/**
+* Back to a blank state. Called when the mode changes, because the marks and
+* units of one mode should not carry over into the other.
+*
+* @refactor: this is copy-pasted from the constructor in the original; a proper
+* reset method on the bar would be better.
+*/
+resetBar() := (
+	// The values stay in the text fields, so they can be restored by hand.
+	'uppervaluemarks = apply(1..5, NADA);
+	'lowervaluemarks = apply(1..5, NADA);
+
+	bar:"units" = {"lower": NADA, "upper": NADA};
+	bar:"givenvalue" = NADA;
+	bar:"sizesteps" = {"lower": NADA, "upper": NADA};
+
+	// In "decreasing" mode the maximum is set by the user, so either line will
+	// do and "upper" is picked; in "increasing" mode the user has to choose.
+	bar:"givenunit" := if(my("mode") == "increasing", NADA, "upper");
+	bar:"dependentunit" = NADA;
+);
+
+
+// --- Mode toggles, mutually exclusive ---------------------------------------
+
+toggles:"increasing":"script" := (
+	regional(widgets);
+	widgets = [
+		textfields:"incUpperSizeSteps", textfields:"incLowerSizeSteps",
+		textfields:"incGivenValue",
+		toggles:"incNumberlineLabels", toggles:"incArcs", toggles:"incTotalArc",
+		toggles:"incValuesInput",
+		toggles:"incUpperGivenUnit", toggles:"incLowerGivenUnit",
+		buttons:"incUpperSizeStepsPlus", buttons:"incUpperSizeStepsMinus",
+		buttons:"incLowerSizeStepsPlus", buttons:"incLowerSizeStepsMinus"
+	];
+
+	if(my("state"),
+		if(toggles:"decreasing":"state", toggles:"decreasing":"click");
+		setVisible(widgets, true);
+	,
+		switchOffAll([
+			toggles:"incNumberlineLabels", toggles:"incArcs", toggles:"incTotalArc",
+			toggles:"incValuesInput",
+			toggles:"incUpperGivenUnit", toggles:"incLowerGivenUnit"
+		]);
+		setVisible(widgets, false);
+		resetBar();
+	);
+);
+
+toggles:"decreasing":"script" := (
+	regional(widgets);
+	widgets = [
+		textfields:"decUpperTargetValue", textfields:"decLowerTargetValue",
+		toggles:"decUseSizeSteps", toggles:"decUseNumberSteps",
+		toggles:"decNumberlineLabels", toggles:"decArcs", toggles:"decValuesInput"
+	];
+
+	if(my("state"),
+		if(toggles:"increasing":"state", toggles:"increasing":"click");
+		setVisible(widgets, true);
+	,
+		switchOffAll([
+			toggles:"decUseSizeSteps", toggles:"decUseNumberSteps",
+			toggles:"decNumberlineLabels", toggles:"decArcs", toggles:"decValuesInput"
+		]);
+		setVisible(widgets, false);
+		resetBar();
+	);
+);
+
+
+// --- Unit selection, mutually exclusive but both may be off -----------------
+// Which number line carries the given value.
+
+toggles:"incUpperGivenUnit":"handle" = bar;
+toggles:"incUpperGivenUnit":"script" := if(my("state"),
+	if(toggles:"incLowerGivenUnit":"state", toggles:"incLowerGivenUnit":"click");
+
+	my("handle"):"givenunit" = "upper";
+	my("handle"):"dependentunit" = "lower";
+,
+	// Only reset if the other one is off as well.
+	if(!toggles:"incLowerGivenUnit":"state",
+		my("handle"):"givenunit" = NADA;
+		my("handle"):"dependentunit" = NADA;
+	);
+);
+
+toggles:"incLowerGivenUnit":"handle" = bar;
+toggles:"incLowerGivenUnit":"script" := if(my("state"),
+	if(toggles:"incUpperGivenUnit":"state", toggles:"incUpperGivenUnit":"click");
+
+	my("handle"):"givenunit" = "lower";
+	my("handle"):"dependentunit" = "upper";
+,
+	if(!toggles:"incUpperGivenUnit":"state",
+		my("handle"):"givenunit" = NADA;
+		my("handle"):"dependentunit" = NADA;
+	);
+);
+
+
+// --- Arch labels follow their arches ----------------------------------------
+
+toggles:"incArcs":"script" := setVisible([toggles:"incArcsLabels"], my("state"));
+toggles:"incTotalArc":"script" := setVisible([toggles:"incTotalArcLabel"], my("state"));
+toggles:"decArcs":"script" := setVisible([toggles:"decArcsLabels"], my("state"));
+
+
+// --- Decreasing: number of steps OR step size, not both ---------------------
+
+toggles:"decUseNumberSteps":"handle" = bar;
+toggles:"decUseNumberSteps":"script" := (
+	regional(widgets);
+	widgets = [textfields:"decNumberSteps",
+		buttons:"decNumberStepsPlus", buttons:"decNumberStepsMinus"];
+
+	if(my("state"),
+		// Clear the other input so no stale step size is left behind
+		if(toggles:"decUseSizeSteps":"state",
+			textfields:"decUpperSizeSteps":"value" = "";
+			textfields:"decLowerSizeSteps":"value" = "";
+			textfields:"decUpperSizeSteps":"onupdate";
+			textfields:"decLowerSizeSteps":"onupdate";
+			toggles:"decUseSizeSteps":"click";
+		);
+
+		// Without arches the steps are not visible at all
+		if(!toggles:"decArcs":"state", toggles:"decArcs":"click");
+
+		my("handle"):"submode" = "number";
+	);
+
+	setVisible(widgets, my("state"));
+);
+
+toggles:"decUseSizeSteps":"handle" = bar;
+toggles:"decUseSizeSteps":"script" := (
+	regional(widgets);
+	widgets = [textfields:"decUpperSizeSteps", textfields:"decLowerSizeSteps",
+		buttons:"decUpperSizeStepsPlus", buttons:"decUpperSizeStepsMinus",
+		buttons:"decLowerSizeStepsPlus", buttons:"decLowerSizeStepsMinus"];
+
+	if(my("state"),
+		my("handle"):"value" = 0;
+
+		if(toggles:"decUseNumberSteps":"state",
+			textfields:"decNumberSteps":"value" = "";
+			textfields:"decNumberSteps":"onupdate";
+			my("handle"):"value" = 0;
+			toggles:"decUseNumberSteps":"click";
+		);
+
+		my("handle"):"submode" = "size";
+	);
+
+	setVisible(widgets, my("state"));
+);
+
+
+// --- Value mark input -------------------------------------------------------
+// One script for both modes, they only differ in the prefix.
+
+/**
+* Show or hide as many value mark field pairs as the add button has revealed.
+*/
+valueInputScript(prefix, addbutton, state) := (
+	regional(fields, i);
+
+	fields = [];
+	forall(1..addbutton:"markValueCounter", i,
+		fields = fields ++ [
+			textfields:(prefix + "UpperValueMark" + i),
+			textfields:(prefix + "LowerValueMark" + i)
+		];
+	);
+
+	if(state,
+		// The add button disappears once all five pairs are shown.
+		if(addbutton:"markValueCounter" < 5, setVisible([addbutton], true));
+		setVisible(fields, true);
+
+		// Apply whatever is already in the fields
+		forall(fields, #:"onupdate");
+	,
+		forall(1..addbutton:"markValueCounter", i,
+			'uppervaluemarks_i = NADA;
+			'lowervaluemarks_i = NADA;
+		);
+
+		setVisible([addbutton], false);
+		setVisible(fields, false);
+	);
+);
+
+toggles:"incValuesInput":"handle" = bar;
+toggles:"incValuesInput":"script" :=
+	valueInputScript("inc", buttons:"incAddValueMarkInputs", my("state"));
+
+toggles:"decValuesInput":"handle" = bar;
+toggles:"decValuesInput":"script" :=
+	valueInputScript("dec", buttons:"decAddValueMarkInputs", my("state"));
+
+// NOTE: the "currentValues" methods of both toggles were defined but never
+// read anywhere - left out.
+
+
+// --- Finally: put the two mode toggles on screen ----------------------------
+obj = obj ++ [toggles:"increasing", toggles:"decreasing"];
+obj = obj ++ [textfields:"upperUnit", textfields:"lowerUnit"];
+
+);
+;
 //[VAM] numbercards
 /** v24 *****************************************************************************************
 * Number cards to explore place value concept.
@@ -6765,6 +8917,11 @@ forall('cardtemplates, card,
 // Prozenstreifen
 if(VAM == "percentagebar",
 
+if(!ISDIVOMATH & !ISCINDYJS,
+	UISCALE = 1.3;
+	LOGLEVEL = LOGNONE;
+);
+
 
 // ================= //
 // A | Documentation //
@@ -6798,7 +8955,7 @@ scaffoldbasevalue			= default to(ENVIRONMENTALPARAMS:"scaffoldbasevalue", false,
 scaffoldvalue					= default to(ENVIRONMENTALPARAMS:"scaffoldvalue", false, true);
 scaffoldpercentage		= default to(ENVIRONMENTALPARAMS:"scaffoldpercentage", false, true);
 isbardraggable				= default to(ENVIRONMENTALPARAMS:"isbardraggable", true, true);
-alwaysdrawarches			= default to(ENVIRONMENTALPARAMS:"alwaysdrawarches", true, true); // Bögen von Anfang an zeichnen.
+alwaysdrawarches			= default to(ENVIRONMENTALPARAMS:"alwaysdrawarches", true, true); // Draw arches from the start
 snapbar								= default to(ENVIRONMENTALPARAMS:"snapbar", false, true);
 decimalspercentage		= default to(ENVIRONMENTALPARAMS:"decimalspercentage", 2, true);
 decimalsvalue					= default to(ENVIRONMENTALPARAMS:"decimalsvalue", 2, true);
@@ -6824,6 +8981,7 @@ if(!contains(["basevalue", "value", "percentage"], keepstable),
 	keepstable = "basevalue";
 	error at("VAM percentagebar", "keepstable has to be one of 'basevalue', 'value' or 'percentage. Set to 'basevalue'.");
 );
+
 
 // ================ //
 // Helper functions //
@@ -7265,50 +9423,63 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 // D.1 | Init Toggle Switches
 // new Toggle(coord,width,state,label,fontsize)
 // ============================================
-regional(screen, togglepad, marginy, togglesize);
-screen = apply(screenbounds(), #.xy);
-togglepad = .5;
-togglesize = 1.5;
-marginy = 1;
+regional(togglepad, marginy, togglesize, anchorpoint, offsetx, offsety);
+togglesize	= 1.5;
+togglepad 	= .5 * UISCALE;
+marginy 		= .2 * UISCALE;
+
+offsetx = [togglepad, togglepad];
+offsety = [0,UISCALE*togglesize/2+marginy];
+anchorpoint = VRBOTTOMLEFT + offsetx; // bottom left corner of bottommost toggle in col 1.
+
 toggles = {
 	// COL 1
-	"percentage"	:	new Toggle(screen_4 + [togglepad,togglepad+marginy+4*togglesize*.8], togglesize, false, "Anteil", 14),
-	"part"				: new Toggle(screen_4 + [togglepad,togglepad+marginy+3*togglesize*.8], togglesize, false, "Teil", 14),
-	"basevalue"		: new Toggle(screen_4 + [togglepad,togglepad+marginy+2*togglesize*.8], togglesize, false, "Ganzes", 14),
-	"parts"				:	new Toggle(screen_4 + [togglepad,togglepad+marginy+1*togglesize*.8], togglesize, false, "Werte unten", 14),
-	"percentages" : new Toggle(screen_4 + [togglepad,togglepad+marginy+0*togglesize*.8], togglesize, false, "Prozente oben", 14),
-	// COL 2
-	"arch"									: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+4*togglesize*.8], togglesize, alwaysdrawarches, "Bögen", 14),
-	"showtf-div"						: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+3*togglesize*.8], togglesize, alwaysdrawarches, "Anzahl der Schritte:", 14),
-	"showtf-divpercentage"	: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+2*togglesize*.8], togglesize, false, "Größe des Schritts in %:", 14),
-	"showtf-divvalue"				: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+1*togglesize*.8], togglesize, false, "Größe des Schritts", 14),
-	// COL 3
-	"showtf-perc"	: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+3*togglesize*.8], togglesize, false, "Eingabe Anteil", 14),
-	"showtf-value": new Toggle(screen_4 + [togglepad+21,togglepad+marginy+2*togglesize*.8], togglesize, false, "Eingabe Teil", 14),
-	"showtf-base"	: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+1*togglesize*.8], togglesize, false, "Eingabe Ganzes", 14),
-	"overflow"		: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+0*togglesize*.8], togglesize, overflow, "Overflow", 14)
+	"percentage"	:	new Toggle(anchorpoint + 4 * offsety, togglesize, false, "Anteil", 14),
+	"part"				: new Toggle(anchorpoint + 3 * offsety, togglesize, false, "Teil", 14),
+	"basevalue"		: new Toggle(anchorpoint + 2 * offsety, togglesize, false, "Ganzes", 14),
+	"parts"				:	new Toggle(anchorpoint + 1 * offsety, togglesize, false, "Werte unten", 14),
+	"percentages" : new Toggle(anchorpoint, togglesize, false, "Prozente oben", 14)
 };
 
-toggles:"showtf-divvalue":"label" = toggles:"showtf-divvalue":"label" + if(unit=="",":", " in " + unit + ":");
+// COL 2 ... has to be moved to the right, once textfields and buttons are placed
+offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply(values(toggles),#:"labelwidth")),0];
+anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
+
+toggles:"arch"										= new Toggle(anchorpoint + 3 * offsety, togglesize, alwaysdrawarches, "Bögen", 14);
+toggles:"showtf-div"							= new Toggle(anchorpoint + 2 * offsety, togglesize, alwaysdrawarches, "Anzahl der Schritte:", 14);
+toggles:"showtf-divpercentage"		= new Toggle(anchorpoint + 1 * offsety, togglesize, false, "Größe des Schritts in %:", 14);
+toggles:"showtf-divvalue"					= new Toggle(anchorpoint, togglesize, false, "Größe des Schritts" + if(unit=="",":", " in " + unit + ":"), 14);
+
+// COL 3 ... has to be moved to the right, once textfields and buttons are placed
+offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply([toggles:"arch", toggles:"showtf-div",
+			toggles:"showtf-divpercentage", toggles:"showtf-divvalue"],#:"labelwidth")),0];
+anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
+
+toggles:"showtf-perc"	= new Toggle(anchorpoint + 3 * offsety, togglesize, false, "Eingabe Anteil", 14);
+toggles:"showtf-value"= new Toggle(anchorpoint + 2 * offsety, togglesize, false, "Eingabe Teil", 14);
+toggles:"showtf-base"	= new Toggle(anchorpoint + 1 * offsety, togglesize, false, "Eingabe Ganzes", 14);
+toggles:"overflow"		= new Toggle(anchorpoint, togglesize, overflow, "Overflow", 14);
 
 // D.2 | Init Text Inputs for (sub)divisions and base value
 // =======================================================
-regional(textfieldoffset);
-textfieldoffset = [9.5,0];
+offsetx = [togglepad+max(apply([toggles:"arch", toggles:"showtf-div", toggles:"showtf-divpercentage", toggles:"showtf-divvalue"], #:"labelwidth")),0];
 
 textfields = {
-	// COL 1
-	"divisions"							:	new TextInput(toggles:"showtf-div":"coord" + textfieldoffset, "", "numeric"),
-	"divisions-percentage" 	: new TextInput(toggles:"showtf-divpercentage":"coord" + textfieldoffset, "", "numeric"),
-	"divisions-value" 			: new TextInput(toggles:"showtf-divvalue":"coord" + textfieldoffset, "", "numeric"),
-	// COL 2
-	"percentage" 						: new TextInput(toggles:"showtf-perc":"coord" + .85*textfieldoffset, "", "numeric"),
-	"value" 								: new TextInput(toggles:"showtf-value":"coord" + .85*textfieldoffset, "", "numeric"),
-	"basevalue" 						: new TextInput(toggles:"showtf-base":"coord" + .85*textfieldoffset, "", "numeric")
+	// for COL 2
+	"divisions"							:	new TextInput(toggles:"showtf-div":"labelcoord" + offsetx, "", "numeric"),
+	"divisions-percentage" 	: new TextInput(toggles:"showtf-divpercentage":"labelcoord" + offsetx, "", "numeric"),
+	"divisions-value" 			: new TextInput(toggles:"showtf-divvalue":"labelcoord" + offsetx, "", "numeric")
 };
 
+// for COL 3
+offsetx = [togglepad+max(apply([toggles:"showtf-perc", toggles:"showtf-value", toggles:"showtf-base"], #:"labelwidth")),0];
+
+textfields:"percentage"		= new TextInput(toggles:"showtf-perc":"labelcoord" + offsetx, "", "numeric");
+textfields:"value" 				= new TextInput(toggles:"showtf-value":"labelcoord" + offsetx, "", "numeric");
+textfields:"basevalue"		= new TextInput(toggles:"showtf-base":"labelcoord" + offsetx, "", "numeric");
+
 'generictextfieldhandle = bar;
-'generickeyboardcoord = (screenbounds()_3).xy - [7, -12];
+'generickeyboardcoord = VRTOPRIGHT - [1,1] * (4*textfields:"value":"keysize" + 3*.2) * UISCALE - [togglepad,togglepad];
 'generickeyboardoffset = [0,0];
 'genericcleanupfunction := (
 	regional(othertextfields);
@@ -7472,8 +9643,8 @@ buttons:"minusbase" = new Button(textfields:"basevalue":"coord" + [textfields:"b
 buttons:"plusbase" = new Button(buttons:"minusbase":"coord" + [buttons:"minusbase":"width" + .2, 0], .7, .7, "", 20);
 buttons:"fixbase" = new Button(buttons:"plusbase":"coord" + [buttons:"plusbase":"width" + .6, 0], .7, .7, "🔒", 24);
 
-buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "-", 20);
-buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "", 20);
+buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "", 20);
 buttons:"fixvalue" = new Button(buttons:"plusvalue":"coord" + [buttons:"plusvalue":"width" + .6, 0], .7, .7, "🔓", 24);
 
 buttons:"minuspercentage" = new Button(textfields:"percentage":"coord" + [textfields:"percentage":"width" + .1, 0], .7, .7, "", 20);
@@ -7742,8 +9913,25 @@ toggles:"arch":"script" := if(my("state") & !anystepsactive(),
 	eval(toggles:"showtf-div":"setstate", 'newstate->true);
 );
 
+
+// D.4b | Reconfigure positioning in COL 3.
+// ===================================================================================
+offsetx = [buttons:"plusdiv":"hitbox"_2_1 - textfields:"divisions":"hitbox"_1_1, 0] + [togglepad, 0];
+
+apply([toggles:"showtf-perc", toggles:"showtf-value", toggles:"showtf-base", toggles:"overflow",
+			textfields:"percentage", textfields:"value", textfields:"basevalue"],
+	#:"coord" = #:"coord" + offsetx;
+	#:"labelcoord" = #:"labelcoord" + offsetx;	
+);
+
+apply([buttons:"pluspercentage", buttons:"plusvalue", buttons:"plusbase",
+			buttons:"minuspercentage", buttons:"minusvalue", buttons:"minusbase",
+			buttons:"fixpercentage", buttons:"fixvalue", buttons:"fixbase"],
+	#:"coord" = #:"coord" + offsetx;
+);
+
+
 // D.5 | Init Percentagebar
-// new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
 // ===================================================================================
 bars = [];
 if(numberofbars <= 1, // build one bar
@@ -7811,9 +9999,6 @@ obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj ++ bars;
 
-
-
-
 bars_1:"toggleactive";
 
 // Call toggle scripts for G,P,p toggle to put in textfields approriately
@@ -7828,6 +10013,10 @@ toggles:"showtf-divvalue":"script";
 if(!showbuttons,
 	obj = obj -- [textfields:"divisions", buttons:"plusdiv", buttons:"minusdiv"];
 );
+
+println(">> labelwidth = " + toggles:"part":"labelwidth");
+println(">> labelpad = " + toggles:"part":"labelpad");
+println(">> max = " + max(apply(values(toggles), #:"labelwidth")));
 
 ); // end vam-if
 ;
@@ -9055,7 +11244,7 @@ container:"timeflow" = "jump";
 );
 ;
 //[VAM] thales
-/** v3 *****************************************************************************************
+/** v4 *****************************************************************************************
 * Interactable to explore thales theorem and its inverse
 *
 * Recent changes:
@@ -9068,6 +11257,7 @@ container:"timeflow" = "jump";
 * 2026-07-30: Change scaling of angle labels
 * 2026-08-03: Darker red for remove button in angle list
 * 2026-08-07: Draw button for removing point without symbol, but with geometry
+* 2026-08-19: Adjust for fixed ImageButton
 ************************************************************************************************/
 
 
@@ -9993,7 +12183,6 @@ trig:"move"; // Trigger C to stick to circle if softc is false
 //  === Init back button ===
 
 backbutton = new ImageButton([0,0], 2, 2, ICONS:"undo");
-backbutton:"imgfill" = 2;
 backbutton:"coord" = if(isundefined(backbuttoncoord), (screenbounds()_1).xy + toolbarmargin*[1,-1] + [0, -backbutton:"height"], 	backbuttoncoord);
 
 backbutton:"script" := (
@@ -10049,7 +12238,6 @@ backbutton:"script" := (
 // === Init reset button ===
 
 resetbutton = new ImageButton([0,0], 2, 2, ICONS:"reset2");
-resetbutton:"imgfill" = 2;
 resetbutton:"coord" = if(isundefined(resetbuttoncoord),
 	if(showundobutton,
 		backbutton:"coord" + toolbarmargin*[1,0] + [backbutton:"width",0],
@@ -10071,7 +12259,6 @@ resetbutton:"script" := (
 // === Init stamp button ===
 
 stampbutton = new ImageButton([0,0], 2, 2, ICONS:stampbuttonimage);
-stampbutton:"imgfill" = 2;
 
 // Set coord for stamp button
 if(stickstampbuttontopoint,
@@ -10131,13 +12318,11 @@ if(!ISCINDYJS, imgoffset=[0,0]); // only use imgoffset if in CindyJS, since it d
 softrobustbutton = new Toggle([0,0], 1.5, !softc, "", NADA);
 softrobustbutton:"coord" = if(showcurrentanglevalue, trig:"gammavalueposition", stampbuttoncoord) - [softrobustbutton:"width" + toolbarmargin, 0];
 if(!isundefined(constructionbuttoncoord), softrobustbutton:"coord" = constructionbuttoncoord);
-softrobustbutton:"imgfill" = 3.7;
-softrobustbutton:"imgscale" := (
-	regional(px);
-	px = imagesize(ICONS:"pointoncircle");
-	my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-);
+softrobustbutton:"imgfill" = 1.5;
+softrobustbutton:"img" = ICONS:"pointoncircle";
+softrobustbutton:"imgscale" := image scale fit(my("img"), my("imgfill") * [my("width"), my("height")]);
 softrobustbutton:"highlightcolor" = DZLMCOLORDARK;
+
 softrobustbutton:"script" := (
 	log button clicked(my("name"));
 	
@@ -10146,7 +12331,7 @@ softrobustbutton:"script" := (
 	trig:"move";
 );
 softrobustbutton:"drawafter" := (
-	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, ICONS:"pointoncircle", scale->my("imgscale"), ref->["50%","0%"]);
+	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, my("img"), scale->my("imgscale"), ref->["50%","0%"]);
 );
 
 
@@ -10155,20 +12340,18 @@ softrobustbutton:"drawafter" := (
 helpbutton = new Toggle([0,0], 1.5, showhelp, "", NADA);
 helpbutton:"coord" = if(showconstructionbutton, softrobustbutton:"coord", trig:"gammavalueposition") - [softrobustbutton:"width" + 2*toolbarmargin, 0];
 if(!isundefined(helpbuttoncoord), helpbutton:"coord" = helpbuttoncoord);
-helpbutton:"imgfill" = 3.7;
-helpbutton:"imgscale" := (
-	regional(px);
-	px = imagesize(ICONS:"bucket2");
-	my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-);
+helpbutton:"imgfill" = 1.5;
+helpbutton:"img" = ICONS:"bucket2";
+helpbutton:"imgscale" := image scale fit(my("img"), my("imgfill") * [my("width"), my("height")]);
 helpbutton:"highlightcolor" = DZLMCOLORDARK;
+
 helpbutton:"script" := (
 	log button clicked(my("name"));
 	
 	trig:"showhelp" = !trig:"showhelp";
 );
 helpbutton:"drawafter" := (
-	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, ICONS:"bucket2", scale->my("imgscale"), ref->"cb");
+	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, my("img"), scale->my("imgscale"), ref->"cb");
 );
 
 
@@ -10284,7 +12467,7 @@ if(drawtogglegamma2, obj = obj :> drawgamma2);
 if(drawtogglevalues, obj = obj :> drawanglevalues);
 );
 ;
-//[VAM] localderivate
+//[VAM*] localderivate
 /** v2 *****************************************************************************************
 *
 * Recent changes:

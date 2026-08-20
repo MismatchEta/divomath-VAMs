@@ -1,4 +1,4 @@
-() => ({ // ***build 410 | 2026-08-17T12:52:55.853Z***
+() => ({ // ***build 427 | 2026-08-20T08:55:16.807Z***
 scripts: {
     draw: 
 `//[FW] global drawing
@@ -49,7 +49,7 @@ FIRSTDRAW = false;`,
 
     init: 
 `//[FUN] Divomath
-/** v3 ******************************************************************************************
+/** v4 ******************************************************************************************
 * Fields and functions for interacting with the divomath platform. divomath uses the following hooks
 * - divomath get var state				- Hook for divomath callbackfunction
 * - divomathAddResult(key, value)	- Adds a submission to the result
@@ -113,9 +113,10 @@ FIRSTDRAW = false;`,
 * }
 *
 * Recent changes:
-* 2026-07-26: Change log behavior.
-* 2026-08-09: Add json serializing to divomath get var state(1).
-* 2026-08-09: Add guards to divomath put results(2).
+* 2026-07-26 Change log behavior.
+* 2026-08-09 Add json serializing to divomath get var state(1).
+* 2026-08-09 Add guards to divomath put results(2).
+* 2026-08-19 Fix divomath get params() method missing the handling of stored states since the refactor - whoops
 ************************************************************************************************/
 
 // ==================================== //
@@ -301,6 +302,30 @@ divomath get params() := if(ISDIVOMATH,
 	if(length(underscorekeys) == 0,
 		debug at("divomath get params()", "No underscore keys found. So no references."));
 
+	// --- 3. Handle last saved state (from divomathVarState) ---
+	//
+	// Weaker than a previous answer and than references, stronger than the
+	// editor default - "add property" keeps the first entry, so insertion
+	// order IS the priority order.
+	//
+	// divomath hands back an empty LIST instead of an empty object when a
+	// slide is revisited without a stored state, so the type has to be
+	// checked before keys() is called.
+	laststatekeys = if(isundefined(DIVOMATH'VARSTATE) % islist(DIVOMATH'VARSTATE),
+		[]
+	,
+		keys(DIVOMATH'VARSTATE)
+	);
+
+	forall(laststatekeys, key,
+		add property(ENVIRONMENTALPARAMS, key, DIVOMATH'VARSTATE:key);
+		debug at("divomath get params()", "Property " + key
+			+ " added to ENVIRONMENTALPARAMS from DIVOMATH'VARSTATE. value: "
+			+ DIVOMATH'VARSTATE:key);
+	);
+
+	if(length(laststatekeys) == 0, debug at("divomath get params()", "No stored state found."));
+
 	// --- 4. Handle default divomath config (from cindyjs object) ---
 	editorstatekeys = keys(DIVOMATH'CINDYJSSTATEDEF);
 	
@@ -315,50 +340,6 @@ divomath get params() := if(ISDIVOMATH,
 	debug at("divomath get params()", "Finished getting parameters. State of ENVIRONMENTALPARAMS: " + ENVIRONMENTALPARAMS);
 
 	ENVIRONMENTALPARAMS; // Return (altough changes in place)
-);
-
-
-default state to(key, value) := If(ISDIVOMATH,
-
-error at("default state to()", "DONT USE ANYMORE, use default to(3) instead.");
-
-	regional(prevansvalue, resultkey, resultvalue, stateobject, statevalue, defaultstateobject, defaultstatevalue);
-
-	// Get config overwrites for forward referencing from RESULT structure (if any)
-	resultkey = "__" + key; // Built key with dunder to separate from other keys of DIVOMATH'CONFIG
-	resultvalue = divomathConfig:resultkey; // Get corresponding value if any
-
-	// Check DIVOMATH'PREVANSWER for if there already was an interaction from a previous session
-	prevansvalue = if(contains(keys(DIVOMATH'PREVANSWER), key), DIVOMATH'PREVANSWER:key);
-
-	// Get value from stateobject, if any (for resetting previous state)
-	stateobject = default to(DIVOMATH'VARSTATE, {}); // Set DIVOMATH'VARSTATE manually to empty object
-	if(islist(stateobject), stateobject = {}); // ?? DIVOMATH'VARSTATE is empty list not nada, if divomath site is revisted
-	statevalue = if(contains(keys(stateobject), key), stateobject:key);
-
-	// Get default state from cindyjs entry of editor state settings
-	defaultstateobject = default to(DIVOMATH'CINDYJSSTATEDEF, {});
-	defaultstatevalue = if(contains(keys(defaultstateobject), key), defaultstateobject:key);
-
-	// Set correct value, order: Overwrite > previous answer > saved state > editor defined state > cindy default state
-	if(!isundefined(prevansvalue), 
-		value = prevansvalue; // try prev ans if any
-	, 
-		if(!isundefined(resultvalue),
-			value = resultvalue; // else: try overwrite value if any
-		,
-			if(!isundefined(statevalue), 
-				value = statevalue; // else: try state if any
-			,
-				if(!isundefined(defaultstatevalue), 
-					value = defaultstatevalue; // else: try state if any
-				)
-			)
-		)
-	); // if all fails use value from param
-
-	// Return
-	value;
 );
 //[FUN] Debug Logging
 /** v1 ******************************************************************************************
@@ -1514,11 +1495,12 @@ to rad(angle) := angle/180*PI;
 
 vectorlength(vector) := sqrt(sum(apply(vector,#^2)));
 //[FUN] Drawing
-/** v2 ******************************************************************************************
+/** v3 ******************************************************************************************
 * Helper functions for drawing
 *
 * Recent changes:
-* 2027-07-30: Add functions - label angle, label segment, label point
+* 2026-07-30 Add functions - label angle, label segment, label point
+* 2026-08-19 Add image scale fit() - scales images properly finally depending on resolution
 ************************************************************************************************/
 
 draw arc(p1,p2,p3,r) := connect(arc(p1,p2,p3,r), color->color);
@@ -1775,6 +1757,24 @@ text box size(text, fontsize, fontfamily) := (
 	box = get boundingbox(text, [0,0], fontsize, fontfamily);
  
 	{"w": box_2_1 - box_1_1, "h": box_4_2 - box_1_2};
+);
+
+
+/**
+* Scale factor for drawimage(pos, img, scale->...).
+*
+* drawimage sizes images in WORLD units: worldsize = imagesize(img) / IMGREFRESOLUTION * scale.
+* The factor is therefore independent of screenresolution() - do not add one.
+*
+* img        image name or image object
+* targetsize desired world size of the image's LONGER side
+*
+* Returns 0 while the image is not available, so nothing is drawn instead of the image appearing at scale 1.
+*/
+image scale fit(img, boxsize) := (
+	regional(px);
+	px = imagesize(img);
+	if(isundefined(px_1), 0, IMGREFRESOLUTION * min(boxsize_1 / px_1, boxsize_2 / px_2));
 );
 //[FUN] Web Controls
 /** v1 ******************************************************************************************
@@ -2085,7 +2085,7 @@ new dolater(object, command, duration) := (
 );
 
 //[FW] Constants
-/** v5 ******************************************************************************************
+/** v7 ******************************************************************************************
 * Predefined Constants (convention: CAPITALIZE CONSTANTS)
 *
 * Recent changes:
@@ -2094,6 +2094,8 @@ new dolater(object, command, duration) := (
 * 2026-07-27 Add VISIBLERECT
 * 2026-06-30 Add Icons for tracebuttonimageon and tracebuttonimageoff
 * 2026-08-13 Add COLORPLASMA16 colors
+* 2026-08-17 Add UISCALE
+* 2026-08-19 Add IMAGEREFRESOLUTION for scaling images properly
 ************************************************************************************************/
 
 // Predefined Constants
@@ -2218,6 +2220,8 @@ VRBOTTOMRIGHT = VISIBLERECT_2;
 VRTOPRIGHT    = VISIBLERECT_3;
 VRTOPLEFT     = VISIBLERECT_4;
 
+UISCALE = 1; // Scale UI components, like Toggles, Buttons, ...
+
 // C | Fonts
 // C.1 | Available Fonts
 FONTS = if(ISCINDYJS,[],fontfamilies());
@@ -2295,6 +2299,7 @@ GREEK = {
 };
 
 // D | Images
+IMGREFRESOLUTION = 72;  // drawimage(): Weltgröße = imagesize * scale / IMGREFRESOLUTION
 ICONS = {
 	"reset" : "icon-reset.png",
 	"reset2" : "icon-reset-DZLMDARK.png",
@@ -2362,7 +2367,12 @@ LOGDEBUG = 3;
 // Vam choice //
 // ========== //
 
-VAM = "doublenumberline";
+VAM = "default";
+if(!ISCINDYJS & !ISDIVOMATH, // probably authoring in Cinderella
+
+	VAM = "thales"; // <-- CHANGE HERE
+
+);
 
 
 // ============ //
@@ -2409,7 +2419,7 @@ USERID = "user-" + random(1000000);		// Gets overwritten by ENVIRONMENTALPARAMS
 EVENTLOG = [];
 EVENTID = 0;		// Auto incrementing
 //[FW] Init start
-/** v4 ******************************************************************************************
+/** v5 ******************************************************************************************
 * Init of general variables for use in the framework.
 *
 * Recent changes:
@@ -2417,6 +2427,7 @@ EVENTID = 0;		// Auto incrementing
 * 2026-07-25: Add divomath configuration items "vam", "debuglevel" and "bgcolor" to ENVIRONMENTALPARAMS
 * 2026-07-27: Fix parsing issues for LOGLEVEL and MAXLOGMESSAGES
 * 2026-07-29: Add access to LOGGINGENABLED via ENVIRONMENTALPARAMS
+* 2026-08-17 Add UISCALE
 ************************************************************************************************/
 
 // =========================== //
@@ -2440,6 +2451,7 @@ if(ISDIVOMATH,
 
 if(!isundefined(ENVIRONMENTALPARAMS:"vam"), VAM = ENVIRONMENTALPARAMS:"vam");
 if(!isundefined(ENVIRONMENTALPARAMS:"bgcolor"), BGCOLOR = parse(ENVIRONMENTALPARAMS:"bgcolor"+""));
+if(!isundefined(ENVIRONMENTALPARAMS:"uiscale"), UISCALE = parse(ENVIRONMENTALPARAMS:"uiscale"+""));
 if(!isundefined(ENVIRONMENTALPARAMS:"loggingenabled"), LOGGINGENABLED = parse(ENVIRONMENTALPARAMS:"loggingenabled"+""));
 
 get screen params(); // Sets bordersize and pinchsensitivity
@@ -2485,11 +2497,13 @@ obj = []; 				// All relevant VAM objects (sort of god object).
 typeorder = [];		// Order in which objects should be drawn by their "type" attribute.
 animations = [];	// Handles animation object.
 //[C] Button
-/** v9 ******************************************************************************************
+/** v11 ******************************************************************************************
 * Classes for Button, ImageButton.
 *
 * Recent changes:
-* 2026-07-24: Added "hasbody" property to control drawing of button
+* 2026-07-24 Add "hasbody" property to control drawing of button
+* 2026-08-17 Add UISCALE
+* 2026-08-19 Fix image scaling issue
 ************************************************************************************************/
 
 new Button(coord,width,height,label,fontsize) := (
@@ -2497,21 +2511,32 @@ new Button(coord,width,height,label,fontsize) := (
 	obj = new VAMobject("Button");
 
 	obj:"coord"  = coord;
-	obj:"width"  = width;
-	obj:"height" = height;
+	obj:"width"  = width * UISCALE;
+	obj:"height" = height * UISCALE;
 	obj:"cornerradius" = (width+height) / 50;
 	obj:"color"	 = DZLMCOLORLIGHT;
 	obj:"bordercolor" = DZLMCOLORDARK;
 	obj:"fontcolor" = DZLMCOLORDARK;
 	obj:"label"	 = label;
-	obj:"fontsize" = defaultto(fontsize, 12) * FONTSCALE;
+	obj:"fontsize" = default to(fontsize, 12) * FONTSCALE * UISCALE;
 	obj:"fontfamily" = NADA;
 	obj:"labelheight" = (
 		regional(box);
 		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
 		box_4_2 - box_1_2;
 	);
+	obj:"labelwidth" = (
+		regional(box);
+		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
+		box_2_1 - box_1_1;
+	);
+	obj:"labelcoord" := (
+		regional(centre, px);
 
+		centre = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1);
+		px = pixelsize(my("label"), size->my("fontsize"), font->my("fontfamily")) / screenresolution();
+		centre - [px_1/2, (px_2 - px_3)/2] + my("customlabeloffset")
+	);
 	obj:"ismoveable" = false;
 	obj:"isfloating" = false;
 	obj:"hasbody" = true;
@@ -2519,7 +2544,7 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"hasborder" = true;
 	obj:"show" = true;
 	obj:"customlabeloffset" = [0,0];
-	obj:"shadowoffset" = [0.03,-.05];
+	obj:"shadowoffset" = [0.03,-.05] * UISCALE;
 
 	obj:"symbolsize" = .22;   // half length of the symbol, relative to button width
 	obj:"symbolweight" = 3;   // line width
@@ -2531,7 +2556,7 @@ new Button(coord,width,height,label,fontsize) := (
 		my("width"),
 		my("height")
 	);
-	obj:"shape" := roundedrectangle(
+	obj:"shape" := rounded rectangle(
 		my("coord"),
 		my("width"),
 		my("height"),
@@ -2540,7 +2565,7 @@ new Button(coord,width,height,label,fontsize) := (
 	obj:"draw" := if(my("show"),
 		// Draw shadow
 		if(my("hasshadow") & (my("hasbody") % my("hasborder")),
-			fill(roundedrectangle(
+			fill(rounded rectangle(
 				my("coord")+my("shadowoffset"),
 				my("width"),
 				my("height"),
@@ -2564,13 +2589,8 @@ new Button(coord,width,height,label,fontsize) := (
 		if(my("hasborder"), draw(my("shape"), color->my("bordercolor")));
 		
 		// Draw Label
-		regional(centre, px);
-
-		centre = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1);
-		px = pixelsize(my("label"), size->my("fontsize"), font->my("fontfamily")) / screenresolution();
-
 		drawtext(
-			centre - [px_1/2, (px_2 - px_3)/2] + my("customlabeloffset"),
+			my("labelcoord"),
 			my("label"),
 			size->my("fontsize"), font->my("fontfamily"),
 			color->my("fontcolor"), bold->false
@@ -2580,14 +2600,14 @@ new Button(coord,width,height,label,fontsize) := (
 		my("drawafter");
 
 		// Debug draw
-		if(LOGLEVEL > 2,
+		if(LOGLEVEL > LOGWARN,
 			connect([my("hitbox")_1,my("hitbox")_3], color->[0,1,0]);
 			connect([my("hitbox")_2,my("hitbox")_4], color->[0,1,0]);
 			drawpoly(getboundingbox(my("label"), offset+my("customlabeloffset"), my("fontsize"), my("fontfamily")));
 		);
 	);
 	obj:"drawafter" := NADA;
-	obj:"ishot" := if(my("show"),inrectangle(my("hitbox"),mouse().xy));
+	obj:"ishot" := if(my("show"),in rectangle(my("hitbox"),mouse().xy));
   obj:"click"	:= my("script");
   obj:"script" := println("Implement obj:script");
 
@@ -2632,22 +2652,15 @@ new ImageButton(coord,width,height,imgpath) := (
 	regional(imgbtn);
 	imgbtn = new Button(coord, width, height, imgpath, NADA);
 
-	imgbtn:"imgscale" := (
-		// scale-> is relative to the image's PIXEL size, so the resulting world
-		// size depends on screenresolution() - the same icon comes out larger
-		// in divomath than in the plain HTML. Therefore we derive the factor from
-		// the button instead.
-		regional(px);
-		px = imagesize(my("label"));
-		my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-	);
+	imgbtn:"imgscale" := image scale fit(my("label"), my("imgfill") * [my("width"), my("height")]);
+	
 	imgbtn:"imgfill" = .9; // how much of the button the image should fill
 
 	imgbtn:"draw" := if(my("show"),
 		// Draw shadow
 		if(my("hasshadow"),
 			fill(roundedrectangle(
-				my("coord")+[0.03,-0.05],
+				my("coord")+my("shadowoffset"),
 				my("width"),
 				my("height"),
 				my("cornerradius")
@@ -2667,7 +2680,7 @@ new ImageButton(coord,width,height,imgpath) := (
 			my("shape"),
 			color->my("bordercolor");
 		));
-
+		
 		// Draw image
 		drawimage(my("coord") + .5*[my("width"), my("height")], my("label"),
 			scale->my("imgscale"), rendering->"nice");
@@ -2873,7 +2886,7 @@ new CoordinateSystem(coord) := (
 );
 
 //[C] Keyboard
-/** v4 ******************************************************************************************
+/** v5 ******************************************************************************************
 * Classes for key and keyboard.
 *
 * Recent changes:
@@ -2881,9 +2894,10 @@ new CoordinateSystem(coord) := (
 * 2026-08-15 Add "full" layout (QWERTZ with shift), taken over from divoVAM 3.1.0 for the
 *            doublenumberline VAM. The numeric layout is untouched, so existing VAMs keep
 *            working exactly as before.
+* 2026-08-17 Add UISCALE
 ************************************************************************************************/
 // Global config
-'fontsize = 16 * FONTSCALE;
+'fontsize = 16;
 'size = 1;
 
 // Special keys. They carry a marker label instead of the character they insert,
@@ -2915,9 +2929,9 @@ new Keyboard(coord, subtype, keysize, target) := (
 	subtypes = ["full", "numeric"];
 	board:"subtype" = if(contains(subtypes,subtype),subtype,"full");
 	board:"coord" = coord;
-	board:"keysize" = keysize;
+	board:"keysize" = keysize; // Don't scale with UISCALE, since keys already do.
 	board:"keys" = [];
-	board:"margin" = .2;
+	board:"margin" = .2 * UISCALE;
 	board:"ismoveable" = false;
 
 	board:"target" = target;
@@ -2934,7 +2948,7 @@ new Keyboard(coord, subtype, keysize, target) := (
 
 	/**
 	* Rows of the "full" layout, top to bottom.
-	*   "indent" shifts the whole row to the right, in key widths
+	* 	"indent" shifts the whole row to the right, in key widths
 	*   "keys"   is a list of labels or [label, widthfactor] pairs
 	* Both layouts must have the same shape.
 	*/
@@ -2961,6 +2975,7 @@ new Keyboard(coord, subtype, keysize, target) := (
 		regional(rows, keys, y, x, rowindex, entry, label, factor, ksize, margin);
 
 		ksize = my("keysize");
+		ksizedrawn = ksize * UISCALE;
 		margin = my("margin");
 		keys = [];
 
@@ -2968,27 +2983,26 @@ new Keyboard(coord, subtype, keysize, target) := (
 			// --- numeric: unchanged from v3, positions must stay identical ---
 			// row 4 (bottom)
 			keys = keys :> new key(my("coord") + [margin, margin], ksize, "0");
-			keys = keys :> new key(my("coord") + [2*margin+ksize, margin], ksize, ".");
-			keys = keys :> new key(my("coord") + [3*margin+2*ksize, margin], ksize, LEFTARROW);
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, margin], ksize, ".");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, margin], ksize, LEFTARROW);
 
 			// row 3
-			keys = keys :> new key(my("coord") + [margin, 2*margin+ksize], ksize, "1");
-			keys = keys :> new key(my("coord") + [2*margin+ksize, 2*margin+ksize], ksize, "2");
-			keys = keys :> new key(my("coord") + [3*margin+2*ksize, 2*margin+ksize], ksize, "3");
+			keys = keys :> new key(my("coord") + [margin, 2*margin+ksizedrawn], ksize, "1");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, 2*margin+ksizedrawn], ksize, "2");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, 2*margin+ksizedrawn], ksize, "3");
 
 			// row 2
-			keys = keys :> new key(my("coord") + [margin, 3*margin+2*ksize], ksize, "4");
-			keys = keys :> new key(my("coord") + [2*margin+ksize, 3*margin+2*ksize], ksize, "5");
-			keys = keys :> new key(my("coord") + [3*margin+2*ksize, 3*margin+2*ksize], ksize, "6");
+			keys = keys :> new key(my("coord") + [margin, 3*margin+2*ksizedrawn], ksize, "4");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, 3*margin+2*ksizedrawn], ksize, "5");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, 3*margin+2*ksizedrawn], ksize, "6");
 
 			// row 1 (top)
-			keys = keys :> new key(my("coord") + [margin, 4*margin+3*ksize], ksize, "7");
-			keys = keys :> new key(my("coord") + [2*margin+ksize, 4*margin+3*ksize], ksize, "8");
-			keys = keys :> new key(my("coord") + [3*margin+2*ksize, 4*margin+3*ksize], ksize, "9");
+			keys = keys :> new key(my("coord") + [margin, 4*margin+3*ksizedrawn], ksize, "7");
+			keys = keys :> new key(my("coord") + [2*margin+ksizedrawn, 4*margin+3*ksizedrawn], ksize, "8");
+			keys = keys :> new key(my("coord") + [3*margin+2*ksizedrawn, 4*margin+3*ksizedrawn], ksize, "9");
 
 			// Return key, two rows high
-			keys = keys :> new key(my("coord") + [4*margin+3*ksize, margin],
-				ksize, 2*ksize + margin, DOWNARROWTIPLEFT);
+			keys = keys :> new key(my("coord") + [4*margin+3*ksizedrawn, margin], ksize, 2*ksize + margin/UISCALE, DOWNARROWTIPLEFT);
 		,
 			// --- full: built from the layout table, bottom row first ---
 			rows = if(my("shift"), my("fulllayoutshift"), my("fulllayout"));
@@ -3423,8 +3437,8 @@ new TextInput(coord, label, keyboardtype) := (
 	o = new VAMobject("textinput");
 	o:"coord" = coord;
 	o:"label" = label;
-	o:"width" = 2;
-	o:"height" = .6;
+	o:"width" = 2 * UISCALE;
+	o:"height" = .6 * UISCALE;
 	o:"value" = "";
 
 	o:"fill-color" = DZLMCOLORGOLD;
@@ -3437,11 +3451,10 @@ new TextInput(coord, label, keyboardtype) := (
 	o:"keyboardbehavior" = "clear"; // ["clear"]
 	o:"keysize" := if(my("keyboardtype") == "full", .6, 1);
 	o:"keyboardtype" = keyboardtype; // see Keyboard class
-	o:"keyboard" = nada;
+	o:"keyboard" = NADA;
 	o:"keyboardoffset" = [5,0];
-	o:"keysize" = 1;
-	o:"fontsize" = 14 * FONTSCALE;
-	o:"fontfamily" = nada;
+	o:"fontsize" = 14 * FONTSCALE * UISCALE;
+	o:"fontfamily" = NADA;
 	o:"labelpadding" = .2;
 
 	o:"isclickable" = true;
@@ -3512,7 +3525,7 @@ new TextInput(coord, label, keyboardtype) := (
 
 	// gets evaled with "value"
 	o:"onupdate" := (	// Destroy keyboard
-		self():"keyboard" = nada;
+		self():"keyboard" = NADA;
 	);
 
 	o:"customclickscript" := (
@@ -3564,11 +3577,13 @@ new Toggle(coord,width,state,label,fontsize) := (
 	regional(o);
 	o = new Button(coord,width,width/2,label,fontsize);
 	o:"type" = "Toggle";
+	o:"labelpad" = .2 * UISCALE;
+	o:"labelcoord" = o:"coord"+[o:"width" + o:"labelpad",.5*o:"height"/3];
 
 	o:"circleoffset" = if(state,.5*[o:"width",0], [0,0]);
 	o:"animationtiming" = .05;
 
-	o:"cornerradius" = width;
+	o:"cornerradius" = width * UISCALE;
 	o:"state" = if(!isundefined(state),state,false);
 	o:"highlightcolor" = DARKBLUE;
 
@@ -3599,7 +3614,7 @@ new Toggle(coord,width,state,label,fontsize) := (
 
 		// Draw label
 		drawtext(
-			my("coord")+[my("width")*1.2,.5*my("height")/3],
+			my("labelcoord"),
 			my("label"),
 			align->"left",
 			color->dzlmcolordark,
@@ -3610,8 +3625,10 @@ new Toggle(coord,width,state,label,fontsize) := (
 		my("drawafter");
 
 		// Debug stuff
-		if(LOGLEVEL > 2,
+		if(LOGLEVEL > LOGWARN,
 			drawpoly(my("hitbox"), color->[1,0,0]);
+			//drawpoly(getboundingbox(my("label"), my("labelcoord"), my("fontsize"), my("fontfamily")));
+			drawpoly(rectangle(my("labelcoord"), my("labelwidth"), my("labelheight")));
 		);
 	);
 	
@@ -4049,6 +4066,7 @@ obj = obj :> adifferentdummy;
 * 2026-08-05: Change rounded rectangles to be approximated by polygons to increase performance
 * 2026-08-05: Introduce base rounded rectangle poly which all Atoms just translate for EVEN MOAR PERFORMANCE
 * 2026-08-09: Adjust divomath functions to new json serialization pipeline
+* 2026-08-19: Change tool button to be proper ImageButton
 ************************************************************************************************/
 
 // Rechteckfeld
@@ -5126,26 +5144,18 @@ new Grid(c, rows, cols) := (
 		c = VRTOPRIGHT - ('buttonsize+'buttonpadding) * [1,1];
 		if(!isundefined('toolbuttonx), c_1 = 'toolbuttonx);
 		if(!isundefined('toolbuttony), c_2 = 'toolbuttony);
-		btn = new Button(c, 'buttonsize, 'buttonsize, "", 14);
+		btn = new ImageButton(c, 'buttonsize, 'buttonsize, NADA);
 
 		btn:"parent" = self();
+		btn:"label" := ICONS:(my("tool"));
 		btn:"center" := my("coord") + .5*[my("width"),my("height")];
-		btn:"imgfill" = 2;
-		btn:"imgscale" := ( // scale relative to images pixelsize
-			regional(px);
-			px = imagesize(ICONS:(my("tool")));
-			my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-		);
+		
 		btn:"value" = {"hand":1,"bucket":2,"scissors":3}:'tool;
 		btn:"tool" := ["hand", "bucket", "scissors"]_(my("value"));
 		btn:"ishot" := if('picturemode, false, if(my("show"),inrectangle(my("hitbox"),mouse().xy))); 
 
 		btn:"color" := if(my("parent"):"toolsallowed", DZLMCOLORLIGHT, grey(.93));
 		btn:"bordercolor" := if(my("parent"):"toolsallowed", DZLMCOLORDARK, grey(.75));
-
-		btn:"drawafter" := (
-			drawimage(my("center"), ICONS:(my("tool")), scale->my("imgscale"));
-		);
 	
 		btn:"script" := (
 			if(my("parent"):"toolsallowed",
@@ -6246,9 +6256,10 @@ if(drawdivbuttons,
 
 ); // end vam-if
 
-//[VAM] doublenumberline
+//[VAM*] doublenumberline
 /** v2 *******************************************************************************************
 * Double number line for proportional reasoning.
+* (not yet fully functional, port from standalone version of some random guy)
 *
 * Recent changes:
 * 2026-08-14 Adopted from divoVAM 3.1.0 into the v7 framework: configuration via "default to",
@@ -8880,6 +8891,11 @@ forall('cardtemplates, card,
 // Prozenstreifen
 if(VAM == "percentagebar",
 
+if(!ISDIVOMATH & !ISCINDYJS,
+	UISCALE = 1.3;
+	LOGLEVEL = LOGNONE;
+);
+
 
 // ================= //
 // A | Documentation //
@@ -8913,7 +8929,7 @@ scaffoldbasevalue			= default to(ENVIRONMENTALPARAMS:"scaffoldbasevalue", false,
 scaffoldvalue					= default to(ENVIRONMENTALPARAMS:"scaffoldvalue", false, true);
 scaffoldpercentage		= default to(ENVIRONMENTALPARAMS:"scaffoldpercentage", false, true);
 isbardraggable				= default to(ENVIRONMENTALPARAMS:"isbardraggable", true, true);
-alwaysdrawarches			= default to(ENVIRONMENTALPARAMS:"alwaysdrawarches", true, true); // Bögen von Anfang an zeichnen.
+alwaysdrawarches			= default to(ENVIRONMENTALPARAMS:"alwaysdrawarches", true, true); // Draw arches from the start
 snapbar								= default to(ENVIRONMENTALPARAMS:"snapbar", false, true);
 decimalspercentage		= default to(ENVIRONMENTALPARAMS:"decimalspercentage", 2, true);
 decimalsvalue					= default to(ENVIRONMENTALPARAMS:"decimalsvalue", 2, true);
@@ -8939,6 +8955,7 @@ if(!contains(["basevalue", "value", "percentage"], keepstable),
 	keepstable = "basevalue";
 	error at("VAM percentagebar", "keepstable has to be one of 'basevalue', 'value' or 'percentage. Set to 'basevalue'.");
 );
+
 
 // ================ //
 // Helper functions //
@@ -9380,50 +9397,63 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 // D.1 | Init Toggle Switches
 // new Toggle(coord,width,state,label,fontsize)
 // ============================================
-regional(screen, togglepad, marginy, togglesize);
-screen = apply(screenbounds(), #.xy);
-togglepad = .5;
-togglesize = 1.5;
-marginy = 1;
+regional(togglepad, marginy, togglesize, anchorpoint, offsetx, offsety);
+togglesize	= 1.5;
+togglepad 	= .5 * UISCALE;
+marginy 		= .2 * UISCALE;
+
+offsetx = [togglepad, togglepad];
+offsety = [0,UISCALE*togglesize/2+marginy];
+anchorpoint = VRBOTTOMLEFT + offsetx; // bottom left corner of bottommost toggle in col 1.
+
 toggles = {
 	// COL 1
-	"percentage"	:	new Toggle(screen_4 + [togglepad,togglepad+marginy+4*togglesize*.8], togglesize, false, "Anteil", 14),
-	"part"				: new Toggle(screen_4 + [togglepad,togglepad+marginy+3*togglesize*.8], togglesize, false, "Teil", 14),
-	"basevalue"		: new Toggle(screen_4 + [togglepad,togglepad+marginy+2*togglesize*.8], togglesize, false, "Ganzes", 14),
-	"parts"				:	new Toggle(screen_4 + [togglepad,togglepad+marginy+1*togglesize*.8], togglesize, false, "Werte unten", 14),
-	"percentages" : new Toggle(screen_4 + [togglepad,togglepad+marginy+0*togglesize*.8], togglesize, false, "Prozente oben", 14),
-	// COL 2
-	"arch"									: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+4*togglesize*.8], togglesize, alwaysdrawarches, "Bögen", 14),
-	"showtf-div"						: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+3*togglesize*.8], togglesize, alwaysdrawarches, "Anzahl der Schritte:", 14),
-	"showtf-divpercentage"	: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+2*togglesize*.8], togglesize, false, "Größe des Schritts in %:", 14),
-	"showtf-divvalue"				: new Toggle(screen_4 + [togglepad+7,togglepad+marginy+1*togglesize*.8], togglesize, false, "Größe des Schritts", 14),
-	// COL 3
-	"showtf-perc"	: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+3*togglesize*.8], togglesize, false, "Eingabe Anteil", 14),
-	"showtf-value": new Toggle(screen_4 + [togglepad+21,togglepad+marginy+2*togglesize*.8], togglesize, false, "Eingabe Teil", 14),
-	"showtf-base"	: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+1*togglesize*.8], togglesize, false, "Eingabe Ganzes", 14),
-	"overflow"		: new Toggle(screen_4 + [togglepad+21,togglepad+marginy+0*togglesize*.8], togglesize, overflow, "Overflow", 14)
+	"percentage"	:	new Toggle(anchorpoint + 4 * offsety, togglesize, false, "Anteil", 14),
+	"part"				: new Toggle(anchorpoint + 3 * offsety, togglesize, false, "Teil", 14),
+	"basevalue"		: new Toggle(anchorpoint + 2 * offsety, togglesize, false, "Ganzes", 14),
+	"parts"				:	new Toggle(anchorpoint + 1 * offsety, togglesize, false, "Werte unten", 14),
+	"percentages" : new Toggle(anchorpoint, togglesize, false, "Prozente oben", 14)
 };
 
-toggles:"showtf-divvalue":"label" = toggles:"showtf-divvalue":"label" + if(unit=="",":", " in " + unit + ":");
+// COL 2 ... has to be moved to the right, once textfields and buttons are placed
+offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply(values(toggles),#:"labelwidth")),0];
+anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
+
+toggles:"arch"										= new Toggle(anchorpoint + 3 * offsety, togglesize, alwaysdrawarches, "Bögen", 14);
+toggles:"showtf-div"							= new Toggle(anchorpoint + 2 * offsety, togglesize, alwaysdrawarches, "Anzahl der Schritte:", 14);
+toggles:"showtf-divpercentage"		= new Toggle(anchorpoint + 1 * offsety, togglesize, false, "Größe des Schritts in %:", 14);
+toggles:"showtf-divvalue"					= new Toggle(anchorpoint, togglesize, false, "Größe des Schritts" + if(unit=="",":", " in " + unit + ":"), 14);
+
+// COL 3 ... has to be moved to the right, once textfields and buttons are placed
+offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply([toggles:"arch", toggles:"showtf-div",
+			toggles:"showtf-divpercentage", toggles:"showtf-divvalue"],#:"labelwidth")),0];
+anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
+
+toggles:"showtf-perc"	= new Toggle(anchorpoint + 3 * offsety, togglesize, false, "Eingabe Anteil", 14);
+toggles:"showtf-value"= new Toggle(anchorpoint + 2 * offsety, togglesize, false, "Eingabe Teil", 14);
+toggles:"showtf-base"	= new Toggle(anchorpoint + 1 * offsety, togglesize, false, "Eingabe Ganzes", 14);
+toggles:"overflow"		= new Toggle(anchorpoint, togglesize, overflow, "Overflow", 14);
 
 // D.2 | Init Text Inputs for (sub)divisions and base value
 // =======================================================
-regional(textfieldoffset);
-textfieldoffset = [9.5,0];
+offsetx = [togglepad+max(apply([toggles:"arch", toggles:"showtf-div", toggles:"showtf-divpercentage", toggles:"showtf-divvalue"], #:"labelwidth")),0];
 
 textfields = {
-	// COL 1
-	"divisions"							:	new TextInput(toggles:"showtf-div":"coord" + textfieldoffset, "", "numeric"),
-	"divisions-percentage" 	: new TextInput(toggles:"showtf-divpercentage":"coord" + textfieldoffset, "", "numeric"),
-	"divisions-value" 			: new TextInput(toggles:"showtf-divvalue":"coord" + textfieldoffset, "", "numeric"),
-	// COL 2
-	"percentage" 						: new TextInput(toggles:"showtf-perc":"coord" + .85*textfieldoffset, "", "numeric"),
-	"value" 								: new TextInput(toggles:"showtf-value":"coord" + .85*textfieldoffset, "", "numeric"),
-	"basevalue" 						: new TextInput(toggles:"showtf-base":"coord" + .85*textfieldoffset, "", "numeric")
+	// for COL 2
+	"divisions"							:	new TextInput(toggles:"showtf-div":"labelcoord" + offsetx, "", "numeric"),
+	"divisions-percentage" 	: new TextInput(toggles:"showtf-divpercentage":"labelcoord" + offsetx, "", "numeric"),
+	"divisions-value" 			: new TextInput(toggles:"showtf-divvalue":"labelcoord" + offsetx, "", "numeric")
 };
 
+// for COL 3
+offsetx = [togglepad+max(apply([toggles:"showtf-perc", toggles:"showtf-value", toggles:"showtf-base"], #:"labelwidth")),0];
+
+textfields:"percentage"		= new TextInput(toggles:"showtf-perc":"labelcoord" + offsetx, "", "numeric");
+textfields:"value" 				= new TextInput(toggles:"showtf-value":"labelcoord" + offsetx, "", "numeric");
+textfields:"basevalue"		= new TextInput(toggles:"showtf-base":"labelcoord" + offsetx, "", "numeric");
+
 'generictextfieldhandle = bar;
-'generickeyboardcoord = (screenbounds()_3).xy - [7, -12];
+'generickeyboardcoord = VRTOPRIGHT - [1,1] * (4*textfields:"value":"keysize" + 3*.2) * UISCALE - [togglepad,togglepad];
 'generickeyboardoffset = [0,0];
 'genericcleanupfunction := (
 	regional(othertextfields);
@@ -9587,8 +9617,8 @@ buttons:"minusbase" = new Button(textfields:"basevalue":"coord" + [textfields:"b
 buttons:"plusbase" = new Button(buttons:"minusbase":"coord" + [buttons:"minusbase":"width" + .2, 0], .7, .7, "", 20);
 buttons:"fixbase" = new Button(buttons:"plusbase":"coord" + [buttons:"plusbase":"width" + .6, 0], .7, .7, "🔒", 24);
 
-buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "-", 20);
-buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "+", 20);
+buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "", 20);
+buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "", 20);
 buttons:"fixvalue" = new Button(buttons:"plusvalue":"coord" + [buttons:"plusvalue":"width" + .6, 0], .7, .7, "🔓", 24);
 
 buttons:"minuspercentage" = new Button(textfields:"percentage":"coord" + [textfields:"percentage":"width" + .1, 0], .7, .7, "", 20);
@@ -9857,8 +9887,25 @@ toggles:"arch":"script" := if(my("state") & !anystepsactive(),
 	eval(toggles:"showtf-div":"setstate", 'newstate->true);
 );
 
+
+// D.4b | Reconfigure positioning in COL 3.
+// ===================================================================================
+offsetx = [buttons:"plusdiv":"hitbox"_2_1 - textfields:"divisions":"hitbox"_1_1, 0] + [togglepad, 0];
+
+apply([toggles:"showtf-perc", toggles:"showtf-value", toggles:"showtf-base", toggles:"overflow",
+			textfields:"percentage", textfields:"value", textfields:"basevalue"],
+	#:"coord" = #:"coord" + offsetx;
+	#:"labelcoord" = #:"labelcoord" + offsetx;	
+);
+
+apply([buttons:"pluspercentage", buttons:"plusvalue", buttons:"plusbase",
+			buttons:"minuspercentage", buttons:"minusvalue", buttons:"minusbase",
+			buttons:"fixpercentage", buttons:"fixvalue", buttons:"fixbase"],
+	#:"coord" = #:"coord" + offsetx;
+);
+
+
 // D.5 | Init Percentagebar
-// new Percentagebar(coord, width, height, value, precision, divisions, baseval, unit)
 // ===================================================================================
 bars = [];
 if(numberofbars <= 1, // build one bar
@@ -9926,9 +9973,6 @@ obj = obj :> arch2;
 obj = obj :> agg;
 obj = obj ++ bars;
 
-
-
-
 bars_1:"toggleactive";
 
 // Call toggle scripts for G,P,p toggle to put in textfields approriately
@@ -9943,6 +9987,10 @@ toggles:"showtf-divvalue":"script";
 if(!showbuttons,
 	obj = obj -- [textfields:"divisions", buttons:"plusdiv", buttons:"minusdiv"];
 );
+
+println(">> labelwidth = " + toggles:"part":"labelwidth");
+println(">> labelpad = " + toggles:"part":"labelpad");
+println(">> max = " + max(apply(values(toggles), #:"labelwidth")));
 
 ); // end vam-if
 //[VAM] strapwork
@@ -11168,7 +11216,7 @@ container:"timing" = .2;
 container:"timeflow" = "jump";
 );
 //[VAM] thales
-/** v3 *****************************************************************************************
+/** v4 *****************************************************************************************
 * Interactable to explore thales theorem and its inverse
 *
 * Recent changes:
@@ -11181,6 +11229,7 @@ container:"timeflow" = "jump";
 * 2026-07-30: Change scaling of angle labels
 * 2026-08-03: Darker red for remove button in angle list
 * 2026-08-07: Draw button for removing point without symbol, but with geometry
+* 2026-08-19: Adjust for fixed ImageButton
 ************************************************************************************************/
 
 
@@ -12106,7 +12155,6 @@ trig:"move"; // Trigger C to stick to circle if softc is false
 //  === Init back button ===
 
 backbutton = new ImageButton([0,0], 2, 2, ICONS:"undo");
-backbutton:"imgfill" = 2;
 backbutton:"coord" = if(isundefined(backbuttoncoord), (screenbounds()_1).xy + toolbarmargin*[1,-1] + [0, -backbutton:"height"], 	backbuttoncoord);
 
 backbutton:"script" := (
@@ -12162,7 +12210,6 @@ backbutton:"script" := (
 // === Init reset button ===
 
 resetbutton = new ImageButton([0,0], 2, 2, ICONS:"reset2");
-resetbutton:"imgfill" = 2;
 resetbutton:"coord" = if(isundefined(resetbuttoncoord),
 	if(showundobutton,
 		backbutton:"coord" + toolbarmargin*[1,0] + [backbutton:"width",0],
@@ -12184,7 +12231,6 @@ resetbutton:"script" := (
 // === Init stamp button ===
 
 stampbutton = new ImageButton([0,0], 2, 2, ICONS:stampbuttonimage);
-stampbutton:"imgfill" = 2;
 
 // Set coord for stamp button
 if(stickstampbuttontopoint,
@@ -12244,13 +12290,11 @@ if(!ISCINDYJS, imgoffset=[0,0]); // only use imgoffset if in CindyJS, since it d
 softrobustbutton = new Toggle([0,0], 1.5, !softc, "", NADA);
 softrobustbutton:"coord" = if(showcurrentanglevalue, trig:"gammavalueposition", stampbuttoncoord) - [softrobustbutton:"width" + toolbarmargin, 0];
 if(!isundefined(constructionbuttoncoord), softrobustbutton:"coord" = constructionbuttoncoord);
-softrobustbutton:"imgfill" = 3.7;
-softrobustbutton:"imgscale" := (
-	regional(px);
-	px = imagesize(ICONS:"pointoncircle");
-	my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-);
+softrobustbutton:"imgfill" = 1.5;
+softrobustbutton:"img" = ICONS:"pointoncircle";
+softrobustbutton:"imgscale" := image scale fit(my("img"), my("imgfill") * [my("width"), my("height")]);
 softrobustbutton:"highlightcolor" = DZLMCOLORDARK;
+
 softrobustbutton:"script" := (
 	log button clicked(my("name"));
 	
@@ -12259,7 +12303,7 @@ softrobustbutton:"script" := (
 	trig:"move";
 );
 softrobustbutton:"drawafter" := (
-	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, ICONS:"pointoncircle", scale->my("imgscale"), ref->["50%","0%"]);
+	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, my("img"), scale->my("imgscale"), ref->["50%","0%"]);
 );
 
 
@@ -12268,20 +12312,18 @@ softrobustbutton:"drawafter" := (
 helpbutton = new Toggle([0,0], 1.5, showhelp, "", NADA);
 helpbutton:"coord" = if(showconstructionbutton, softrobustbutton:"coord", trig:"gammavalueposition") - [softrobustbutton:"width" + 2*toolbarmargin, 0];
 if(!isundefined(helpbuttoncoord), helpbutton:"coord" = helpbuttoncoord);
-helpbutton:"imgfill" = 3.7;
-helpbutton:"imgscale" := (
-	regional(px);
-	px = imagesize(ICONS:"bucket2");
-	my("imgfill") * min(my("width"), my("height")) * screenresolution() / max(px_1, px_2);
-);
+helpbutton:"imgfill" = 1.5;
+helpbutton:"img" = ICONS:"bucket2";
+helpbutton:"imgscale" := image scale fit(my("img"), my("imgfill") * [my("width"), my("height")]);
 helpbutton:"highlightcolor" = DZLMCOLORDARK;
+
 helpbutton:"script" := (
 	log button clicked(my("name"));
 	
 	trig:"showhelp" = !trig:"showhelp";
 );
 helpbutton:"drawafter" := (
-	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, ICONS:"bucket2", scale->my("imgscale"), ref->"cb");
+	drawimage(my("coord")+ [my("width")/2,my("height")+.1]+imgoffset, my("img"), scale->my("imgscale"), ref->"cb");
 );
 
 

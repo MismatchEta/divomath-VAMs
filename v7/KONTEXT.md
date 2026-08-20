@@ -1,7 +1,7 @@
 # Kontext divoVAM v7
 
 Arbeitsnotizen für die Weiterentwicklung. Ergänzt README.md (Nutzerdoku) und
-den Changelog darin. Stand: 2026-08-16.
+den Changelog darin. Stand: 2026-08-20, Build 426.
 
 ---
 
@@ -77,6 +77,19 @@ In Cinderella 0, in CindyJS undefined. Nie ungeprüft auf ein Ergebnis
 anwenden, das undefined sein kann — das war die Ursache des
 `to json`-Fehlers in divomath.
 
+### `isundefined()` auf zusammengesetzte Rückgabewerte
+
+```cindyscript
+isundefined(imagesize(img))     // true, auch bei gültigem [421,421]
+isundefined([421,421])          // false
+isundefined(imagesize(img)_1)   // richtig
+```
+
+`imagesize()` liefert offenbar keine gewöhnliche Liste zurück. Der Guard im
+ImageButton hat deshalb immer gegriffen, `imgscale` war konstant 0 und es wurde
+gar nichts gezeichnet. **Immer auf einer Komponente prüfen**, nie auf der
+ganzen Rückgabe. Verwandt mit `length(___)` oben.
+
 ### `list and` / `list or` und undefinierte Einträge
 
 `list or(l) := contains(l, true)` behandelt `___` wie false — richtig.
@@ -87,6 +100,50 @@ und die Konjunktion wird fälschlich wahr.
 
 `nada` und `NADA` sind verschiedene Variablen (beide undefined, daher
 austauschbar). `list or` und `listor` sind dieselbe Funktion.
+
+### `apply()` über ein Dictionary
+
+```cindyscript
+apply(toggles, #:"labelwidth")   // Cinderella: Werte, CindyJS: nichts
+```
+
+Immer `values(...)` verwenden. Dasselbe gilt für numerische Indizes auf Dicts
+(`toggles_(5..9)`) – das setzt Einfügereihenfolge voraus und ist ohnehin
+spröde, weil sich die Indizes bei jeder Ergänzung verschieben.
+
+Hat im percentagebar dazu geführt, dass zwei von drei Schalterspalten im
+Export fehlten, während in Cinderella alles richtig aussah.
+
+### Skalierungsfaktoren gehören an EINE Stelle
+
+Ein Faktor (`FONTSCALE`, `UISCALE`) wird dort angewandt, wo die Größe zum
+ersten Mal entsteht – und nirgendwo sonst. Werte, die durch mehrere Klassen
+gereicht werden (Keyboard → Key → Button), dürfen unterwegs nicht erneut
+multipliziert werden.
+
+⚠️ Cinderella verdeckt das: Dort liegt `FONTSCALE` nahe 1 (bei üblicher
+Fenstergröße etwa 1.24), eine doppelte Anwendung fällt also kaum auf. Im Export
+multipliziert sich beides auf.
+
+### `drawimage()` misst in WELTeinheiten, nicht in Pixeln
+
+```
+Weltgröße = imagesize(img) / 72 · scale
+```
+
+Die 72 steht als `viewScale = matrix.sdet / 72` fest in `OpImageDrawing.js`; der
+zugehörige Commit heißt „Adjust scale of drawimage to match Cinderella", beide
+Umgebungen verhalten sich also gleich. **Ein `screenresolution()` in der
+Bildskalierung ist deshalb immer falsch** — es kürzt sich nicht heraus, sondern
+geht linear in die Größe ein.
+
+Bei fester Portgröße fällt das nicht auf, weil der Faktor dort konstant bleibt.
+Erkennungszeichen sind Kompensationswerte, die semantisch nicht sein können:
+`imgfill = 2` oder `3.7` bei einer Größe, die „Anteil der Fläche" heißen soll.
+Mit `?full` oder anderem `?rect` bricht es auf.
+
+Zuständig ist jetzt `image scale fit(img, boxsize)` in `[FUN] Drawing`, Bezug
+ist `IMGREFRESOLUTION = 72`.
 
 ### `regional()` sperrt aus Klassenmethoden aus
 
@@ -108,6 +165,8 @@ umbenannt: `blobcolors`, `cardalpha`, `maxdigits`, `linesize`.
 | `fillpoly(..., color->)` | greift | greift bei manchen Punktlisten nicht |
 | Strings in Dicts | ohne Quotes | mit eigenen Quotes |
 | `length(___)` | 0 | undefined |
+| `drawimage(..., ref->)` | verankert | ignoriert, Bild bleibt zentriert |
+| `drawimage(..., rendering->)` | wertet aus | ignoriert (heißt dort `interpolate->`) |
 
 **Regel:** Alles, was gezeichnet oder serialisiert wird, muss im Export
 gegengeprüft werden. Im Cinderella-Fenster sieht vieles richtig aus, was es
@@ -193,20 +252,14 @@ Aus divoVAM 3.1.0 übernommen, Schichten 1–3d sind übertragen.
 - Reihenfolge im Init: 3a bis Bar → 3b Textfelder → 3c Buttons → 3d
   Toggle-Skripte → Verdrahtungsblock D.3 aus 3a **zuletzt**
 - ⚠️ Herkunft klären: „Mierswa" im Pfad, Betreuung unbekannt. Vor weiterer
-  Arbeit klären, wer es pflegt und ob es nach divomath soll.
+  Arbeit abwarten: Ein Gespräch dazu steht an. Die Person hat es vermutlich
+  nicht selbst gebaut, weiß aber mehr über Herkunft und Nutzung.
 
 ### Framework
 
-- **percentagebar: UI-Skalierung** (neu, aus dem Termin mit Yasemin am 16.08.)
-  Alles außer dem Streifen selbst soll gemeinsam skalierbar sein: Textfelder,
-  Schriftgrößen, Schalter und vermutlich auch die Tastatur. Hintergrund ist die
-  Storyline-Einbettung, wo der Streifen die volle Breite nutzen soll, das
-  Bedienfeld aber unabhängig davon lesbar bleiben muss.
-  - Vermutlich ein Parameter `uiscale`, der in die Konstruktoren von Toggle,
-    TextInput, Button und Keyboard einfließt – analog zu FONTSCALE, aber
-    konfigurierbar statt auflösungsabhängig.
-  - ⚠️ Betrifft Framework-Klassen, die alle VAMs nutzen. Der Standardwert muss
-    1 sein, damit sich für die anderen nichts ändert.
+- **Editor-Seite nachziehen** (`index.html` auf abako). Dort fehlen aktuell
+  `uiscale`, `rect` und die `draw`-Parameter. Bewusst zurückgestellt – sinnvoll,
+  sobald jemand sie regelmäßig braucht.
 - **Freihandzeichnen: Brücke zum Event-Log.** Das Werkzeug schreibt nichts in
   die Ereignisdaten – eine Skizze, die niemand sieht, ist für die
   Prozessdatenauswertung verloren.
@@ -224,9 +277,16 @@ Aus divoVAM 3.1.0 übernommen, Schichten 1–3d sind übertragen.
   positioniert und folgt einer späteren Änderung nicht (`@improvement`-Vermerk
   im Konstruktor).
 - `draw textbox`-Aufrufstellen auf `draw label` umstellen, dann Alias entfernen
-- `image scale`-Muster steht viermal fast identisch da (ImageButton,
-  distributive-Toolbutton, zwei Thales-Toggles) — als Framework-Funktion
-  herausziehen
+- `image scale fit()` ist herausgezogen, ImageButton und distributive-Toolbutton
+  nutzen sie. **Die zwei Thales-Toggles rechnen noch inline** — korrekt (mit
+  `IMGREFRESOLUTION`), aber dupliziert. Umstellen.
+- `imgfill` steht im ImageButton weiter auf `.9`. Da die Größe jetzt stimmt,
+  heißt das 90 % Füllung statt bisher effektiv 34 %. Betrifft alle Stellen ohne
+  eigenen Wert, konkret den strapwork-Reset-Button und den distributive-
+  Toolbutton — vor dem nächsten Upload optisch prüfen.
+- `ref->` in thales (zwei `drawimage`-Aufrufe) wirkt im Export nicht. Entweder
+  ein `draw image(coord, img, targetsize, anchor)` bauen, das die Verankerung
+  selbst über einen Offset rechnet, oder die Offsets fest eintragen.
 - `roundedrectangle`-Performance auf percentagebar, numbercards, Button-Klassen
   übertragen
 - `put result`: Wird der **Key** von divomath roh eingesetzt? Bisher
@@ -237,9 +297,12 @@ Aus divoVAM 3.1.0 übernommen, Schichten 1–3d sind übertragen.
 
 ### Bei Dortmund liegend
 
-- Kritzeln-Verifikation auf der iframe-Testseite (hängt seit Wochen)
 - Daniels Gegentest zum `coloredcolindex`-Oszillieren
 - Lenas Blick auf die neuen Sprachtexte im Distributivfeld
+- Yasemin: korrigierte Datei mit fester Portgröße, dazu eine `index.html` als
+  Weiterleitung, damit sie ihre Konfiguration nicht mehr im Quelltext ändern
+  muss (Storyline lädt lokale Webobjekte ohne URL-Parameter)
+- Kritzeln: keine Rückmeldung mehr, scheint zu funktionieren
 
 ### Kleinkram
 

@@ -1,4 +1,4 @@
-> v7b403
+> v7b426
 
 # divomath VAM Dokumentation
 
@@ -37,7 +37,8 @@ Folgende Strings sind für *vam* Schlüssel zulässig:
 ### Beispiel
 
 Eine Minimalkonfiguration zur Darstellung der Zahlenkarten-Komponente ("numbercards").
-``` yaml
+
+```yaml
 configuration:
   cindyJsPrefix: divomath
   vam: numbercards
@@ -50,7 +51,8 @@ Dieser Abschnitt stellt die möglichen Konfigurationen der verschiedenen VAMs da
 ### Beispiel
 
 Das folgende Beispiel zeigt eine Konfiguration für das VAM *numbercards*. [Siehe unten](#zustand-numbercards) für Details.
-``` yaml
+
+```yaml
 cindyjs:
   color: true
   colortoggle: false
@@ -366,6 +368,15 @@ cindyjs:
 
 #### Bedienelemente
 
+- uiscale: *\<float>*
+  - Skaliert alle Bedienelemente gemeinsam: Schalter, Eingabefelder, Plus- und
+    Minus-Tasten sowie die eingeblendete Tastatur. Der Streifen selbst bleibt
+    unberührt – er richtet sich weiterhin nach *barwidth* und *barheight*.
+  - Gedacht für Einbettungen, in denen der Streifen die volle Breite nutzen
+    soll, das Bedienfeld darunter aber unabhängig davon lesbar bleiben muss.
+  - Bezugspunkt der Anordnung ist die linke untere Ecke des sichtbaren
+    Bereichs; von dort aus wächst das Bedienfeld nach oben und rechts.
+  - default 1
 - showbuttons: *\<bool>*
   - Alle Schalter und Eingabefelder anzeigen oder nicht.
   - default true
@@ -398,12 +409,19 @@ cindyjs:
 - polycolors: *\<list>*
   - genaue Konfiguration der Farbe jedes Basis-Polygons. Muss mindestens so viele Einträge enthalten, *\<polys>* gibt.
   - Farben: 
+    
     1. blau
+    
     2. dunkelblau
+    
     3. rot
+    
     4. grün
+    
     5. violett
+    
     6. grau
+    
     7. schwarz
   - default: [1..100]
 - rows: *\<int>*
@@ -698,7 +716,7 @@ Jede Komponente kann in ihrem Zustand grundsätzlich Werte anderer Komponenten v
 
 Am Bsp. der numbercards: Es seien zwei Folien gegegeben mit den Namen *"ZAHLENKARTEN"* und *"ZAHLENKARTEN-2"* auf denen jeweils die VAM-Komponenten *"vam-karten"* bzw. *"vam-karten2"* angelegt sind. Nachfolgend ein möglicher Zustand von *"vam-karten2"*, um auf das vorige VAM zuzugreifen.
 
-``` yaml
+```yaml
 # --- Im Zustand von "vam-karten2"
 # Die Referenzen stehen im cindyjs-Objekt und ueberschreiben die
 # darunter definierten Werte.
@@ -796,7 +814,57 @@ späteren Änderung der Fenstergröße nicht.
 
 ## Changelog
 
+### v7b426
+
+- FRAMEWORK:
+  - **image scale fit()** in `[FUN] Drawing` neu: liefert den `scale`-Wert, mit
+    dem ein Bild in eine vorgegebene Box aus Welteinheiten passt. Dazu die
+    Konstante **IMGREFRESOLUTION** (72).
+  - Fix ImageButton: Die Bildgröße hing an der Auflösung. `drawimage()` misst
+    Bilder in **Welteinheiten** (Weltgröße = Bildgröße in Pixeln / 72 · scale),
+    die bisherige Formel hat zusätzlich mit `screenresolution()` multipliziert.
+    Bei fester Canvasgröße fiel das nicht auf, weil der Faktor konstant blieb –
+    mit **?full** oder einem anderen **?rect** wuchsen die Symbole gegenüber
+    ihren Schaltflächen.
+  - **imgfill** bedeutet damit wieder das, was der Name sagt: den Anteil der
+    Schaltfläche, den das Bild einnimmt. Die bisherigen Werte (2 bzw. 3.7) waren
+    Kompensation dieses Fehlers und wurden nachgezogen.
+- VAM:
+  - distributive: Werkzeug-Schaltfläche ist jetzt ein regulärer **ImageButton**
+    statt einer Sonderkonstruktion.
+  - thales: **imgfill** der Winkel-Schalter und Schaltflächen an die korrigierte
+    Skalierung angepasst.
+
+### v7b422
+
+- FRAMEWORK:
+  - **UISCALE** eingeführt: skaliert Bedienelemente (Button, Toggle, TextInput,
+    Keyboard) unabhängig von dem, was ein VAM selbst zeichnet. Standardwert 1,
+    für VAMs ohne eigene Einstellung ändert sich nichts.
+  - Keyboard: **"full"**-Layout ergänzt (QWERTZ mit Umschalttaste, Ziffernreihe,
+    Leer- und Eingabetaste). Bisher war der Subtyp zulässig, es wurden aber nur
+    Zifferntasten gebaut. Das numerische Layout ist unverändert.
+  - Fix TextInput: **keyboardtype** wurde ignoriert, es entstand immer ein
+    Ziffernfeld. Außerdem war **keysize** doppelt gesetzt, die zweite Zuweisung
+    hat die Unterscheidung numerisch/full überschrieben.
+  - Fix Toggle: **cornerradius** nutzte die unskalierte Konstruktorgröße.
+- VAM:
+  - percentagebar: Parameter **uiscale** (s.o.). Bedienfeld ist an der linken
+    unteren Ecke des sichtbaren Bereichs verankert und skaliert von dort.
+  - Fix percentagebar: Die Spalten 2 und 3 der Schalter wurden im Export nicht
+    angezeigt. Ursache war `apply()` über ein Dictionary sowie ein numerischer
+    Index darauf – beides funktioniert in Cinderella, in CindyJS nicht.
+- GENERAL:
+  - **Freihandzeichnen** für den Standalone-Betrieb, über `?draw` (siehe
+    [Standalone-Betrieb](#standalone-betrieb-abakodzlmde)). Das Werkzeug stammt
+    aus einer älteren Arbeit am doppelten Zahlenstrahl und wurde aufgeräumt:
+    Storyline-Modus entfernt (läuft als Webobjekt ohnehin nicht), toter Code
+    und sechs Fehler beseitigt.
+  - `build.py` legt `freehand-drawing.js` mit ins Ausgabeverzeichnis; die Datei
+    muss neben der HTML hochgeladen werden.
+
 ### v7
+
 - GENERAL:
   - Build-Prozess vereinheitlicht: **build.py** erzeugt aus einem Cinderella-Export und der zugehörigen .cdy beide Zielformate (gepatchte HTML für abako, vam.cdyjs für divomath) in ein out-Verzeichnis
   - Skripte werden aus dem .cdy-Archiv gelesen, nicht mehr aus dem HTML-Export (der lässt Skripte weg)
@@ -852,6 +920,7 @@ späteren Änderung der Fenstergröße nicht.
     - Fix: Schulschrift wurde nie verwendet (falscher Konstantenname)
 
 ### v5.194
+
 - GENERAL:
   - Versionssystematik geändert zu <main>.<build> (momentan version 5, build 194)
   - Build erhöht sich über Versionen hinweg
@@ -879,11 +948,13 @@ späteren Änderung der Fenstergröße nicht.
     - Größeren Kreis and die Hitbox des Separators gebaut zum einfacheren Greifen
     - Fix: Separator übermittelt den State wo er gedropped wird, nicht wo er danach einsortiert wird (selbst wenn an der Stelle keine Polygone sind)
     - Zeichenreihenfolge der Polygone geändert
-### v5.2.3
+      
+      ### v5.2.3
 - VAM:
   - distributive:
     - divomath state und result reporting implementiert (Validierung und Referenzierung)
-### v5.2.0
+      
+      ### v5.2.0
 - VAM:
   - distributive:
     - Init Zustand **groupby**: Initialer Gruppierungszustand
@@ -897,6 +968,7 @@ späteren Änderung der Fenstergröße nicht.
     - gelöscht: Init Zustand **lblpadding**
 
 ### v5.1.0
+
 - VAM:
   - distributive:
     - Init Zustand **fontsize**: Schriftgröße für Term und verbale Beschreibung
@@ -909,6 +981,7 @@ späteren Änderung der Fenstergröße nicht.
     - Init Zustand **groupingtype**: Welche Gruppierungen sind mit Klick möglich (Keine, Zeile, Spalte, Beide)
 
 ### v5.0.0
+
 - FW:
   - constants:
     - Bild von kreisförmigen Button zu ICONS hinzugefügt
@@ -925,11 +998,13 @@ späteren Änderung der Fenstergröße nicht.
     - Init Zustand **interactable**: Mit Container kann (nicht) interagiert werden
 
 ### v4.3.0
+
 - VAM:
   - strapwork:
     - Referenzcontainer hinzugefügt
 
 ### v4.1.0
+
 - VAM:
   - distributive:
     - neue Logik für das Färben. Jetzt färbt das Zeichnen einer Zeile die zugehörigen Spalten und umgekehrt.
@@ -941,6 +1016,7 @@ späteren Änderung der Fenstergröße nicht.
     - numerals(\<int>) hinzugefügt: Gibt von einer Ganzzahl das zugehörige Zahlwort zurück, wenn die übergebene Ganzzahl kleiner als 13 ist. Gibt ansonsten die Zahl selbst (als Zahl) zurück.
 
 ### v4.0.0
+
 - VAM:
   - neues VAM: (percentagebar, ) distributive
   - divisors: 
@@ -1039,16 +1115,23 @@ späteren Änderung der Fenstergröße nicht.
 ### v3.0.0
 
 - neues VAM: percentagebar als preview
+
 - VAM: 
+  
   - divisors: 
+    
     - Konfiguration für Darstellung der UI Buttons hinzugefügt (**drawbuttons**)
     - Fix: **color** Konfiguration
+  
   - numbercards: 
+    
     - Farbbutton geändert. Ist jetzt grau, wenn auch die Karten grau sind und farbig, wenn die Karten farbig sind.
     - Klickverhalten der Numbercards geändert: 
       - Kinder Placecards werden nicht mehr nach der Animation gelöscht um eine Gesamtkarte zu bilden. Stattdessen bleiben die Placecards erhalten werden nur in der Position animiert. (~ Zeile 503, setpropertylater() auskommentiert)
       - Farben werden auch nicht mehr gefadet beim aus- und einklappen. Placecards (und Farben) sind auch im zusammengeklappten Zustand sichtbar. (~ Zeilen 523 & 562 auskommentiert, Animationskonstrukt aber erhalten)
+  
   - strapwork: 
+    
     - RegPolys sind "gleichgroß". Bei Polygonen mit gerader Eckenzahl sind gegenüberliegende Kanten 2*RADIUS weit entfernt, bei ungerader Eckenzahl, ist jede Ecke von ihrer gegenüberliegenden Kante 2*RADIUS weit entfernt. Vorher hatten alle den gleichen Umkreis mit RADIUS.
     - RegPolys werden mit der unteren Kante parallel zur x-Achse ausgerichtet, es sei denn, "rotation" wird spezifiziert (nicht dm-konfigurierbar)
     - Ist das RegPoly ein Kreis, wird es nicht mehr als Kreis verwaltet, sondern ein 100-Eck. Der Einheitlichkeit wegen. "shape" und "draw" entsprechend angepasst
@@ -1058,12 +1141,17 @@ späteren Änderung der Fenstergröße nicht.
       - NEU **state** ([ ] \<string>): Definiert, welche der über **vertices** und **colors** definierten Polygone im Container beim Start enthalten sein sollen. Für **vertices**=[0,3,4] sowie **rows**=3 stellt ["1,2,2", "3,3,3", ""] den Container so ein, dass im ersten der drei Bänder die Polygone Nummer 1-2-2 enthalten sind (also Kreis-Dreieck-Dreieck), im zweiten Band 3-3-3 (Viereck-Viereck-Viereck) und das dritte Band leer ist.
       - NEU **drawpatterncontainer** (\<bool>): true, wenn PatternContainer gezeichnet werden soll.
       - **borders** in **drawborders** umbenannt. Funktion gleich.
+  
   - FW: 
+    
     - mousedown Handler: 
+      
       - Zeile 41 entfernt, die dafür sorgt, das hottes Element nach vorne geholt wird. Holt sonst bei **strapwork** im Zweifel Container vor Polygone. 
-
+        
         > **@Todo**: Durch Layer-System und "movetofront" Attribut austauschen (mit Ulli abstimmen, geht das rückwärtskompatibel?!).
+  
   - CLASS: 
+    
     - Scrollbar: 
       - "script" wird nicht mehr auf "moveend" getriggered (zusätzlich zu "move"), sondern bei "click" (zusätzlich zu "move"), da sonst immer der "value" VOR der Änderung verwendet wird.
 
@@ -1137,7 +1225,7 @@ späteren Änderung der Fenstergröße nicht.
     - VALUEMAP: weist Zahlen von 1-12 die Wörter "Einer", "Zweier" ... "Zwölfer" zu
     - HEXMAP: weist den Strings "0" bis "9" sowie "A" bis "F" bzw. "a" bis "f" die Zahlen 1 bis 15 zu
     - COLORMAP: enthält die meisten vordefinierten Farben 
-      - Farben: "DARKRED", "DARKBLUE", "DARKGREEN",	"DZLMCOLORGOLD", "DZLMCOLORDARK", "PLACECOLORGREEN", "PLACECOLORBLUE","PLACECOLORRED", "DIVOGREEN", "DIVOVIOLET", "DIVOGREY", "DIVOBLACK", "DIVORED", "DIVOBLUE"
+      - Farben: "DARKRED", "DARKBLUE", "DARKGREEN",    "DZLMCOLORGOLD", "DZLMCOLORDARK", "PLACECOLORGREEN", "PLACECOLORBLUE","PLACECOLORRED", "DIVOGREEN", "DIVOVIOLET", "DIVOGREY", "DIVOBLACK", "DIVORED", "DIVOBLUE"
   - helper functions: 
     - list(\<any>): Erzwingt eine Liste für irgendeine Übergabe (Zahl, Objekt). nada bleibt nada, list bleibt list, String wird char array.
     - centroid: 
