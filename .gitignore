@@ -1,0 +1,9 @@
+# directories
+/.vscode
+/archive
+/out
+/vam specifications
+
+# files
+divomath VAMs.code-workspace
+KONTEXT.md
