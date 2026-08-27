@@ -2264,6 +2264,8 @@ ANTICLOCKWISEARROW = unicode("21BA");
 CLOCKWISEARROW = unicode("21BB");
 ANTICLOCKWISEARROWU = unicode("2B8C");
 CLOCKWISEARROWU = unicode("2B8E");
+LOCK = unicode("1F512");
+UNLOCK = unicode("1F513");
 
 ARROWS = [LEFTARROW, RIGHTARROW, UPARROW, DOWNARROW,
 DOWNARROWTIPLEFT, DOWNARROWTIPRIGHT, ANTICLOCKWISEARROW, CLOCKWISEARROW,
@@ -2384,7 +2386,7 @@ LOGDEBUG = 3;
 VAM = "default";
 if(!ISCINDYJS & !ISDIVOMATH, // probably authoring in Cinderella
 
-	VAM = "thales"; // <-- CHANGE HERE
+	VAM = "percentagebar"; // <-- CHANGE HERE
 
 );
 
@@ -8954,6 +8956,9 @@ fontfamily 						= default to(ENVIRONMENTALPARAMS:"fontfamily", NADA, true);
 leftoutpercentages		= default to(ENVIRONMENTALPARAMS:"leftoutpercentages", [], true);
 
 leftoutvalues					= default to(ENVIRONMENTALPARAMS:"leftoutvalues", [], true);
+
+leftoutvalues = [750];
+
 custompercentages			= default to(ENVIRONMENTALPARAMS:"custompercentages", [], true);
 customvalues					= default to(ENVIRONMENTALPARAMS:"customvalues", [], true);
 scaffoldbasevalue			= default to(ENVIRONMENTALPARAMS:"scaffoldbasevalue", false, true);
@@ -9137,7 +9142,8 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 
 		// Draw value labels
 		if(my("drawvaluelabels"),
-			forall(my("ticks") ++ my("standardticks") -- leftoutvalues,
+		println(my("ticks")--leftoutvalues);
+			forall(my("ticks") ++ my("standardticks") -- [leftoutvalues],
 				if(my("drawarches"),
 					if(my("value") >= # ,
 						text = format(#*my("basevalue"),decimalsvalue) + " " + my("unit"); // altered tick value with unit
@@ -9647,15 +9653,15 @@ textfields:"basevalue":"onupdate" := (
 buttons = {};
 buttons:"minusbase" = new Button(textfields:"basevalue":"coord" + [textfields:"basevalue":"width" + .1, 0], .7, .7, "", 20);
 buttons:"plusbase" = new Button(buttons:"minusbase":"coord" + [buttons:"minusbase":"width" + .2, 0], .7, .7, "", 20);
-buttons:"fixbase" = new Button(buttons:"plusbase":"coord" + [buttons:"plusbase":"width" + .6, 0], .7, .7, "🔒", 24);
+buttons:"fixbase" = new Button(buttons:"plusbase":"coord" + [buttons:"plusbase":"width" + .6, 0], .7, .7, if(to bool(keepstable=="basevalue"),LOCK,UNLOCK), 24);
 
 buttons:"minusvalue" = new Button(textfields:"value":"coord" + [textfields:"value":"width" + .1, 0], .7, .7, "", 20);
 buttons:"plusvalue" = new Button(buttons:"minusvalue":"coord" + [buttons:"minusvalue":"width" + .2, 0], .7, .7, "", 20);
-buttons:"fixvalue" = new Button(buttons:"plusvalue":"coord" + [buttons:"plusvalue":"width" + .6, 0], .7, .7, "🔓", 24);
+buttons:"fixvalue" = new Button(buttons:"plusvalue":"coord" + [buttons:"plusvalue":"width" + .6, 0], .7, .7, if(to bool(keepstable=="value"),LOCK,UNLOCK), 24);
 
 buttons:"minuspercentage" = new Button(textfields:"percentage":"coord" + [textfields:"percentage":"width" + .1, 0], .7, .7, "", 20);
 buttons:"pluspercentage" = new Button(buttons:"minuspercentage":"coord" + [buttons:"minuspercentage":"width" + .2, 0], .7, .7, "", 20);
-buttons:"fixpercentage" = new Button(buttons:"pluspercentage":"coord" + [buttons:"pluspercentage":"width" + .6, 0], .7, .7, "🔓", 24);
+buttons:"fixpercentage" = new Button(buttons:"pluspercentage":"coord" + [buttons:"pluspercentage":"width" + .6, 0], .7, .7, if(to bool(keepstable=="percentage"),LOCK,UNLOCK), 24);
 
 buttons:"minusdiv" = new Button(textfields:"divisions":"coord" + [textfields:"divisions":"width" + .1, 0], .7, .7, "", 20);
 buttons:"plusdiv" = new Button(buttons:"minusdiv":"coord" + [buttons:"minusdiv":"width" + .2, 0], .7, .7, "", 20);
@@ -9761,9 +9767,9 @@ buttons:"fixbase":"cornerradius" = 0;
 buttons:"fixbase":"color" := DZLMCOLORLIGHT * if(tobool(keepstable == "basevalue"), .8, 1);
 buttons:"fixbase":"script" := (
 	keepstable = "basevalue";
-	set my("label", "🔒");
-	buttons:"fixlabel":"label" = "🔓";
-	buttons:"fixpercentage":"label" = "🔓";
+	set my("label", LOCK);
+	buttons:"fixvalue":"label" = UNLOCK;
+	buttons:"fixpercentage":"label" = UNLOCK;
 );
 
 // Config buttons for (current) value
@@ -9794,9 +9800,9 @@ buttons:"fixvalue":"cornerradius" = 0;
 buttons:"fixvalue":"color" := DZLMCOLORLIGHT * if(tobool(keepstable == "value"), .8, 1);
 buttons:"fixvalue":"script" := (
 	keepstable = "value";
-	set my("label", "🔒");
-	buttons:"fixbase":"label" = "🔓";
-	buttons:"fixpercentage":"label" = "🔓";
+	set my("label", LOCK);
+	buttons:"fixbase":"label" = UNLOCK;
+	buttons:"fixpercentage":"label" = UNLOCK;
 );
 
 // Config buttons for percentage
@@ -9828,9 +9834,9 @@ buttons:"fixpercentage":"cornerradius" = 0;
 buttons:"fixpercentage":"color" := DZLMCOLORLIGHT * if(tobool(keepstable == "percentage"), .8, 1);
 buttons:"fixpercentage":"script" := (
 	keepstable = "percentage";
-	set my("label", "🔒");
-	buttons:"fixlabel":"label" = "🔓";
-	buttons:"fixvalue":"label" = "🔓";
+	set my("label", LOCK);
+	buttons:"fixbase":"label" = UNLOCK;
+	buttons:"fixvalue":"label" = UNLOCK;
 );
 
 // fix for iPad pen issue: debounce clicks on all percentagebar buttons
@@ -9998,6 +10004,7 @@ obj = obj
 		textfields:"basevalue", textfields:"value", textfields:"percentage", 
 		textfields:"divisions",	textfields:"divisions-percentage",	textfields:"divisions-value"
 	];
+
 obj = obj ++ values(buttons) 
 	-- [
 		buttons:"plusbase", buttons:"plusvalue",buttons:"pluspercentage",
@@ -10022,13 +10029,14 @@ toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
 
 // Remove divisions textfield and buttons if buttons are not showing.
-if(!showbuttons,
+if(!showbuttons % contains(hidetoggles,"showtf-div"),
 	obj = obj -- [textfields:"divisions", buttons:"plusdiv", buttons:"minusdiv"];
 );
 
-println(">> labelwidth = " + toggles:"part":"labelwidth");
-println(">> labelpad = " + toggles:"part":"labelpad");
-println(">> max = " + max(apply(values(toggles), #:"labelwidth")));
+// Call correct fix toggle script
+if(to bool(keepstable=="basevalue"), buttons:"fixbase":"script");
+if(to bool(keepstable=="value"), buttons:"value":"script");
+if(to bool(keepstable=="percentage"), buttons:"percentage":"script");
 
 ); // end vam-if
 ;
