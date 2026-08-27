@@ -3,6 +3,33 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7428
+
+- FRAMEWORK:
+  - **to key list()** added in `[FUN] Other`: normalises a configuration value
+    that is meant to be a *list of string keys*. Accepts a real list, `a,b`,
+    `[a,b]` and quoted variants, and returns a list of plain strings. Such
+    values must never go through `parse()` — see the percentagebar fix below.
+- VAM:
+  - Fix percentagebar: **hidetoggles** had no effect at all. The value was read
+    with `default to(..., true)`, so `parse()` was applied to it. From a URL the
+    parameter always arrives as text, and `parse()` reads bare words as
+    variables: `arch` became undefined, `percentage,part` became a comma
+    sequence returning the (also undefined) last entry, and `overflow` even
+    resolved to the identically named configuration variable. The following
+    `select()` then removed nothing and every toggle stayed on screen. The value
+    is now taken as text and normalised through **to key list()**.
+  - percentagebar: unknown entries in **hidetoggles** produce a warning instead
+    of being dropped silently.
+  - Fix percentagebar: with **showbuttons** false the toggles were appended via
+    an `if` without an else branch, so an undefined value went into `obj`.
+- GENERAL:
+  - Fix link generator (`usage examples/web/index.html`): checkbox groups that
+    share one name — the **hidetoggles** list — were remembered under that name
+    alone, so the last entry of the group overwrote all the others. Reopening
+    the dialog then set every box of the group to that one state. The key now
+    contains the value as well.
+
 ## v7b426
 
 - FRAMEWORK:

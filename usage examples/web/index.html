@@ -1158,13 +1158,23 @@
     const savedValues = {};
     let currentTemplateId = null;
 
+    // Schluessel, unter dem ein Feld gemerkt wird. Checkboxen bekommen ihren
+    // Wert mit hinein: Gruppen wie "hidetoggles" teilen sich EINEN Namen, sonst
+    // ueberschreibt der letzte Eintrag der Gruppe alle anderen und beim erneuten
+    // Oeffnen stehen saemtliche Haken auf dessen Zustand.
+    function fieldKey(el) {
+      return (el.type === 'checkbox') ? el.name + '\u0000' + el.value : el.name;
+    }
+
     function restoreValues(form, tmplId) {
       const data = savedValues[tmplId];
       if (!data) return;
       Array.from(form.elements).forEach(el => {
-        if (!el.name || !(el.name in data)) return;
-        if (el.type === 'checkbox') el.checked = data[el.name];
-        else el.value = data[el.name];
+        if (!el.name) return;
+        const key = fieldKey(el);
+        if (!(key in data)) return;
+        if (el.type === 'checkbox') el.checked = data[key];
+        else el.value = data[key];
       });
     }
 
@@ -1172,7 +1182,7 @@
       const data = {};
       Array.from(form.elements).forEach(el => {
         if (!el.name) return;
-        data[el.name] = (el.type === 'checkbox') ? el.checked : el.value;
+        data[fieldKey(el)] = (el.type === 'checkbox') ? el.checked : el.value;
       });
       savedValues[tmplId] = data;
     }

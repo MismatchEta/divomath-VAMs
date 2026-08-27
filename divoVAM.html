@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     
-    <title>divoVAM v7.cdy</title>
+    <title>divoVAM.cdy</title>
     <style type="text/css">
         * {
             margin: 0px;
@@ -1948,6 +1948,13 @@ min with index(l) := (
 	sort(newlist, #_1)_1;
 );
 
+
+/**
+* All entries of a list that are not undefined.
+**/
+select defined(l) := select(l, !isundefined(#));
+
+
 to bool(expression) := (
 	regional(result);
 	result = NADA;
@@ -1959,10 +1966,29 @@ to bool(expression) := (
 	result;
 );
 
+
 /**
-* All entries of a list that are not undefined.
+* Normalises a config value that is meant to be a LIST OF STRING KEYS.
+* Accepts a real list, "a,b", "[a,b]" and quoted variants.
+* parse() must NOT be used here: bare words become variables and "a,b"
+* becomes a comma sequence - both end up undefined.
 **/
-select defined(l) := select(l, !isundefined(#));
+to key list(value) := (
+	regional(l);
+	if(isundefined(value), value = []);
+	if(isstring(value),
+		l = value;
+		l = replace(l, "[", "");
+		l = replace(l, "]", "");
+		l = replace(l, unicode("0022"), "");
+		l = replace(l, " ", "");
+		l = tokenize(l, ",");
+	,
+		l = apply(list(value), replace(# + "", " ", ""));
+	);
+	select(l, # != "");
+);
+
 
 type(data) := (
 	regional(type);
@@ -8942,7 +8968,8 @@ numberofbars					= default to(ENVIRONMENTALPARAMS:"numberofbars", 1, true);
 keepstable						= default to(ENVIRONMENTALPARAMS:"keepstable", "basevalue", false);
 showbuttons						= default to(ENVIRONMENTALPARAMS:"showbuttons", true, true);
 overflow							= default to(ENVIRONMENTALPARAMS:"overflow", false, true);
-hidetoggles						= default to(ENVIRONMENTALPARAMS:"hidetoggles", [], true);
+hidetoggles						= default to(ENVIRONMENTALPARAMS:"hidetoggles", [], false); // no parse, see to key list()
+hidetoggles						= to key list(hidetoggles);
 
 if(isundefined(barposition),
 	barposition = screenbounds()_1;
@@ -9956,9 +9983,15 @@ forall(bars, bar,
 // Update handles for textfields, since bar wasn't defined earlier
 'generictextfieldhandle = bars_1;
 
-obj = obj 
-	++ if(showbuttons, values(toggles))
-	-- apply(select(hidetoggles, contains(keys(toggles), #)), toggles:#);
+obj = obj ++ if(showbuttons, values(toggles), []);
+forall(hidetoggles, togglekey,
+	if(contains(keys(toggles), togglekey),
+		obj = obj -- [toggles:togglekey];
+	,
+		warn at("VAM percentagebar", "hidetoggles: unbekannter Schlüssel '" + togglekey + "'");
+	);
+);
+
 obj = obj 
 	++ values(textfields)
 	-- [

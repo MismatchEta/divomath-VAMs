@@ -5,7 +5,7 @@ Arbeitsmittel", VAM) built in [Cinderella](https://cinderella.de) and deployed
 two ways: as a component inside the [divomath](https://divomath-nrw.de) platform,
 and as a standalone HTML page.
 
-Current build: **v7b427**
+Current build: **v7b428**
 
 
 ## The two deliverables
@@ -61,7 +61,8 @@ Two more are under construction but unfinished and should not be used in product
     └─ img/
         └─ ... # Icons used by the widgets
 ├─ usage examples/ # Ready-made usage examples
-    └─ storyline/ # Storyline embedding
+    ├─ storyline/ # Storyline embedding
+    └─ web/ # example web usage
 ├─ CHANGELOG.md # Version history
 └─ README.md # this file
 ```

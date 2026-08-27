@@ -1,6 +1,6 @@
 # divoVAM Nutzerdokumentation
 
-> Stand 7b426
+> Stand 7b428
 
 divoVAM ist eine Sammlung virtueller Arbeitsmittel für den Mathematikunterricht,
 umgesetzt als CindyJS-Widgets. Alle Arbeitsmittel stecken in einer einzigen
@@ -340,7 +340,7 @@ _\* und wahrscheinlich noch andere Bezeichner_
 
 ---
 
-### distributive
+### Rechteckfeld (vam: distributive)
 
 Ein Rechteckfeld aus Plättchen, das sich in Zeilen oder Spalten gruppieren,
 teilweise einfärben und zerschneiden lässt. Dazu erscheinen der zugehörige 
@@ -441,7 +441,7 @@ Term und seine verbale Beschreibung, die sich mit jeder Handlung mitverändern
 
 ---
 
-### divisors
+### Teilbarkeit (vam: divisors)
 
 Eine Menge von Plättchen wird in Bänder gleicher Länge aufgeteilt. Anzahl und
 Gruppengröße lassen sich über Knöpfe oder einen senkrechten Balken einstellen,
@@ -491,7 +491,7 @@ der Plättchen) und `divisor` (eingestellte Gruppengröße).
 
 ---
 
-### numbercards
+### Zahlenkarten (vam: numbercards)
 
 Stellenwertkarten, die sich auf- und zuklappen lassen. Zugeklappt zeigen sie
 eine Zahl, aufgeklappt deren Zerlegung nach Stellenwerten in Montessorifarben.
@@ -538,7 +538,7 @@ Ab der Milliardenstelle sind die Bezeichner numerisch (`nc1_10`, `nc1_11`, …).
 
 ---
 
-### percentagebar
+### Prozentstreifen (vam: percentagebar)
 
 Ein Prozentstreifen, der sich ziehen lässt, mit Beschriftungen für Anteil, Teil
 und Ganzes. Die drei Größen hängen zusammen: Wird eine geändert, bleibt eine
@@ -633,7 +633,7 @@ zweite fest und die dritte rechnet sich neu.
 
 ---
 
-### strapwork
+### Bandornamente (vam: strapwork)
 
 Bänder, in die regelmäßige Vielecke einsortiert werden, dazu ein Container für
 Musterfolgen und wahlweise ein Referenzcontainer. Trennstriche gliedern die
@@ -733,7 +733,7 @@ und so weiter. Eine Folge aus fünfmal dem ersten Polygon ergibt dort `11111`.
 
 ---
 
-### thales
+### Satz des Thales (vam: thales)
 
 Ein Dreieck mit Umkreis, dessen Punkt C sich bewegen lässt — wahlweise fest auf
 dem Thaleskreis oder frei. Winkel lassen sich einblenden, messen, stempeln und
