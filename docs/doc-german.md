@@ -627,7 +627,7 @@ zweite fest und die dritte rechnet sich neu.
   - Verdecken Grundwert, Prozentwert bzw. Prozentsatz mit einem grauen Feld — als
     Lücke für Aufgaben
   - default false
-- pos\<togglename>: *\<list>
+- `pos<togglename>`: *\<list>*
   - Positionierung `[x,y]` der einzelnen Toggles.
   - Zulässige Werte für \<togglename> siehe `hidetoggles`
 
