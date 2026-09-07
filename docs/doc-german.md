@@ -611,7 +611,8 @@ zweite fest und die dritte rechnet sich neu.
   - Bezugspunkt ist die linke untere Ecke des sichtbaren Bereichs; von dort
     wächst das Bedienfeld nach oben und rechts.
   - default 1
-- `showbuttons`: *\<bool>* — Alle Schalter und Eingabefelder anzeigen. default true
+- `showbuttons`: *\<bool>*
+  - Alle Schalter und Eingabefelder anzeigen. default true
 - `hidetoggles`: *\<list of strings>*
   - Blendet einzelne Schalter aus, während die übrigen bleiben. Wirkt nur bei
     *showbuttons* true.
@@ -626,6 +627,9 @@ zweite fest und die dritte rechnet sich neu.
   - Verdecken Grundwert, Prozentwert bzw. Prozentsatz mit einem grauen Feld — als
     Lücke für Aufgaben
   - default false
+-pos\<togglename>: *\<list>
+  - Positionierung `[x,y]` der einzelnen Toggles.
+  - Zulässige Werte für \<togglename> siehe `hidetoggles`
 
 #### Rückgabewerte
 
