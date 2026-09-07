@@ -3,7 +3,11 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
-## v7428
+## v7b437
+- VAM:
+  - percentagebar: Parameter für Positionierung der Toggles hinzugefügt.
+
+## v7b428
 
 - FRAMEWORK:
   - **to key list()** added in `[FUN] Other`: normalises a configuration value
