@@ -2386,7 +2386,7 @@ LOGDEBUG = 3;
 VAM = "default";
 if(!ISCINDYJS & !ISDIVOMATH, // probably authoring in Cinderella
 
-	VAM = "percentagebar"; // <-- CHANGE HERE
+	VAM = "doublenumberline"; // <-- CHANGE HERE
 
 );
 
@@ -2416,7 +2416,7 @@ DOCTEXT = "No docstring for VAM.";
 // - LOGDEBUG (3)	= Errors + Warning + Debug //
 // ========================================= //
 
-LOGLEVEL = LOGNONE; 			// Local overwrite for debuglevel set by environment
+LOGLEVEL = 3; 			// Local overwrite for debuglevel set by environment
 MAXLOGMESSAGES = 50;			// Number of last messages stored in LOGMESSAGES
 MSGTOKEN = "sl_cjs_v1";		// Security feature for "post value(3)"
 
@@ -6315,7 +6315,7 @@ DOCTEXT = "...";
 // ================= //
 
 // --- Bar ---
-'barposition					= default to(ENVIRONMENTALPARAMS:"barposition", [1,15], true);
+'barposition					= default to(ENVIRONMENTALPARAMS:"barposition", [1,1], true);
 'barwidth							= default to(ENVIRONMENTALPARAMS:"barwidth", 16, true); // initial width of bar
 'barheight						= default to(ENVIRONMENTALPARAMS:"barheight", 2, true); // height of bar
 'barvalue							= default to(ENVIRONMENTALPARAMS:"barvalue", 0, true); // initial bar value in [0,1]
@@ -12959,10 +12959,10 @@ var cdy = CindyJS({
   autoplay: false,
   animcontrols: false,
   ports: [{
-    width: 759,
-    height: 586,
+    width: 819,
+    height: 530,
     id: "CSCanvas",
-    transform: [{visibleRect: [-0.27428199274629916, 18.50596739294148, 24.217486536011474, -0.40335587168573406]}],
+    transform: [{visibleRect: [-0.27428199274629916, 18.50596739294148, 26.153594720102998, 1.4036784334663546]}],
     background: "rgb(255,255,255)"
   }],
   csconsole: false,
