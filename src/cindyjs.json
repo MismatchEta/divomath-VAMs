@@ -1,0 +1,22 @@
+{
+  "defaultAppearance": {
+    "dimDependent": 0.7,
+    "fontFamily": "sans-serif",
+    "lineSize": 1,
+    "pointSize": 5.0,
+    "textsize": 12.0
+  },
+  "angleUnit": "°",
+  "animation": {
+    "autoplay": false,
+    "controls": false,
+    "speed": 0.5257731958762887,
+    "speedRange": [0.0, 1.0],
+    "accuracy": 1
+  },
+  "autoplay": false,
+  "animcontrols": false,
+  "csconsole": false,
+  "use": ["katex"],
+  "cinderella": {"build": 2136, "version": [3, 0, 2136]}
+}
