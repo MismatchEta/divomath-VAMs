@@ -1,0 +1,88 @@
+//Cindy-3.0 @branch@ build 2131 (2026/05/29 13:28)
+//Created on: 15.09.2026, 13:57:03
+//For: marcus
+//DO NOT EDIT --- MACHINE GENERATED CODE
+Geometry:=Euclidean;
+//
+//Exercise Information
+exercise {
+  input {
+    setElements(());
+    addMode("de.cinderella.modes.Move()");
+    addMode("de.cinderella.modes.SingleAdd()");
+    addMode("de.cinderella.modes.MultiAdd(de.cinderella.algorithms.Join)");
+    addMode("de.cinderella.modes.DefineCompass()");
+    addMode("de.cinderella.actions.Undo()");
+    addMode("de.cinderella.actions.GiveHint()");
+    addMode("de.cinderella.actions.Restart()");
+  }
+}
+behavior {Environment();
+          setParams(1.0,0.0,0.0);
+          addToLevel(1);
+         }
+behavior {Motor();
+          setParams(1.0,0.1,0.0);
+          addToLevel(1);
+         }
+kernel.setAcc(2);
+kernel.setFrames(1);
+kernel.setSpeed(1.0515463917525774);
+kernel.addAnimation(null);
+//Start portinfo
+kernel.setAttribute("prefs.menu","default.name");
+kernel.setAttribute("altmodes.rightclick","de.cinderella.modes.PopupMenuMode.name");
+kernel.setAttribute("altmodes.middleclick","de.cinderella.modes.Move.name");
+kernel.setAttribute("multiselect.enabled","false");
+kernel.setAttribute("drm.owner","Cinderella User");
+kernel.setAttribute("drm.userkey.p","");
+kernel.setAttribute("drm.userkey.q","");
+kernel.setAttribute("drm.userkey.g","");
+kernel.setAttribute("drm.userkey.y","");
+kernel.setAttribute("drm.copyright","Created with Cinderella - see http://cinderella.de");
+kernel.setAttribute("drm.protected","false");
+kernel.setAttribute("drm.protect.scripts","false");
+kernel.setAttribute("drm.commercial","false");
+kernel.setAttribute("drm.changeflag","drm.change.unlimited");
+kernel.setAttribute("drm.showinapplet","false");
+kernel.setAttribute("metadata.humanname","");
+kernel.setAttribute("metadata.pretext","");
+kernel.setAttribute("metadata.posttext","");
+kernel.setAttribute("widgetmode","false");
+kernel.setAttribute("cindyscript.version","3.0");
+kernel.setBackgroundColor(255,255,255);
+kernel.setBlackColor(0,0,0);
+kernel.setHighlightColor(255,102,102);
+kernel.setColor(9,71,119,133);
+port EuclideanPort() {
+   setAttribute("imagescalemode","scalemode.center");
+   setAttribute("imagealpha","1.0");
+   setAttribute("port.background.media","tracebuttonimageon.png");
+   setAttribute("imagescalemodeint","1");
+   setAttribute("precision.measure","precision.2");
+   setAttribute("precision.measure.int","2");
+   setAttribute("precision.angle","precision.1");
+   setAttribute("precision.angle.int","1");
+   setAttribute("anglemodulo","modulo.0");
+   setAttribute("printscale","1:1");
+   setAttribute("printscale.int","1:1");
+   setAttribute("darkenDependent","true");
+   setAttribute("mesh.rectangular","false");
+   setAttribute("mesh.triangular","false");
+   setAttribute("axes.show","false");
+   setAttribute("snap","false");
+   setAttribute("mesh.density","0");
+   setAttribute("euclideanport.scale","30.990003809189872");
+   setAttribute("euclideanport.origin.x","8.0");
+   setAttribute("euclideanport.origin.y","573.0");
+   setPolar(false);
+   setPortWidth(759);
+   setPortHeight(586);
+   setScale(30.990003809189872);
+   setOriginY(8.0);
+   setOriginX(573.0);
+   setMesh(false);
+   setAxes(false);
+   setSnap(false);
+}
+//End portinfo

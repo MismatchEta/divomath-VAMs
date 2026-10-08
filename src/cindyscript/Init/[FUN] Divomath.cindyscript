@@ -1,0 +1,292 @@
+/** v4 ******************************************************************************************
+* Fields and functions for interacting with the divomath platform. divomath uses the following hooks
+* - divomath get var state				- Hook for divomath callbackfunction
+* - divomathAddResult(key, value)	- Adds a submission to the result
+* - divomathSendResult()					- Sends a result to divomath
+* - divomathConfig								- JSON object containing configurations for VAM and last submissions of the user (see below)
+*
+* NOTE: the leading "divomath" in the function names is variable is a convention and must be specified in the configuration of the specific implemention of the VAM.
+*
+* On init divomath provides Cindy with an object of configuration and state settings set by the VAMs editors on divomath side.
+* This can be used to configure positioning of components and similar stuff. It can also be used to access the last submitted result.
+*
+* Example strucutre of the configuration object:
+* {
+*     "configuration":{														# === From "Komponentenverhalten" textbox from divomath editor (for non VAM specific config) ===
+*         "cindyJsPrefix":"divomath",							# Sets prefix for functions and fields mentioned above.
+*         "debuglevel":0,													# Sets debuglevel (0-3) for VAM.
+*         "vam":"strapwork"												# VAM choice for Init.
+*     },
+*     "cindyjs":{																	# === "cindyjs" object from "Zustand" textbox fromdivomath editor (for VAM specific config) ===
+*         "drawborders":false,										# - Contains VAM specific settings.
+*         "size":0.9,															# - Cindy parses ALL values from divomath to String.
+*         "state":[2,1,3]													# - Values here overwrite URL GET values if any.
+*     },
+*     "divomathVarState":{												# === Current/Last saved state of VAM ===
+*         "datetime":[2026,6,17,9,17,22,267],			# - Gets set by VAM with "divomath set state()".
+*					"timestamp":1781680642267,							# - Needs to be overwritten by every VAM according to its needs.
+* 				"drawborders":false,										# - Overwrites config from "cindyjs" object if any.
+*        	"limit":[8],														# - Cindy still parses ALL values from divomath to String.
+*         "polypadding":0.6,
+*         "size":0.9,
+*         "state":[1,1,1,1]        
+*    },
+*		 "runtime":"VIEWER",													# Divomath runtime can be "EDITOR" or "VIEWER". Should be VIEWER when used by students.
+*			"__limit": [3],															# Keys with leading dunder ("__") are used for referencing from other VAM states.
+*			"__size": 3.1,															# - They overwrite the corresponding value from divomathVarState (e.g. limit, size, drawborders).
+*			"__drawborders": true,											# - Has to be done top level when addressing another divomath component.
+*		 {RESULT_key}:"value",												# Keys with leading "RESULT_" are posted when using the "divomath * result()" functions.
+*		 {RESULT_foo}:"bar",													# - Overwrite corresponding value from divomathVarState (e.g. key, foo, x, iscool).
+*		 {RESULT_x}: 3,																# - Also overwrites reference keys (indicated by dunder).
+*		 {RESULT_iscool}: false												# - Are otherwise used for validating solutions in divomath.
+*		 {RESULT_DONTUSE}: true												# - Don't use these though, see below.
+* }
+*
+* (!!) The values from the divomath configuration object are stored in ENVIRONMENTALPARAMS according to the specifications from the example.
+* This means the following order is applied for a VAM specific key-value pair ("foo", "bar"):
+*		1. Get pair from cindyjs object if any.
+*		2. Overwrite/get pair from divomathVarState if any.
+*		3. Overwrite/get pair from correpsonding reference object (dunder, "__").
+*		4. Overwrite/get pait from corresponding RESULT object.
+*
+* (!!) The RESULT fields also contained in separate object "PreviousAnswer" and should be get from there. Example structure:
+* "Prev Answer":{
+* 		"datetime":[2026,6,17,9,28,40,944],					# Gets stored automatically when using "divomath post results()".
+* 		"timestamp":1781681320944										# Gets stored automatically when using "divomath post results()".
+*     "1.1":0,																		# Results stored as (key, value) as specified when calling "divomath put result(2)".
+*     "1.2":3,
+*     "drawborders":true,
+*     "limit":[3,5],
+*     "size":0.75,
+*     "state":[1,2,3,4,5],
+* }
+*
+* Recent changes:
+* 2026-07-26 Change log behavior.
+* 2026-08-09 Add json serializing to divomath get var state(1).
+* 2026-08-09 Add guards to divomath put results(2).
+* 2026-08-19 Fix divomath get params() method missing the handling of stored states since the refactor - whoops
+************************************************************************************************/
+
+// ==================================== //
+// Access divomath configuration object //
+// ==================================== //
+
+ISDIVOMATH 								= !isundefined(divomathConfig); 			// Flag for setting VAM specific non divomath config overwrites on init
+
+DIVOMATH'BLOB 						= divomathConfig;											// Complete JSON config object
+DIVOMATH'CONFIG 					= DIVOMATH'BLOB.configuration; 				// Configuration field from editor
+DIVOMATH'CINDYJSSTATEDEF	= DIVOMATH'BLOB.cindyjs; 							// Default state definition (from state field in editor)
+DIVOMATH'VARSTATE 				= DIVOMATH'BLOB.divomathVarState; 		// Last stored state (set by divomathSetState)
+DIVOMATH'ISVIEWER 				= DIVOMATH'BLOB.runtime == "VIEWER";	// VAM is running inside divomath VIEWER
+DIVOMATH'ISEDITOR 				= DIVOMATH'BLOB.runtime == "EDITOR";	// VAM is running inside divomath EDITOR
+
+DIVOMATH'PREVANSWER 			= divomathPreviousAnswer; 						// Last submission for VAM
+
+// ===================== //
+// divomath state setter //
+// ===================== //
+
+/**
+* Used by divomaths SendState function to update the state (if any) and set the previousAnswer variable.
+* Uses divomathSetState(), which has to be implemented in every VAM individually, according to the VAMs specific needs.
+* @param dmcb: name of divomath callback (dmcb) function
+*/
+divomath get var state(dmcb) := (
+	regional(state);
+	state = divomath set state();
+	state:"timestamp" = timestamp();
+	state:"datetime" = date() ++ time();
+
+	debug at("divomath get var state(1)", "State object has been sent to divomath.");
+	
+	// Send last answer to DM and (maybe) overwrite state
+	if(!isundefined(state),
+		debug at("divomath get var state(1)", "JSON: " + to json(state));
+		javascript(dmcb + "(" + to json(state) + ")");
+	,
+		javascript(dmcb+"()");
+	);
+);
+
+/** @Overwrite
+* Build a state object, to be transfered to divomath.
+* Should be NADA if state is not supposed to change or should equal DIVOMATH'VARSTATE.
+* --- Has to be overwritten by every VAM ---
+**/
+divomath set state() := (
+	regional(state);
+	state = NADA;
+
+	warn at("divomathSetState", "Function is not overwritten in current VAM: " + VAM);
+		
+	state; // Return state;
+);
+
+
+// ======================== //
+// divomath result handling //
+// ======================== //
+
+/** @Overwrite
+* Update divomath results to be used for validation.
+* Should use divomath put result(2) and divomath post result() instead
+* of the direct hooks divomathAddResult(2) and divomathSendResult()
+* --- Has to be overwritten by every VAM ---
+* --- Don't call directly use wrapper below instead --- 
+**/
+divomath update results() := (
+	warn at("divomathUpdateResults", "Function is not overwritten in current VAM: " + VAM);
+);
+
+/**
+* Wrapper for divomath update results (call this instead of divomath update results)
+**/
+divomath push results() := if(ISDIVOMATH,
+	divomath update results()
+);
+
+/**
+* Clears all current user submissions in divomath.
+* (See "divomath put result(2)" and "divomath post results()" for updating results)
+*	- Use inside "divomath update results()" when overwriting.
+* - Call first.
+**/
+divomath clear results() := if(ISDIVOMATH,
+	divomathClearResult();
+
+	debug at("divomath clear results()", "Divomath results cleared.");
+);
+
+/**
+* Adds result to be updated for divomath as a "key" and "value" pair.
+* (See "divomath post results()" and "divomath clear results()" for updating results)
+* 	- Use inside "divomath update results()" when overwriting.
+**/
+divomath put result(key, value) := if(ISDIVOMATH,
+	// divomath's own hook builds its JavaScript by concatenation, so the value
+	// has to arrive as a valid JS literal: strings quoted, lists as [..],
+	// undefined as null. "to json" produces exactly that for every type,
+	// which makes the old wrap quote() unnecessary.
+	value = to json(value);
+
+	divomathAddResult(key, value); // call divomath hook
+
+	debug at("divomath put result(2)", "Divomath result added with key: " + key);
+
+	[key, value]; // Return pair
+);
+
+/**
+* Sends results from "divomath put result(2)" to divomath
+* (See "divomath put result(2)" and "divomath clear results()" for updating results)
+* - Use inside "divomath update results()" when overwriting.
+*	- Call last.
+**/
+divomath post results() := if(ISDIVOMATH,
+	divomath put result("timestamp", timestamp());
+	divomath put result("datetime", date() ++ time());
+	
+	divomathSendResult();
+
+	debug at("divomath post results()", "Divomath results updated.");
+);
+
+
+// ====================== //
+// divomath config parser //
+// ====================== //
+
+/**
+* Checks divomath config object for (key, value) pairs for configuring current VAM.
+* (key, value) pairs are getting put in ENVIRONMENTALPARAMS.
+*/
+divomath get params() := if(ISDIVOMATH,
+	regional(prevanswerkeys, underscorekeys, laststatekeys, editorstatekeys);
+
+	// --- 1. Handle last submission (from ~PreviousAnswer object) ---
+	prevanswerkeys = keys(DIVOMATH'PREVANSWER);
+	
+	forall(prevanswerkeys, key,
+		add property(ENVIRONMENTALPARAMS, key, DIVOMATH'PREVANSWER:key);
+		debug at("divomath get params()", "Property " + key + " added to ENVIRONMENTALPARAMS from DIVOMATH'PREVANSWER. value: " + DIVOMATH'PREVANSWER:key);
+	);
+
+	if(length(prevanswerkeys) == 0, debug at("divomath get params()", "No prevanswer keys found. So no previous answer available."));
+
+	// --- 2. Handle referencing keys (starting with dunder) ---
+	//
+	// They can sit in two places: at the top level of the blob (how the
+	// existing VAMs do it - only passed on in the VIEWER, not in the EDITOR)
+	// or inside the "cindyjs" object (works in both). The cindyjs object is
+	// read FIRST because "add property" keeps the first entry, so a key
+	// defined in both places is won by the cindyjs one.
+	//
+	// The prefix is a divomath level marker: "__rcrows" resolves to a result
+	// of an earlier slide. It has to be stripped, otherwise the value ends up
+	// under a key nobody reads and the stored state wins instead.
+	underscorekeys = [];
+	
+	forall([DIVOMATH'CINDYJSSTATEDEF, DIVOMATH'BLOB], source,
+		regional(sourcename, dunderkeys);
+		sourcename = if(source == DIVOMATH'CINDYJSSTATEDEF, "cindyjs object", "blob top level");
+
+		dunderkeys = if(isundefined(source), [], select(keys(source), key, starts with(key, "__")));
+
+		forall(dunderkeys, key,
+			regional(plainkey);
+			plainkey = substring(key, 2, length(key))
+		;
+
+			add property(ENVIRONMENTALPARAMS, plainkey, source:key);
+			debug at("divomath get params()", "Property " + plainkey
+				+ " added from dunder reference " + key + " (" + sourcename
+				+ "). value: " + source:key
+			);
+		);
+
+		underscorekeys = underscorekeys ++ dunderkeys;
+	);
+
+	if(length(underscorekeys) == 0,
+		debug at("divomath get params()", "No underscore keys found. So no references."));
+
+	// --- 3. Handle last saved state (from divomathVarState) ---
+	//
+	// Weaker than a previous answer and than references, stronger than the
+	// editor default - "add property" keeps the first entry, so insertion
+	// order IS the priority order.
+	//
+	// divomath hands back an empty LIST instead of an empty object when a
+	// slide is revisited without a stored state, so the type has to be
+	// checked before keys() is called.
+	laststatekeys = if(isundefined(DIVOMATH'VARSTATE) % islist(DIVOMATH'VARSTATE),
+		[]
+	,
+		keys(DIVOMATH'VARSTATE)
+	);
+
+	forall(laststatekeys, key,
+		add property(ENVIRONMENTALPARAMS, key, DIVOMATH'VARSTATE:key);
+		debug at("divomath get params()", "Property " + key
+			+ " added to ENVIRONMENTALPARAMS from DIVOMATH'VARSTATE. value: "
+			+ DIVOMATH'VARSTATE:key);
+	);
+
+	if(length(laststatekeys) == 0, debug at("divomath get params()", "No stored state found."));
+
+	// --- 4. Handle default divomath config (from cindyjs object) ---
+	editorstatekeys = keys(DIVOMATH'CINDYJSSTATEDEF);
+	
+	forall(editorstatekeys, key,
+		add property(ENVIRONMENTALPARAMS, key, DIVOMATH'CINDYJSSTATEDEF:key);
+		debug at("divomath get params()", "Property " + key + " added to ENVIRONMENTALPARAMS from default editor config. value: " + DIVOMATH'CINDYJSSTATEDEF:key);
+	);
+
+	if(length(editorstatekeys) == 0, debug at("divomath get params()", "No default config found."));
+
+	// --- Dump final object ---
+	debug at("divomath get params()", "Finished getting parameters. State of ENVIRONMENTALPARAMS: " + ENVIRONMENTALPARAMS);
+
+	ENVIRONMENTALPARAMS; // Return (altough changes in place)
+);

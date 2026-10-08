@@ -1,0 +1,119 @@
+/** v2 *****************************************************************************************
+* Example VAM usage.
+*
+* Recent changes:
+* 2026-08-06: Some adjustments because of new framework structure
+************************************************************************************************/
+
+// Beispiel VAM
+if(VAM == "default",
+
+// ================= //
+// A | Documentation //
+// ================= //
+
+//DOCTEXTPOS = [9,15.5];
+DOCTEXT = "Ein Platzhalter VAM ohne bestimmte Funktionalität.";
+
+
+// ================= //
+// B | Configuration //
+// ================= //
+
+'someParameter = default to(ENVIRONMENTALPARAMS:"someParameter", "default value", false); // TRUE parses the value. Try, if not a string.
+
+
+// ================= //
+// Divomath settings //
+// ================= //
+
+divomath update results() := if(ISDIVOMATH, // @overwrite
+	warn at("default, divomath update results()", "No function, just an example.");
+
+	divomath clear results(); // Clear last results.
+
+	divomath put result(#, dmstate:#); // Put some results in.
+
+	divomath post results(); // Submit results to divomath.
+);
+
+divomath set state() := if(ISDIVOMATH, // @overwrite	
+	// Build state object.
+	state = {
+		"size" : size, // Size of Blobs
+		"blobmargin" : padding, // Padding between blobs in a strip
+		"stripmargin" : stripmargin, // Margin between strips
+		"timing" : timing, // Animation timing
+		"blobs" : world:"#allblobs", // Initial Blob count
+		"maxblobs" : maxblobs, // Maximum Blob count
+		"divisor" : world:"#divisors", // Initial number of divisors
+		"maxcols" : maxcols, // Max number of divisors
+		"sequentialorder" : sequentialorder, // Reording strategy on divisor change
+		"drawblobbuttons" : drawblobbuttons,
+		"drawdivbuttons" : drawdivbuttons,
+		"displaycalc" : displaycalc,
+		"drawbar" : drawbar,
+		"displayresult" : displayresult,
+		"displaydescription" : displaydescription,
+		"displayblobcount" : displayblobcount,
+		"displaydivisorcount" : displaydivisorcount
+	};
+
+	state; // Return state.
+);
+
+
+// ===================== //
+// C | Class Definitions //
+// ===================== //
+
+new DummyObject(coord) := (
+	regional(o);
+
+	o = new VAMobject("Dummy"); // Set some defaults.
+
+	o:"coord" = coord;
+	o:"ismoveable" = true;
+	o:"isclickable"  = true;
+	o:"color" = DARKRED; // See [FW] Constants
+
+	o:"draw" := ( // called whenever draw event is triggered if object is in "obj"
+		fill(
+			circle(my("coord"), 1),
+			color -> my("color")
+		);
+		
+		draw(
+			my("coord"),
+			color -> [1,1,1]
+		);
+		
+		drawtext(my("coord")+[.1,.1],my("coord"));
+	);
+
+	o:"click" := ( // triggered on mousedown, if elements "ishot" is true
+		set my("color", [random(),random(),random()]);
+		divomath push results();
+	);
+
+	o; // Return the object.
+);
+
+
+// ================== //
+// D | Initialization //
+// ================== //
+
+// --- Instantiate dummy object ---
+adummy = new DummyObject(.5*VRBOTTOMLEFT + .5*VRTOPRIGHT);
+adifferentdummy = new DummyObject([0,0]);
+
+// Change some stuff on init.
+adummy:"color" = DARKBLUE;
+adifferentdummy:"coord" := adummy:"coord" + [3,1];
+
+// Add stuff to obj to make in known to the framework.
+obj = obj :> adummy;
+obj = obj :> adifferentdummy;
+
+);

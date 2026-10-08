@@ -1,0 +1,17 @@
+/** v1 ******************************************************************************************
+* FW handling for dragging an object.
+* Updates mouse coords if a hot element is moved.
+*
+* Recent changes:
+************************************************************************************************/
+
+if(!isundefined(hot),
+
+	if(!isundefined(hot:"deletecopyifnotmovedandsubstitutebyoriginal"), 
+		hot:"deletecopyifnotmovedandsubstitutebyoriginal"=NADA
+	); 
+	
+	act(hot,action,startmouse, startcoord, mouse().xy, mouse().xy-oldmouse);
+	oldmouse = mouse().xy;
+	
+);

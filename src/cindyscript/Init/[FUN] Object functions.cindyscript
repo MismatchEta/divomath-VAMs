@@ -1,0 +1,212 @@
+/** v2 ******************************************************************************************
+* Helper functions for interacting with objects (instance method like)
+*
+* Recent changes:
+* 2026-07-26: Change log behavior.
+************************************************************************************************/
+
+/**
+* Call a property (function) of a VAM object, with some settable parameters.
+* @param object: VAM object reference
+* @param action: key of the property (String)
+* @param startmouse: used to calc "coord" for mouse starting mouse coordinates as reference point for the object on click
+* @param startcoord: used to calc "coord" for mouse starting mouse coordinates
+* @param mouse: TODO
+* @param mousedelta: TODO
+* @return: The result of the called function.
+**/
+act(object, action, startmouse, startcoord, mouse, mousedelta) := (
+	eval(object:action,	coord->startcoord-startmouse+mouse, 
+											delta->startcoord-startmouse,
+											mouse->mouse,
+											startmouse->startmouse,
+											startcoord->startcoord,
+											mousedelta->mousedelta
+	);
+);
+
+// =======//
+// Getter //
+// =======//
+
+/** 
+* Get a property by the given "property"-key (and a given "object")
+**/
+get(property) := get(self(), property);
+get(object, property) := object:property;
+
+/** Specific getters for default VAM properties **/
+get action() := get("action");
+get action(object) := get(object, "getaction");
+
+get clickable(value) := get("isclickable");
+get clickable(object, value) := get(object, "isclickable");
+
+get coord() := get("coord");
+get coord(object) := get(object, "coord");
+
+get hot() := get("ishot");
+get hot(object) := get(object, "ishot");
+
+get moveable() := get("ismoveable");
+get moveable(object) := get(object, "ismoveable");
+
+get name() := get("name");
+get name(object) := get(object, "name");
+
+get type() := get("type");
+get type(object) := get(object, "type");
+
+/** Alternatives for getters from self() **/
+get my(property) := get(property);
+get my action() := get action();
+get my coord() := get coord();
+get my name() := get name();
+get my type() := get type();
+
+/** Alternative getters for some default booleans (with specific "object") **/
+is moveable() := get("ismoveable");
+am i moveable() := is moveable();
+is moveable(object) := object:"ismoveable";
+
+is clickable() := get("isclickable");
+am i clickable() := is clickable();
+is clickable(object) := get(object, "isclickable");
+
+is hot() := get("ishot");
+am i hot() := is hot();
+i am hot() := am i hot();	// very specific use case when used with if.
+is hot(object) := get(object, "ishot");
+
+/** Alternative to get(1) **/
+my(property) := get my(property);
+
+
+// =================//
+// Cautious Setters //
+// =================//
+
+/**
+* Add a key value pair iff the key does not already exists.
+**/
+add property(object, property, value) := if(!contains(keys(object), property),
+	set(object, property, value);
+	debug at("add property(3)", "Property " + property + " has been added to object.");
+,
+	warn at("add property(3)", "Property " + property + " already exists in object. Nothing added.");
+);
+
+add property(property, value) := add property(self(), property, value);
+
+/**
+* Change a "property" if it exists (for given "object")
+**/
+change property(object, property, value) := if(contains(keys(object), property),
+	set(object, property, value)
+,
+	warn at("change property(3)", "Object does not contain property " + property + ". Nothing changed.")
+);
+
+change property(property, value) := change property(self(), property, value);
+change(property, value) := change property(property, value);
+
+
+// =======//
+// Setter //
+// =======//
+
+/**
+* Set a specific property by the given "property"-key (for specific "object")
+**/
+set(object, property, value) := (
+	debug at("set(3)", property + " set.");
+	object:property = value;
+);
+set(property, value) := set(self(), property, value);
+set my(property, value) := set(property, value);
+
+/**
+* Specific setters
+**/
+set action(value) := set("action", value);
+set action(object, value) := set(object, "action", value);
+
+set clickable(value) := set("isclickable");
+set clickable(object, value) := set(object, "isclickable", value);
+
+set coord(value) := set("coord", value);
+set coord(object, value) := set(object, "coord", value);
+
+set hot(value) := set("ishot");
+set hot(object, value) := set(object, "ishot", value);
+
+set moveable(value) := set("ismoveable", value);
+set moveable(object, value) := set(object, "ismoveable", value);
+
+set name(value) := set("name", value);
+set name(object, value) := set(object, "name", value);
+
+set type(value) := set("type", value);
+set type(object, value) := set(object, "type", value);
+
+/**
+* Alternatives for setters from self()
+**/
+set my action(value) := set action(value);
+set my clickable(value) := set clickable(value);
+set my coord(value) := set coord(value);
+set my hot(value) := set hot(value);
+set my moveable(value) := set moveable(value);
+set my name(value) := set name(value);
+set my type(value) := set type(value);
+
+
+// ========//
+// Toggles //
+// ========//
+
+toggle clickable(object) := set clickable(object, !is clickable(object));
+toggle clickable() := toggle clickable(self());
+toggle my clickable() := toggle clickable();
+
+toggle hot(object) := set hot(object, !is hot(object));
+toggle hot() := toggle hot(self());
+toggle my hot() := toggle hot();
+
+toggle moveable(object) := set moveable(object, !is moveable(object));
+toggle moveable() := toggle moveable(self());
+toggle my moveable() := toggle moveable();
+
+
+// ===== //
+// Other //
+// ===== //
+
+/**
+* Filter an object according to a given list of keys.
+**/
+pick keys(keylist) := pick keys(self(), keylist);
+pick keys(object, keylist) := (
+	regional(result);
+  result = {};
+  
+  forall(keylist,
+    result:# = object:#;
+  );
+
+  result;
+);
+
+/**
+* Get all values of an object in a list (equivalent to keys())
+**/
+values(object) := (
+	regional(values);
+	values = [];
+
+	forall(keys(object), key,
+		values = values :> object:key
+	);
+
+	values;
+);

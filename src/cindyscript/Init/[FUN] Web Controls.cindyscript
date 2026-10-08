@@ -1,0 +1,67 @@
+/** v1 ******************************************************************************************
+* Helper functions for messaging with parent frame in browser sessions, handling GET requests
+* and the like.
+*
+* Recent changes:
+************************************************************************************************/
+
+/**
+* Get a URL search parameter based on key
+**/
+get url param(key) := (
+	regional(valueincs);
+	
+	javascript("
+    var params = new URLSearchParams(window.location.search);
+    var value = String(params.get('" + key + "'));
+		var csquery = 'valueincs = ';
+		csquery += '"+QUOTE+"';
+		csquery += value;
+		csquery += '"+QUOTE+"';
+		cdy.evokeCS(csquery);
+	");
+	
+	valueincs;
+);
+
+/**
+* Get all URL search parameters
+**/
+get url params() := (
+	regional(urlparams);
+	urlparams = {};
+	
+	javascript("
+    var params = new URLSearchParams(window.location.search);
+    
+		for (let [k,v] of params.entries()) {
+			// stringify key and value
+			var key = JSON.stringify(k);
+      var val = JSON.stringify(v);
+			
+			// Build command: urlparams.key = val;
+			var csquery = 'urlparams:' + key + ' = ' + val + ';';
+			cdy.evokeCS(csquery);
+		};
+	");
+	urlparams; // Return value
+);
+
+/**
+* Post a message to parent browser frame.
+**/
+post value(name, value, msgtoken) := (
+	javascript("
+		window.parent.postMessage(
+			{
+				type: 'CJS_TO_SL_SET',
+				token: '" + msgtoken + "',
+				name: '" + name + "',
+				value: " + value + "
+			},
+			'*'
+		);
+	");
+
+	debug at("post value(3)", "Msg sent, Payload: name='" + name + "', value=" + value);
+);

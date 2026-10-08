@@ -1,0 +1,62 @@
+/** v1 ******************************************************************************************
+* Vars for configuring general VAM behavior. 
+* Most of them can get overwritten by ENVIRONMENTALPARAMATERS at Init.
+*
+* Recent changes:
+************************************************************************************************/
+
+// ========== //
+// Vam choice //
+// ========== //
+
+VAM = "default";
+if(!ISCINDYJS & !ISDIVOMATH, // probably authoring in Cinderella
+
+	VAM = "percentagebar"; // <-- CHANGE HERE
+
+);
+
+
+// ============ //
+// Screen stuff //
+// ============ //
+
+BORDERSIZE = .05; // default border size (equals 0.5 mm fineliner)
+PINCHSENSITIVITY = 1; // default pinch sensitivity
+BGCOLOR = grey(1);
+
+
+// ================ //
+// VAM doc defaults //
+// ================ //
+
+DOCTEXTPOS = VRTOPLEFT + [1,-0.5];
+DOCTEXT = "No docstring for VAM.";
+
+
+// ========================================= //
+//             Debug Level					 				 //
+// - LOGNONE  (0)	= no debugging,			 			 //
+// - LOGERROR (1)	= Errors only,			 			 //
+// - LOGWARN  (2)	= Errors + Warnings,	 		 //
+// - LOGDEBUG (3)	= Errors + Warning + Debug //
+// ========================================= //
+
+LOGLEVEL = LOGNONE; 			// Local overwrite for debuglevel set by environment
+MAXLOGMESSAGES = 50;			// Number of last messages stored in LOGMESSAGES
+MSGTOKEN = "sl_cjs_v1";		// Security feature for "post value(3)"
+
+
+// ============= //
+// Event logging //
+// ============= //
+
+LOGGINGENABLED = false;
+
+PROGRAMID = version() + "";
+SCENARIOID = NADA; 										// Gets set in var init with VAM choice. Overwrite in VAM if needed.
+USERID = "user-" + random(1000000);		// Gets overwritten by ENVIRONMENTALPARAMS
+
+// Local event log
+EVENTLOG = [];
+EVENTID = 0;		// Auto incrementing

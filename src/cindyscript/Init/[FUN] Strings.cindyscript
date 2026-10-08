@@ -1,0 +1,194 @@
+/** v2 ******************************************************************************************
+* String stuff.
+*
+* Recent changes:
+* 2026-08-09: Add to json(1) and escape json(1) as serializer
+************************************************************************************************/
+
+colorize string(s,c):= if(ISCINDYJS,
+	"\color{#"+hexcolor(c)+"}{\Large "+s+"}"
+,
+	"{\color{"+hexcolor(c)+"}"+s+"}"
+);
+
+ends with(str, postfix) := (
+	substring(str, length(str)-length(postfix), length(str)) == postfix;
+);
+
+/**
+* Escape the characters that must not appear unescaped inside a JSON string.
+* Backslash goes first, otherwise the backslashes added afterwards get escaped
+* a second time.
+**/
+escape json(text) := (
+	regional(out);
+ 
+	out = replace(text, "\", "\\");
+	out = replace(out, QUOTE, "\" + QUOTE);
+	out = replace(out, unicode("0009"), "\t");
+	out = replace(out, unicode("000A"), "\n");
+	out = replace(out, unicode("000D"), "\r");
+ 
+	out;
+);
+
+/**
+* Get box, wherein text is actually horizontally centered.
+**/
+get adjusted boundingbox(text, coord, size, font) := (
+	regional(pxsize);
+	bold = default to(bold, false);
+
+	pxsize = pixelsize(text, size->size, font->font, bold->bold); // [width,height,baseline] in px
+	pxsize = pxsize / screenresolution(); // convert to world units
+	rectangle(coord-[0,.5*pxsize_3],pxsize_1,pxsize_2); // return rectangle moved down by half the baseline to center box around text
+);
+
+/**
+* Find the bounding rectangle for a text with given size and font.
+**/
+get boundingbox(text, coord, size, font) := (
+	regional(pxsize, bld);
+
+	bld = default to(mod'bold, false);
+
+	pxsize = pixelsize(text, size->size, font->font, bold->bld); // Return [width,height,baseline] in px.
+	pxsize = pxsize / screenresolution(); // Convert to world units.
+
+	rectangle(coord,pxsize_1,pxsize_2); // Return rectangle moved down by half the baseline to center box around text.
+);
+
+/**
+* Return the numeral for a given number.
+**/
+numeral(number) := (
+	regional(nameindex, value, numeral, subnumeral);
+	numeral = "";
+	number = abs(number); // get absolute value of number
+	nameindex = 1;
+	while(number>0, 
+		value = mod(number,1000); // get last 3 digits of number
+		number = floor(number/1000); // get remaining digits of number
+		subnumeral = "";
+
+		// handle triples from right to left
+		if(value != 0, // only crunch, if value needs to be written as numeral
+			// handle hundreds
+			if(value >= 100,
+				subnumeral = NUMERALS:((value+"")_1); // get hundreds
+				if(subnumeral == "eins", subnumeral = "ein"); // fix grammar inconsistency 
+				subnumeral = subnumeral + "hundert";
+			);
+			// handle tens
+			value = mod(value,100);
+			if(value > 0, // only crunch, if value has tens or units
+				if(value < 20,
+					subnumeral = subnumeral + NUMERALS:value;
+					if(subnumeral == "eins" & nameindex > 2, subnumeral = "eine"); // fix grammar inconsistency 
+					if(subnumeral == "eins" & nameindex == 2, subnumeral = "ein"); // fix grammar inconsistency 
+				, // else: value >= 20
+					subnumeral = subnumeral + if(mod(value,10)==1, "ein", if(mod(value,10) != 0, NUMERALS:(mod(value,10)), "")); // ones digit
+					subnumeral = subnumeral + if(mod(value,10)!=0, "und", "");
+					subnumeral = subnumeral + TENSNUMERALS:(10*floor(value/10)); // tens digit
+				);
+			);
+		);
+
+		// add big number numeral
+		if(subnumeral != "",
+			if(nameindex == 2, subnumeral = subnumeral + BIGNUMBERNUMERALS_nameindex); 
+			if(nameindex > 2, 
+				subnumeral = subnumeral + " " + BIGNUMBERNUMERALS_nameindex;
+				subnumeral = subnumeral + if(subnumeral_(-1) == "e", "n ", "en ");
+			);
+		);
+
+		// piece together
+		numeral = subnumeral + numeral;
+		nameindex = nameindex + 1; // next big number (million, billion, ...)
+	);
+	
+	numeral; // return
+);
+
+readable datetime() := (
+	regional(resultstring);
+	resultstring = "";
+	// Handle date
+	forall(date(),
+		if(# < 10, resultstring = resultstring + "0");
+		resultstring = resultstring + # + "-";
+	);
+
+	resultstring = substring(resultstring,0,length(resultstring)-1);
+	resultstring = resultstring + ", ";
+
+	forall(time(),
+		if(# < 10, resultstring = resultstring + "0");
+		resultstring = resultstring + # + ":";
+	);
+
+	resultstring = substring(resultstring,0,length(resultstring)-1);
+	
+	resultstring;
+);
+
+starts with(str, prefix) := (
+	indexof(str, prefix) == 1;
+);
+
+/**
+* Serialise a CindyScript value as JSON.
+*
+* Needed wherever a value is handed to JavaScript by string concatenation:
+* Cinderella and CindyJS stringify values inside a dictionary differently, so
+* building the JSON explicitly is the only way to get the same result in both.
+*
+* Handles numbers, booleans, strings, lists and dictionaries, nested in any
+* combination. Undefined becomes null.
+*
+* STRICT: strings are quoted and escaped HERE. Do not add quotes at the call
+* site - they would be escaped and end up inside the value.
+*
+* Branch order matters: keys() returns an empty list for a plain list, so the
+* list case has to be checked before the dictionary case.
+**/
+to json(value) := (
+	regional(out, n, parts, ks);
+
+	out = if(isundefined(value),
+		"null";
+	, if(isstring(value),
+		QUOTE + escape json(value) + QUOTE;
+	, if(islist(value),
+		parts = "";
+		n = length(value);
+		forall(1..n,
+			parts = parts + to json(value_#);
+			if(# < n, parts = parts + ",");
+		);
+		"[" + parts + "]";
+	, (
+		// Dictionary or scalar. keys() is undefined for numbers and booleans,
+		// and length(undefined) behaves differently in Cinderella and CindyJS -
+		// so guard it instead of testing length(keys(value)) directly.
+		ks = keys(value);
+		if(isundefined(ks), ks = []);
+
+		if(length(ks) > 0,
+			parts = "";
+			n = length(ks);
+			forall(1..n,
+				parts = parts + QUOTE + escape json(ks_#) + QUOTE + ":" + to json(value:(ks_#));
+				if(# < n, parts = parts + ",");
+			);
+			"{" + parts + "}";
+		, // numbers and booleans
+			"" + value;
+		);
+	))));
+
+	out;
+);
+
+wrap quote(string) := QUOTE + string + QUOTE;

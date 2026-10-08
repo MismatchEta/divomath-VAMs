@@ -1,0 +1,44 @@
+/** v2 ******************************************************************************************
+* Class for default VAMobject from which most VAM classes are derived.
+*
+* Recent changes:
+* - 2026-06-22: Added "id" field and added it to naming scheme.
+************************************************************************************************/
+
+new VAMobject(type) := (
+	regional(obj);
+	
+	obj = {
+		"coord" 			: [0,0],
+		"type"  		  : type,
+		"ismoveable"  : false,
+		"copyonmove"	: false,
+		"isclickable" : false,
+		"getaction" 	: "move",
+		"color" 			: VAMPALETTE_1
+	};
+
+	obj:"id"				:= random(1000);
+	obj:"name" 			:= my("type") + ":" + my("coord") + ":" + my("id");
+	obj:"ishot" 		:= dist(my("coord"), mouse().xy) < 1;
+	
+	obj:"move"  		:= if(am i moveable(), set my("coord", coord));
+	obj:"moveend"		:= NADA;
+	
+	obj:"clickcopy" := if(my("copyonmove"), my("copy"));
+	
+	obj:"copy"  		:= (
+		new VAMobject(my("type"));
+	);
+	
+	obj:"draw"			:= fill(
+		circle(my("coord"), 1),
+		color->my("color")
+	);
+	
+	obj:"click"			:= if(am i clickable(), 
+		self():"color" = apply(self():"color", |1-#|)
+	);
+	
+	obj; // Return the VAMobject.
+);

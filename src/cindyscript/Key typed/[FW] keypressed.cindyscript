@@ -1,0 +1,56 @@
+/** v8 ******************************************************************************************
+* Handles key presses (mainly for debugging).
+*
+* Recent changes:
+* 2027-07-27: Add more detailed debug output on keypress
+* 2027-07-27: Refactor stuff
+* 2026-08-11: Split debug printing
+************************************************************************************************/
+
+debug at("key pressed event", "Key press triggered. Key: " + key());
+
+// Debug print divomath details
+if(key() == "y" % key() == "Y",
+	println("================= SETTINGS =================");
+	println("ISCINDYJS: " + ISCINDYJS);
+	println("Screenbounds: " + screenbounds());
+	println("ENVIRONMENTALPARAMS: " + ENVIRONMENTALPARAMS);
+	println("BGCOLOR: " + BGCOLOR);
+	println("LOGLEVEL: " + LOGLEVEL);
+	println("----------------- divomath -----------------");
+	println("DM ISDIVOMATH: " + ISDIVOMATH);
+	println("DM ISVIEWER: " + DIVOMATH'ISVIEWER);
+	println("DM base object: " + divomathConfig);
+	println("DM config: " + DIVOMATH'CONFIG);
+	println("DM var state: " + DIVOMATH'VARSTATE);
+	println("DM prev answer: " + DIVOMATH'PREVANSWER);
+	println("==========================================="); 
+);
+
+// Debug print divomath details
+if(key() == "x" % key() == "X",
+	println("===========================================");
+	println("Test set state() overwrite. Returns: " + divomath set state());
+	println("Test update results() overwrite. Returns: " + divomath update results());
+	println("==========================================="); 
+);
+
+if(key() == "c" % key() == "C",
+	print log messages();
+);
+
+
+if(key() == "s" % key() == "S", 
+	divomathUpdateResults();
+	divomathSetState();
+);
+
+if(key() == "+",
+	LOGLEVEL = min(3, LOGLEVEL + 1);
+	debug at("key pressed event", "LOGLEVEL increased. New level: " + key());
+);
+
+if(key() == "-",
+	LOGLEVEL = max(0, LOGLEVEL - 1);
+	debug at("key pressed event", "LOGLEVEL increased. New level: " + key());
+);

@@ -29,12 +29,22 @@ Options:
     --rect A,B,C,D    visibleRect written into the cdyjs
     --html-only       only build the patched HTML
     --cdyjs-only      only build the cdyjs
+
+Unpacking:
+
+    python3 tools/build.py unpack divoVAM.cdy
+
+copies scripts, construction and images of a .cdy into src/ (see "Source
+tree" below) and removes what the archive no longer contains. Refuses to run
+while src/ has uncommitted changes, unless --force is given.
 """
 
 import argparse
 import datetime
+import json
 import pathlib
 import re
+import subprocess
 import sys
 import urllib.parse
 import zipfile
@@ -86,8 +96,25 @@ COPY_FIELDS = ["defaultAppearance", "angleUnit", "geometry", "animation",
 # Freehand drawing overlay, activated with ?draw
 # The tool is a self contained JS overlay: it puts a second canvas on top of
 # #CSCanvas and draws there. Deployed as a separate file next to the HTML.
-FREEHAND_SRC = "js/freehand-drawing.js"   # relative to the repo root
-FREEHAND_URL = "freehand-drawing.js"      # how the HTML references it
+FREEHAND_SRC = "src/js/freehand-drawing.js"   # relative to the repo root
+FREEHAND_URL = "freehand-drawing.js"          # how the HTML references it
+
+# Source tree, relative to the repo root
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+SRC_DIR = "src"
+SRC_MANIFEST = "manifest.json"
+SRC_CONSTRUCTION = "construction.cdy"
+SRC_SCRIPTS = "cindyscript"         # one folder per Cinderella event
+SRC_IMAGES = "resources/images"
+SCRIPT_EXT = ".cindyscript"         # ".cs" inside the archive
+
+# Characters Windows does not allow in file names. Script labels become file
+# names, so they must not contain any of these.
+FORBIDDEN_CHARS = '<>:"/\\|?*'
+
+# Header lines of construction.cdy that change on every save, even when the
+# construction itself did not. Ignored when comparing.
+VOLATILE_HEADERS = ("//Cindy-", "//Created on:", "//For:")
 
 # ==========================================================================
 # HTML patching
@@ -272,54 +299,73 @@ def patch_html(text, build_no):
 # Building cdyjs file for use in divomath
 # ==========================================================================
 # --- 1. Read the archive ---
-def read_cdy(path):
-    """Return ({key: source}, [icon file names]) from the Cinderella archive."""
+def read_archive(path):
+    """Return the parts of a Cinderella archive as a dict:
 
-    parts, icons = {}, []
+        events        {event folder: [(label, source), ...]}, sub scripts in
+                      their order, events in the order of the archive
+        construction  text of construction.cdy (None if missing)
+        images        {file name: bytes}
+    """
+
+    parts, images, construction = {}, {}, None
 
     with zipfile.ZipFile(path) as z:
-        for info in z.infolist(): # Iterate over all files from table of contents of zip file
-            name = info.filename
+        for name in z.namelist(): # Iterate over all files from table of contents of zip file
 
-            # Parse images and fill list "icons" with icon names
+            # Parse construction
+            if name == "private/de.cinderella/construction.cdy":
+                construction = z.read(name).decode("utf-8")
+                continue
+
+            # Parse images and fill dict "images" with icon names and data
             if name.startswith("resources/images/") and not name.endswith("/"):
-                icons.append(name.rsplit("/", 1)[1])
+                images[name.rsplit("/", 1)[1]] = z.read(name)
                 continue
 
             # Find script file
             m = re.match(r"private/de\.cinderella/scripts/([^/]+)/(\d+)/(.+)\.cs$", name)
-            
+
             # If none found continue
             if not m:
                 continue
 
             # Decode URL since Cinderella encodes special chars
             event = urllib.parse.unquote_plus(m.group(1))
-            
-            # Get CindyJS event name from Cinderella event name
-            key = EVENT_MAP.get(event)
 
-            # If Cinderella event not found in dict print WARNING and continue
-            if key is None:
-                print("  WARNING: unknown event folder '%s' - skipped" % event)
-                continue
-            
             # Get scripts label
             label = urllib.parse.unquote_plus(m.group(3))
-            
-            # Add scripts to parts dict (if key doesnt exist starts with empty dict as default entry)
-            parts.setdefault(key, {})[int(m.group(2))] = (label, z.read(name).decode("utf-8"))
 
+            # Add scripts to parts dict (if key doesnt exist starts with empty dict as default entry)
+            # The number folder is the position of the sub script within its event
+            parts.setdefault(event, {})[int(m.group(2))] = (label, z.read(name).decode("utf-8"))
+
+    # Fold items from parts to ordered lists for every event
+    events = {event: [chunks[i] for i in sorted(chunks)] for event, chunks in parts.items()}
+
+    return {"events": events, "construction": construction, "images": images}
+
+
+def read_cdy(path):
+    """Return ({key: source}, [icon file names]) from the Cinderella archive."""
+
+    archive = read_archive(path)
     scripts = {}
 
-    # Fold items from parts to complete scripts for every type
-    for key, chunks in parts.items():
-        ordered = [chunks[i] for i in sorted(chunks)]
+    for event, chunks in archive["events"].items():
+        # Get CindyJS event name from Cinderella event name
+        key = EVENT_MAP.get(event)
+
+        # If Cinderella event not found in dict print WARNING and continue
+        if key is None:
+            print("  WARNING: unknown event folder '%s' - skipped" % event)
+            continue
+
         # Concatenate the sub scripts in order, each preceded by its name as a
         # comment - same layout Cinderella uses in its HTML export.
-        scripts[key] = "\n".join("//%s\n%s" % (label, src) for label, src in ordered)
+        scripts[key] = "\n".join("//%s\n%s" % (label, src) for label, src in chunks)
 
-    return scripts, sorted(icons)
+    return scripts, sorted(archive["images"])
 
 
 # --- 2. Look for CindyJS() call in html text. ---
@@ -489,9 +535,223 @@ def warn_if_stale(cdy_path, html_path):
 
 
 # ==========================================================================
+# Unpacking a .cdy into the source tree
+# ==========================================================================
+# The source tree holds one plain text file per Cinderella sub script:
+#
+#     src/manifest.json                              order of the sub scripts
+#     src/construction.cdy                           copied verbatim
+#     src/cindyscript/<event>/<label>.cindyscript    one per sub script
+#     src/resources/images/<name>                    images of the archive
+#
+# Event folders and labels are the ones Cinderella shows. The label doubles
+# as the file name, so the manifest only has to hold the order.
+
+# --- 1. Check if a name works as a file name everywhere. ---
+def unsafe_name(name):
+    """Return why name can not be a file name on every platform, else None."""
+
+    # Characters Windows refuses, plus control characters
+    bad = sorted({c for c in name if c in FORBIDDEN_CHARS or ord(c) < 32})
+    if bad:
+        return "contains %s" % " ".join(repr(c) for c in bad)
+
+    # Windows silently drops these, so two names could end up the same
+    if name != name.rstrip(" ."):
+        return "ends with a space or a dot"
+
+    return None
+
+
+# --- 2. Strip the save stamp from construction.cdy. ---
+def strip_volatile(text):
+    """Return the lines of construction.cdy without the ones that change on every save."""
+    return [l for l in text.splitlines() if not l.startswith(VOLATILE_HEADERS)]
+
+
+# --- 3. Write a file only if its content changed. ---
+def write_if_changed(path, data, changes):
+    """Write bytes to path unless it already holds them, note what happened in changes."""
+
+    # Same content --> nothing to do.
+    if path.is_file():
+        if path.read_bytes() == data:
+            return
+        changes.append(("changed", path))
+    else:
+        changes.append(("added", path))
+
+    # Bytes, not text: keeps line endings exactly as they are in the archive
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+
+
+# --- 4. Remove files the archive does not contain (anymore). ---
+def remove_others(folder, keep, suffix, changes):
+    """Delete files below folder that are not in keep, then empty folders.
+
+    With a suffix only files ending in it are considered, so stray files of
+    an editor next to the scripts survive.
+    """
+
+    # Folder does not exist yet --> nothing to remove.
+    if not folder.is_dir():
+        return
+
+    # Remove files first...
+    for path in sorted(p for p in folder.rglob("*") if p.is_file()):
+        if path in keep or (suffix and path.suffix != suffix):
+            continue
+        path.unlink()
+        changes.append(("removed", path))
+
+    # ...then folders left empty, deepest first
+    dirs = sorted((p for p in folder.rglob("*") if p.is_dir()),
+                  key=lambda p: len(p.parts), reverse=True)
+    for path in dirs:
+        if not any(path.iterdir()):
+            path.rmdir()
+
+
+# --- 5. Ask git about uncommitted work. ---
+def uncommitted(paths):
+    """Return git's short status lines for paths, None if git can not tell."""
+
+    try:
+        r = subprocess.run(["git", "status", "--porcelain", "--"] + [str(p) for p in paths],
+                           cwd=REPO_ROOT, capture_output=True, text=True)
+    except OSError:
+        return None
+
+    # Not a repository or folder outside of it
+    if r.returncode != 0:
+        return None
+
+    return r.stdout.splitlines()
+
+
+# --- 6. Unpack. ---
+def unpack(cdy_path, src):
+    """Mirror the archive into the source tree. Return the list of changes."""
+
+    archive = read_archive(cdy_path)
+
+    # No construction --> probably not a Cinderella file.
+    if archive["construction"] is None:
+        sys.exit("ERROR: no construction.cdy inside the archive - not a Cinderella file?")
+
+    # Labels become file names. Find the ones that would not work on every
+    # platform or would end up as the same file (case insensitive file systems).
+    problems = []
+    for event, chunks in archive["events"].items():
+        seen = set()
+        for name in [event] + [label for label, _ in chunks]:
+            reason = unsafe_name(name)
+            if reason:
+                problems.append("%s / %s: %s" % (event, name, reason))
+            elif name.lower() in seen:
+                problems.append("%s / %s: used twice" % (event, name))
+            seen.add(name.lower())
+
+    for name in archive["images"]:
+        reason = unsafe_name(name)
+        if reason:
+            problems.append("image %s: %s" % (name, reason))
+
+    # Any problems --> exit, nothing has been written yet.
+    if problems:
+        sys.exit("ERROR: these names can not be used as file names, rename them in Cinderella:\n  "
+                 + "\n  ".join(problems))
+
+    changes = []
+
+    # --- scripts and their order ---
+    scripts, keep, manifest = src / SRC_SCRIPTS, set(), {}
+
+    for event, chunks in archive["events"].items():
+        manifest[event] = [label for label, _ in chunks]
+
+        for label, source in chunks:
+            path = scripts / event / (label + SCRIPT_EXT)
+            keep.add(path)
+            write_if_changed(path, source.encode("utf-8"), changes)
+
+    remove_others(scripts, keep, SCRIPT_EXT, changes)
+
+    # One label per line, so a reordering shows up as a readable diff
+    text = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+    write_if_changed(src / SRC_MANIFEST, text.encode("utf-8"), changes)
+
+    # --- construction ---
+    # Keep the old file if only the save stamp in its header differs,
+    # otherwise every save in Cinderella would show up as a change.
+    path = src / SRC_CONSTRUCTION
+    if not (path.is_file() and strip_volatile(path.read_text(encoding="utf-8"))
+            == strip_volatile(archive["construction"])):
+        write_if_changed(path, archive["construction"].encode("utf-8"), changes)
+
+    # --- images ---
+    images, keep = src / SRC_IMAGES, set()
+
+    for name, data in archive["images"].items():
+        keep.add(images / name)
+        write_if_changed(images / name, data, changes)
+
+    remove_others(images, keep, None, changes)
+
+    return changes
+
+
+# --- 7. Command line for unpacking. ---
+def unpack_main(argv):
+    # Parse args.
+    ap = argparse.ArgumentParser(prog="build.py unpack",
+                                 description="copy scripts, construction and images of a .cdy into src/")
+    ap.add_argument("cdy", help="Cinderella file to unpack, e.g. divoVAM.cdy")
+    ap.add_argument("--src", default=str(REPO_ROOT / SRC_DIR),
+                    help="source tree (default: src/ in the repo)")
+    ap.add_argument("--force", action="store_true",
+                    help="unpack even if src/ has uncommitted changes")
+    a = ap.parse_args(argv)
+
+    # Setup path names.
+    cdy_path, src = pathlib.Path(a.cdy), pathlib.Path(a.src)
+
+    # Check if file exists, else --> exit.
+    if not cdy_path.is_file():
+        sys.exit("File not found: %s" % cdy_path)
+
+    # Unpacking overwrites and deletes files in src/. That is only safe while
+    # everything it touches is committed, because then git can restore it.
+    # Other files in src/ (e.g. js/) are none of its business.
+    if not a.force:
+        status = uncommitted([src / SRC_SCRIPTS, src / SRC_IMAGES,
+                              src / SRC_MANIFEST, src / SRC_CONSTRUCTION])
+        if status is None:
+            sys.exit("ERROR: could not ask git about %s - use --force to unpack anyway." % src)
+        if status:
+            sys.exit("ERROR: %s has uncommitted changes, unpacking would overwrite them:\n  %s\n"
+                     "Commit or stash them first, or use --force." % (src, "\n  ".join(status)))
+
+    # Unpack.
+    changes = unpack(cdy_path, src)
+
+    # Print some results.
+    print("unpack: %s -> %s" % (cdy_path, src))
+    for what, path in changes:
+        print("  %-8s %s" % (what, path.relative_to(src)))
+    if not changes:
+        print("  no changes")
+
+
+# ==========================================================================
 # Main
 # ==========================================================================
 def main():
+    # "unpack" is a sub command, everything else is the regular build.
+    if sys.argv[1:2] == ["unpack"]:
+        return unpack_main(sys.argv[2:])
+
     # Parse args.
     ap = argparse.ArgumentParser(description="divoVAM build")
     ap.add_argument("name", help='base name without extension, e.g. "divoVAM v6"')
@@ -560,7 +820,7 @@ def main():
         patched, changed = patch_html(html_raw, build_number_from_html(target))
 
         # Copy the freehand tool next to the HTML so it can be uploaded together
-        src = pathlib.Path(__file__).resolve().parent.parent / FREEHAND_SRC
+        src = REPO_ROOT / FREEHAND_SRC
         if src.is_file():
             (out_dir / FREEHAND_URL).write_text(src.read_text(encoding="utf-8"),
                                                 encoding="utf-8")

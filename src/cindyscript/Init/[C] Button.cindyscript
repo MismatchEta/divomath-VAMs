@@ -1,0 +1,194 @@
+/** v11 ******************************************************************************************
+* Classes for Button, ImageButton.
+*
+* Recent changes:
+* 2026-07-24 Add "hasbody" property to control drawing of button
+* 2026-08-17 Add UISCALE
+* 2026-08-19 Fix image scaling issue
+************************************************************************************************/
+
+new Button(coord,width,height,label,fontsize) := (
+	regional(obj);
+	obj = new VAMobject("Button");
+
+	obj:"coord"  = coord;
+	obj:"width"  = width * UISCALE;
+	obj:"height" = height * UISCALE;
+	obj:"cornerradius" = (width+height) / 50;
+	obj:"color"	 = DZLMCOLORLIGHT;
+	obj:"bordercolor" = DZLMCOLORDARK;
+	obj:"fontcolor" = DZLMCOLORDARK;
+	obj:"label"	 = label;
+	obj:"fontsize" = default to(fontsize, 12) * FONTSCALE * UISCALE;
+	obj:"fontfamily" = NADA;
+	obj:"labelheight" = (
+		regional(box);
+		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
+		box_4_2 - box_1_2;
+	);
+	obj:"labelwidth" = (
+		regional(box);
+		box = getboundingbox(label,[0,0],obj:"fontsize",obj:"fontfamily");
+		box_2_1 - box_1_1;
+	);
+	obj:"labelcoord" := (
+		regional(centre, px);
+
+		centre = my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1);
+		px = pixelsize(my("label"), size->my("fontsize"), font->my("fontfamily")) / screenresolution();
+		centre - [px_1/2, (px_2 - px_3)/2] + my("customlabeloffset")
+	);
+	obj:"ismoveable" = false;
+	obj:"isfloating" = false;
+	obj:"hasbody" = true;
+	obj:"hasshadow" = true;
+	obj:"hasborder" = true;
+	obj:"show" = true;
+	obj:"customlabeloffset" = [0,0];
+	obj:"shadowoffset" = [0.03,-.05] * UISCALE;
+
+	obj:"symbolsize" = .22;   // half length of the symbol, relative to button width
+	obj:"symbolweight" = 3;   // line width
+	obj:"symbolcentre" := my("hitbox")_1 + .5 * (my("hitbox")_3 - my("hitbox")_1); // centre of button, used by drawn symbols
+	obj:"symbolradius" := my("symbolsize") * min(my("width"), my("height")); // radius of drawn symbols in world units
+	
+	obj:"hitbox" := rectangle(
+		my("coord"),
+		my("width"),
+		my("height")
+	);
+	obj:"shape" := rounded rectangle(
+		my("coord"),
+		my("width"),
+		my("height"),
+		my("cornerradius")
+	);
+	obj:"draw" := if(my("show"),
+		// Draw shadow
+		if(my("hasshadow") & (my("hasbody") % my("hasborder")),
+			fill(rounded rectangle(
+				my("coord")+my("shadowoffset"),
+				my("width"),
+				my("height"),
+				my("cornerradius")
+				),
+				color->[0,0,0],
+				alpha->0.2
+			);
+		);
+
+		// Fill box
+		if(my("hasbody"),
+			fill(
+				my("shape"),
+				color->if(MOUSEDOWN & my("ishot"),0.95*my("color"),my("color")),
+				alpha->1
+			);
+		);
+
+		// Draw border
+		if(my("hasborder"), draw(my("shape"), color->my("bordercolor")));
+		
+		// Draw Label
+		drawtext(
+			my("labelcoord"),
+			my("label"),
+			size->my("fontsize"), font->my("fontfamily"),
+			color->my("fontcolor"), bold->false
+		);
+
+		// Draw something after the button
+		my("drawafter");
+
+		// Debug draw
+		if(LOGLEVEL > LOGWARN,
+			connect([my("hitbox")_1,my("hitbox")_3], color->[0,1,0]);
+			connect([my("hitbox")_2,my("hitbox")_4], color->[0,1,0]);
+			drawpoly(getboundingbox(my("label"), offset+my("customlabeloffset"), my("fontsize"), my("fontfamily")));
+		);
+	);
+	obj:"drawafter" := NADA;
+	obj:"ishot" := if(my("show"),in rectangle(my("hitbox"),mouse().xy));
+  obj:"click"	:= my("script");
+  obj:"script" := println("Implement obj:script");
+
+	obj:"move" := if(my("isfloating"),
+		self():"coord" = my("coord") + mousedelta;
+	);
+
+	// --- Drawing methods for special buttons ---
+	obj:"drawplus" := (
+		regional(c, r);
+		c = my("symbolcentre");
+		r = my("symbolradius");
+ 
+		draw(c - [r,0], c + [r,0], size->my("symbolweight"), color->my("fontcolor"));
+		draw(c - [0,r], c + [0,r], size->my("symbolweight"), color->my("fontcolor"));
+	);
+ 
+	obj:"drawminus" := (
+		regional(c, r);
+		c = my("symbolcentre");
+		r = my("symbolradius");
+ 
+		draw(c - [r,0], c + [r,0], size->my("symbolweight"), color->my("fontcolor"));
+	);
+ 
+	obj:"drawcross" := (
+		regional(c, r);
+		c = my("symbolcentre");
+		// A diagonal cross looks bigger than a plus of the same radius,
+		// so shrink it a little to match visually.
+		r = my("symbolradius") * .8;
+ 
+		draw(c + [-r,-r], c + [r, r], size->my("symbolweight"), color->my("fontcolor"));
+		draw(c + [-r, r], c + [r,-r], size->my("symbolweight"), color->my("fontcolor"));
+	);
+
+	obj; // Return the button.
+);
+
+
+new ImageButton(coord,width,height,imgpath) := (
+	regional(imgbtn);
+	imgbtn = new Button(coord, width, height, imgpath, NADA);
+
+	imgbtn:"imgscale" := image scale fit(my("label"), my("imgfill") * [my("width"), my("height")]);
+	
+	imgbtn:"imgfill" = .9; // how much of the button the image should fill
+
+	imgbtn:"draw" := if(my("show"),
+		// Draw shadow
+		if(my("hasshadow"),
+			fill(roundedrectangle(
+				my("coord")+my("shadowoffset"),
+				my("width"),
+				my("height"),
+				my("cornerradius")
+				),
+				color->[0,0,0],
+				alpha->0.2
+			);
+		);
+
+		// Draw box and border
+		fill(
+			my("shape"),
+			color->if(MOUSEDOWN&my("ishot"),0.95*my("color"),my("color")),
+			alpha->1
+		);
+		if(my("hasborder"), draw(
+			my("shape"),
+			color->my("bordercolor");
+		));
+		
+		// Draw image
+		drawimage(my("coord") + .5*[my("width"), my("height")], my("label"),
+			scale->my("imgscale"), rendering->"nice");
+
+		// Draw something after the button has been drawn
+		my("drawafter");
+	);
+
+	imgbtn; // Return the button.
+);

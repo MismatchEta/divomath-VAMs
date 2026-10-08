@@ -1,0 +1,182 @@
+/** v5 ******************************************************************************************
+* Class for a HorizontalScrollbar.
+*
+* Recent changes:
+************************************************************************************************/
+
+new HorizontalScrollbar(coord, width) := (
+	regional(obj);
+	obj = new VAMobject("Scrollbar");
+
+	obj:"coord" = coord;
+	obj:"width" = width;
+	obj:"height" = 1;
+	obj:"padding" = .15;
+	obj:"ismoveable" = true;
+	obj:"isclickable" = true;
+	obj:"hasbuttons" = true;
+	obj:"callonmove" = true; // Call Scrollbars script continously on move (true) or once at moveend?
+	obj:"moveonclick" = true; // Move bar when clicking on background of Scrollbar
+	obj:"precision" = .05; // amount that bar gets moved by, if button is pressed
+
+	obj:"min" = 0; // Value, if bar is furthest to the left
+	obj:"max" = 1; // Value, if bar is furthest to the right
+	obj:"value" := ( // current value of Scrollbar depending on position
+		regional(currX, minX, maxX);
+		currX = my("bar"):"coord"_1;
+		minX = my("coord")_1 + my("padding") + if(my("hasbuttons"), my("height"), 0);
+		maxX = my("coord")_1 + my("width") - my("padding") - if(my("hasbuttons"), my("height"), 0);
+		maxX = maxX - my("bar"):"width";
+		my("min") + (my("max")-my("min")) * (currX-minX) / (maxX-minX);
+	);
+
+	obj:"shape" := rectangle(my("coord"), my("width"), my("height"));
+	obj:"hitbox" := my("shape");
+
+	// Button for moving the bar to the left
+	obj:"left" = (
+		regional(btn);
+		btn = new Button(obj:"coord",obj:"height",obj:"height","◀",18*obj:"height");
+		btn:"parent" = obj;
+		btn:"fontcolor" = grey(1);
+		btn:"color" = grey(0.8);
+		btn:"cornerradius" = 0;
+		btn:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+		btn:"script" := ( // Moves button to the left
+			regional(sb,minX, maxX, barX);
+			sb = my("parent"); // Scrollbar parent
+
+			barX = sb:"bar":"coord"_1; // bars (as in the rectangle of the ScrollBar object) current coord
+
+			minX = sb:"coord"_1 + sb:"padding" + if(sb:"hasbuttons", sb:"height", 0); // leftmost point where to put the bar
+			maxX = sb:"coord"_1 + sb:"width" - sb:"padding" - if(sb:"hasbuttons", sb:"height", 0); // rightmost point
+			maxX = maxX - sb:"bar":"width"; // subtract bar with to get bottom left corner
+
+			barX = sb:"bar":"coord"_1 - sb:"precision" * (maxX-minX); // Decrement coord by multiple of length of space
+			barX = max(barX,minX); // Recognize left border
+
+			sb:"bar":"coord"_1 = barX; // Set value
+		);		
+
+		btn;
+	);
+
+	// Button for moving the bar to the right
+	obj:"right" = (
+		regional(btn, pos);
+		pos = obj:"coord" + [obj:"width"-obj:"height",0];
+		btn = new Button(pos,obj:"height",obj:"height"," ▶",18*obj:"height");
+		btn:"parent" = obj;
+		btn:"fontcolor" = grey(1);
+		btn:"color" = grey(0.8);
+		btn:"cornerradius" = 0;
+		btn:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+		btn:"script" := ( // Moves button to the right
+			regional(sb,minX, maxX, barX);
+			sb = my("parent"); // Scrollbar parent
+
+			barX = sb:"bar":"coord"_1; // bars (as in the rectangle of the ScrollBar object) current coord
+
+			minX = sb:"coord"_1 + sb:"padding" + if(sb:"hasbuttons", sb:"height", 0); // leftmost point where to put the bar
+			maxX = sb:"coord"_1 + sb:"width" - sb:"padding" - if(sb:"hasbuttons", sb:"height", 0); // rightmost point
+			maxX = maxX - sb:"bar":"width"; // subtract bar with to get bottom left corner
+
+			barX = sb:"bar":"coord"_1 + sb:"precision" * (maxX-minX); // Decrement coord by multiple of length of space
+			barX = min(barX,maxX); // Recognize left border
+
+			sb:"bar":"coord"_1 = barX; // Set value
+		);	
+
+		btn;
+	);
+	obj:"bar" = (
+		regional(bar);
+		bar = new VAMobject("bar");
+		bar:"parent" = obj;
+		bar:"ismoveable" := my("parent"):"ismoveable";
+		bar:"padding" := my("parent"):"padding";
+		bar:"height" := my("parent"):"height" - 2 * my("padding");
+		bar:"width" := .5 * (my("parent"):"width" - 2 * my("parent"):"height");
+		bar:"coord" = bar:"parent":"coord" + 
+			if(bar:"parent":"hasbuttons",[bar:"parent":"height", 0], [0,0]) +
+			[bar:"padding", bar:"padding"];
+
+		bar:"shape" := rectangle(my("coord"),my("width"),my("height"));
+		bar:"hitbox" := my("shape");
+		bar:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+
+		bar:"draw" := fillpoly(my("shape"), color->grey(.8));
+
+		bar;
+	);
+
+	obj:"draw" := (
+		fillpoly(my("shape"), color->grey(.95));
+		if(my("hasbuttons"),
+			my("left"):"draw";
+			my("right"):"draw";
+		);
+		my("bar"):"draw";
+
+		// Debug draw
+		if(LOGLEVEL > 0, draw(my("coord")));
+		if(LOGLEVEL > 0, drawtext(my("bar"):"coord"+[.1,.1],my("value")));
+		if(LOGLEVEL > 1, draw(my("bar"):"coord",color->[0,0,1]));
+		if(LOGLEVEL > 1, drawpoly(my("bar"):"hitbox",color->[1,0,0]));
+		if(LOGLEVEL > 1, drawpoly(my("hitbox"),color->[0,0,0]));
+	);
+
+	obj:"ishot" := inrectangle(my("hitbox"),mouse().xy);
+	obj:"move" := if(my("ismoveable") & my("bar"):"ishot",
+		// Move bar
+		my("bar"):"coord" = my("bar"):"coord" + [mousedelta_1,0];
+
+		// Constrain movement to the left
+		regional(borderX);
+		borderX =	my("coord")_1 + my("padding") + if(my("hasbuttons"), my("height"), 0);
+		if(my("bar"):"coord"_1 < borderX,
+				my("bar"):"coord"_1 = borderX;
+		);
+
+		// Constrain movement to the right
+		borderX =  my("coord")_1 + my("width") - my("padding") - if(my("hasbuttons"), my("height"), 0);
+		borderX = borderX - my("bar"):"width";
+		if(my("bar"):"coord"_1 > borderX,
+				my("bar"):"coord"_1 = borderX;
+		);
+
+		// Call Scrollbar script
+		if(my("callonmove"), my("script"));
+	);
+
+//	obj:"moveend" := my("script"); // calls "script" with old value. Why?
+
+	obj:"click" := (
+		// Trigger left button action
+		if(my("left"):"ishot" & my("hasbuttons"),
+			my("left"):"click";
+		);
+		
+		// Trigger right button action
+		if(my("right"):"ishot" & my("hasbuttons"),
+			my("right"):"click"
+		);
+
+		if(!my("left"):"ishot" & !my("right"):"ishot" & !my("bar"):"ishot" & my("moveonclick"),
+			regional(minX, maxX);
+			minX =	my("coord")_1 + my("padding") + if(my("hasbuttons"), my("height"), 0);
+			maxX =  my("coord")_1 + my("width") - my("padding") - if(my("hasbuttons"), my("height"), 0);
+			maxX = maxX - my("bar"):"width";
+			my("bar"):"coord"_1 = mouse().xy_1;
+			my("bar"):"coord"_1 = max(my("bar"):"coord"_1, minX);
+			my("bar"):"coord"_1 = min(my("bar"):"coord"_1, maxX);
+		);
+
+		// Run script
+		my("script");
+	);
+
+	obj:"script" := println("Implement obj:script || my(value) = " + my("value"));
+
+	obj; // Return Scrollbar;
+);

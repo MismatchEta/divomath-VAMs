@@ -1,0 +1,615 @@
+/** v24 *****************************************************************************************
+* Number cards to explore place value concept.
+*
+* Recent changes:
+* 2026-08-06 Adjusted VAM to new framework structure.
+* 2026-08-07 Rebuilt: configuration via "default to" with speaking 'names, dropped the
+*            top level regional() (config is read from class methods), renamed variables
+*            that shadowed builtins or drawing modifiers, fixed schulschrift -> SCHULFONT,
+*            fixed placecards of different cards ending up in the same children list.
+* 2026-08-09: Adjust divomath functions to new json serialization pipeline
+************************************************************************************************/
+
+// Zahlenkarten
+if(VAM == "numbercards",
+
+
+// ================= //
+// A | Documentation //
+// ================= //
+
+//DOCTEXTPOS = [9,15.5];
+DOCTEXT = "...";
+
+
+// ================= //
+// B | Configuration //
+// ================= //
+//
+// NOTE: no regional() here on purpose. These values are read from class methods,
+// which do not run in the init script's scope - a regional declaration would make
+// them invisible there. The apostrophe marks them as explicitly global.
+
+'numberofcards				= default to(ENVIRONMENTALPARAMS:"cards", 1, true); // no. of cards to create
+'cardpositionsx				= default to(ENVIRONMENTALPARAMS:"x", apply(1..'numberofcards, 10*#-7), true);
+'cardpositionsy				= default to(ENVIRONMENTALPARAMS:"y", apply(1..'numberofcards, 16), true);
+'cardvalues						= default to(ENVIRONMENTALPARAMS:"value", apply(1..'numberofcards, 1234), true);
+
+// Force lists - a single card may arrive as a plain value
+if(!islist('cardpositionsx), 'cardpositionsx = ['cardpositionsx]);
+if(!islist('cardpositionsy), 'cardpositionsy = ['cardpositionsy]);
+if(!islist('cardvalues),     'cardvalues     = ['cardvalues]);
+'cardpositionsx = apply('cardpositionsx, if(isstring(#), parse(#), #));
+'cardpositionsy = apply('cardpositionsy, if(isstring(#), parse(#), #));
+'cardvalues     = apply('cardvalues,     if(isstring(#), parse(#), #));
+
+// --- Look and feel ---
+'showincolor					= default to(ENVIRONMENTALPARAMS:"color", true, true); // show cards in color
+'showcolortoggle			= default to(ENVIRONMENTALPARAMS:"colortoggle", true, true); // show color toggle btn
+'unfoldedalpha				= default to(ENVIRONMENTALPARAMS:"alpha", .2, true); // alpha of an unfolded Numbercard
+'thousandsseparator		= default to(ENVIRONMENTALPARAMS:"separator", "", false); // separator between groups of 3 digits
+
+'unfoldedatstart			= default to(ENVIRONMENTALPARAMS:"unfold", apply(1..'numberofcards, true), true);
+if(!islist('unfoldedatstart), 'unfoldedatstart = ['unfoldedatstart]);
+
+// Normalize booleans (divomath reports back "" instead of false)
+'showincolor = tobool('showincolor);
+'showcolortoggle = tobool('showcolortoggle);
+'unfoldedatstart = apply('unfoldedatstart, tobool(#));
+
+// --- Which place value of every card is editable ---
+// Configured as strings of "t"/"f", e.g. ["ttt", "ftf"], read right to left.
+// "@else" means: everything editable, derived from the length of the card values.
+'editableasstring			= default to(ENVIRONMENTALPARAMS:"edit", "@else", false);
+if('editableasstring != "@else" & !islist('editableasstring), 'editableasstring = ['editableasstring]);
+
+'editableplaces = []; // resulting array like [[true, true, true], [false, true, false]]
+
+if('editableasstring != "@else", // Config by divomath
+	forall('editableasstring, str, // loop over every raw string like "ffttft"
+		regional(entry);
+		entry = [];
+		repeat(length(str), // loop over every char, in reverse order (-#)
+			entry = entry :> if(str_(-#) == "t", true, false);
+		);
+		'editableplaces = 'editableplaces :> entry;
+	);
+, // else: all trues, based on the number of digits of each value
+	'editableplaces = apply('cardvalues, apply(1..length(text(#)), true));
+	'editableasstring = [];
+	forall('editableplaces, state,
+		// ...and store the corresponding string (e.g. "tfttf")
+		'editableasstring = 'editableasstring :> "";
+		forall(state, 'editableasstring_(-1) = 'editableasstring_(-1) + if(#, "t", "f"));
+	);
+);
+
+// Number of digits per card. NOT CONFIGURABLE - derived from "edit".
+// NOTE: this is a LIST, one entry per card. It used to be overwritten by a scalar
+// further down (max(...)), which broke the per card lookup.
+'maxplaces = apply('editableplaces, length(#));
+
+
+// ------------------------------------------------------------------ //
+// Result handling: overwrite the divomath hooks for this VAM          //
+// ------------------------------------------------------------------ //
+
+divomath update results() := if(ISDIVOMATH,
+	divomath clear results();
+
+	regional(cards, cardnr, placevaluenames);
+	placevaluenames = ["E","Z","H","T","ZT","HT","M","ZM","HM"];
+
+	// Select the cards explicitly instead of guessing from the end of "obj"
+	cards = select(obj, #:"type" == "numbercard");
+	cardnr = 1; // for naming results of multiple cards
+
+	forall(cards, card,
+		// Add number value as a whole
+		divomath put result("nc" + cardnr, card:"value");
+
+		// Add individual place values by hand.
+		// (Can't be done with children, might not have any)
+		regional(remainder, digit, place);
+		remainder = card:"value";
+		place = 1;
+		while(remainder > 0,
+			digit = mod(remainder, 10);
+			remainder = floor(remainder/10);
+
+			// Use a numerical indicator for places beyond the named ones
+			divomath put result("nc" + cardnr + "_" + if(
+				!isundefined(placevaluenames_place),
+				placevaluenames_place,
+				place
+			), digit);
+
+			place = place + 1;
+		);
+
+		// Add result, if numbercard is folded
+		divomath put result("nc" + cardnr + "_unfolded", card:"expanded");
+
+		cardnr = cardnr + 1;
+	);
+
+	// Export state as results as well, for forward referencing
+	regional(dmstate);
+	dmstate = divomath set state();
+	forall(keys(dmstate), divomath put result(#, dmstate:#));
+
+	// Post results
+	divomath post results();
+);
+
+divomath set state() := (
+	regional(cards, state);
+	cards = select(obj, #:"type" == "numbercard");
+
+	state = {
+		"cards"       : length(cards),                  // Record numofcards
+		"x"           : apply(cards, #:"coord"_1),      // Record xcoords
+		"y"           : apply(cards, #:"coord"_2),      // Record ycoords
+		"value"       : apply(cards, #:"value"),        // Record values
+		"edit"        : 'editableasstring,    					// Record editable status per card
+		"unfold"      : apply(cards, #:"expanded"),     // Record fold/unfold status
+		"color"       : 'showincolor,                   // Record colored/uncolored status
+		"colortoggle" : 'showcolortoggle,               // Record button drawing status
+		"alpha"       : 'unfoldedalpha,                 // Record cards alpha
+		"separator"   : 'thousandsseparator             // cards separator character
+	};
+
+	state;
+);
+
+
+// ===================== //
+// C | Class Definitions //
+// ===================== //
+
+// C.1 | Placecard
+new Placecard(c, initialvalue, maxplaces) := (
+	regional(o);
+	o = new VAMobject("placecard");
+	o:"coord"				= c;
+	o:"maxplaces"		= maxplaces;
+	o:"width"				= maxplaces;
+	o:"height"			= 1;
+	o:"value"				= initialvalue;
+	o:"color"				= MONTEGREY;
+	o:"bgcolor"			= MONTEGREY;
+	o:"mix"					= 0;
+	o:"edit"				= false;
+	o:"ismoveable"	= false;
+	o:"downbutton"	= {"center": [-10,-10], "radius": 0};
+	o:"upbutton"		= {"center": [-10,-10], "radius": 0};
+
+	o:"ishot" := or(
+		dist(my("upbutton"):"center", mouse().xy) < my("upbutton"):"radius",
+		dist(my("downbutton"):"center", mouse().xy) < my("downbutton"):"radius"
+	);
+
+	o:"shape" := rectangle(my("coord"), my("width"), my("height"));
+
+	o:"draw" := (
+		// For nonzero place card
+		if(my("value") > 0,
+			// Draw the box
+			fillpoly(my("shape"), color->(1-my("mix"))*my("bgcolor") + my("mix")*my("color"));
+			drawpoly(my("shape"), color->grey(0));
+
+			// Draw card text
+			regional(ps);
+			ps = pixelsize("0", size->screenresolution(), family->SCHULFONT);
+
+			repeat(my("maxplaces"),
+				// Draw digit
+				drawtext(
+					my("coord") + (
+						my("maxplaces") - # + .5 - 2*floor((#-1)/3)/ps_1, // adjust x
+						(ps_3) / 4 / screenresolution()                   // adjust y
+					),
+					if(# == my("maxplaces"), my("value"), "0"),
+					align->"center",
+					size->screenresolution(),
+					family->SCHULFONT
+				);
+
+				// Draw separator
+				if(mod(#,3) == 0 & # < my("maxplaces"),
+					drawtext(
+						my("coord") + (
+							my("maxplaces") - # - .15,      // adjust x
+							(ps_3) / 4 / screenresolution() // adjust y
+						),
+						'thousandsseparator,
+						align->"center",
+						size->screenresolution(),
+						family->SCHULFONT
+					);
+				);
+			);
+		, // else draw empty rectangle if unfolded
+			if(my("parent"):"expanded",
+				drawpoly(my("shape"), size->2, color->(1-my("mix"))*my("bgcolor") + my("mix")*my("color"));
+			);
+		);
+
+		// Draw + and - buttons
+		regional(circ);
+		if(my("edit"),
+			if(my("value") < 9, // can become more
+				self():"upbutton" = {
+					"center": my("coord") + [my("width") + 2*my("height"), my("height")/2],
+					"radius": my("height")/2
+				};
+				circ = my("upbutton");
+
+				fillcircle(circ:"center", circ:"radius", color->DIVOBLUE);
+				drawtext(
+					circ:"center" - [circ:"radius", circ:"radius"] + [.54,.1],
+					"+",
+					color->MONTEGREY,
+					size->screenresolution(),
+					align->"center"
+				);
+			, // inner else
+				self():"upbutton" = {"center": [-10,-10], "radius": 0};
+			);
+
+			if(my("value") > 0, // can become less
+				self():"downbutton" = {
+					"center": my("coord") + [my("width") + my("height") - 0.2, my("height")/2],
+					"radius": my("height")/2
+				};
+				circ = my("downbutton");
+
+				fillcircle(circ:"center", circ:"radius", color->DIVOBLUE);
+				drawtext(
+					circ:"center" - [circ:"radius", circ:"radius"] + [.54,.22],
+					"-",
+					color->MONTEGREY,
+					size->screenresolution(),
+					align->"center"
+				);
+			, // inner else
+				self():"downbutton" = {"center": [-10,-10], "radius": 0};
+			);
+		);
+
+		// Debug Draw
+		if(LOGLEVEL > 0,
+			draw(my("shape"));
+			draw(my("coord"));
+		);
+	);
+
+	o:"click" := (
+		if(dist(my("downbutton"):"center", mouse().xy) < my("downbutton"):"radius",
+			self():"value" = my("value") - 1;
+			my("parent"):"value" = my("parent"):"value" - 10^(my("maxplaces")-1);
+		);
+		if(dist(my("upbutton"):"center", mouse().xy) < my("upbutton"):"radius",
+			self():"value" = my("value") + 1;
+			my("parent"):"value" = my("parent"):"value" + 10^(my("maxplaces")-1);
+		);
+	);
+
+	o; // Return placecard.
+);
+
+// C.2 | Numbercard
+new Numbercard(c, initialvalue, maxplaces, editable) := (
+	regional(o);
+	o = new VAMobject("numbercard");
+	o:"coord"						= c;
+	o:"maxplaces"				= maxplaces;
+	o:"width"						= maxplaces;
+	o:"height"					= 1;
+	o:"editable"				= editable; // bool array of editable placecards
+	o:"value"						= initialvalue;
+	o:"expanded"				= false;
+	o:"children"				= [];
+	o:"alpha"						= 1;
+	o:"offset"					= 1;
+	o:"fadetime"				= 3/5;
+	o:"foldtime"				= 5/5;
+	o:"color"						= MONTEGREY;
+	o:"fadealpha"				= 'unfoldedalpha;
+	o:"ismoveable"			= false;
+	o:"montessori"			= 'showincolor;
+	o:"showtogglemonte"	= 'showcolortoggle;
+
+	o:"hitbox" := rectangle(
+		my("coord") - 2*(1.4,0),
+		2*1.4 + my("maxplaces"),
+		my("height")
+	);
+
+	o:"ishot" := or(
+		inrectangle(my("hitbox"), mouse().xy),
+		listor(apply(my("children"), #:"ishot"))
+	);
+
+	o:"shape" := rectangle(my("coord"), my("width"), my("height"));
+
+	o:"draw" := (
+		regional(value, dodraw, ps);
+
+		// Draw the card
+		fillpoly(my("shape"), color->my("color"), alpha->my("alpha"));
+		drawpoly(my("shape"), size->2, color->grey(0), alpha->my("alpha"));
+
+		// Draw the value
+		value = my("value");
+		dodraw = true;
+		ps = pixelsize("0", size->screenresolution(), family->SCHULFONT);
+
+		repeat(my("maxplaces"),
+			if(dodraw,
+				drawtext(
+					my("coord") + (
+						my("maxplaces") - # + .5 - 2*floor((#-1)/3)/ps_1,
+						(ps_3)/4/screenresolution()
+					),
+					mod(value,10),
+					align->"center",
+					size->screenresolution(),
+					family->SCHULFONT,
+					alpha->my("alpha")
+				);
+
+				// Draw separator
+				if(mod(#,3) == 0 & # < my("maxplaces"),
+					drawtext(
+						my("coord") + (
+							my("maxplaces") - # - .15,      // adjust x
+							(ps_3) / 4 / screenresolution() // adjust y
+						),
+						'thousandsseparator,
+						align->"center",
+						size->screenresolution(),
+						family->SCHULFONT,
+						alpha->my("alpha")
+					);
+				);
+			);
+			value = floor(value/10);
+			dodraw = (value > 0);
+		);
+
+		// Unfold Button
+		// NOTE: locals are called "linesize"/"rectcolor" - "size" would shadow the
+		// size-> modifier, and the old code declared "rectcol" but assigned "rectcolor".
+		regional(rect, linesize, rectcolor, barcolor, offset);
+		offset = (1.4,0);
+		rect = roundedrectangle(my("coord") - offset, 1, my("height"), .1);
+		linesize = 2;
+		rectcolor = DIVOBLUE;
+		barcolor = MONTEGREY;
+
+		draw(rect, color->rectcolor, size->linesize);
+		fill(rect, color->rectcolor);
+		repeat(if(my("expanded"), 1, 4), // Draw burger-like lines to display "unfold"
+			fillpoly(rectangle(
+				my("coord") + (-offset_1 - 0.1 + .2*#, -.05 + .2*(5-#)),
+				(5-#)*.2, .1
+			), color->barcolor);
+		);
+
+		forall(my("children"), #:"draw");
+
+		// Color Button
+		if(my("showtogglemonte"),
+			regional(togglerect, circ0, circ1, circ2);
+			togglerect = roundedrectangle(my("coord") - 2*offset, 1, my("height"), .1); // border
+			circ0 = circle(my("coord") - 2*offset + [1,0], 2);  // outer circle
+			circ1 = circle(my("coord") - 2*offset + [1,0], 1);  // middle circle
+			circ2 = circle(my("coord") - 2*offset + [1,0], .5); // inner circle
+
+			if(!my("montessori"), // Colorful button
+				fill(togglerect~~circ0, color->MONTEBLUE);
+				fill(togglerect~~circ1, color->MONTERED);
+				fill(togglerect~~circ2, color->MONTEGREEN);
+			, // Grey button
+				fill(togglerect~~circ0, color->grey(.9));
+				fill(togglerect~~circ1, color->grey(.6));
+				fill(togglerect~~circ2, color->grey(.3));
+			);
+			draw(togglerect, color->DIVOBLUE, size->linesize);
+		);
+
+		// DEBUG DRAW
+		if(LOGLEVEL > 0,
+			drawpoly(my("hitbox"));
+			draw(my("hitbox")_1, color->[1,0,0]);
+			draw(my("coord"));
+		);
+	);
+
+	o:"move" := if(my("ismoveable"), self():"coord" = coord);
+
+	o:"active" := inrectangle( // If condition in o:"click"
+		rectangle(
+			my("coord") - (1.4,0),
+			2 + my("maxplaces"),
+			my("height")
+		),
+		mouse().xy
+	);
+
+	o:"colortoggle" := if(my("showtogglemonte"),
+		regional(offset);
+		offset = (1.4,0);
+		inrectangle(
+			rectangle(my("coord") - 2*offset, 1, my("height")),
+			mouse().xy
+		);
+	);
+
+	o:"click" := (
+		if(my("active"), // Fold / Unfold action
+			regional(children, pc, offset, fadetime, foldtime);
+			fadetime = my("fadetime");
+			foldtime = my("foldtime");
+			children = [];
+
+			self():"expanded" = if(my("expanded"),
+				// --- fold ---
+				forall(my("children"), child,
+					child:"edit" = false;
+					new animationobject(
+						child, "coord",
+						child:"coord",
+						my("coord") + (my("maxplaces") - child:"maxplaces", 0),
+						foldtime, "accel"
+					);
+					new animationobjectwithdelay(
+						child, "mix",
+						1,
+						1, // should be 0 for animation
+						fadetime, "accel", foldtime
+					);
+				);
+				false // set my("expanded")
+			, // --- unfold ---
+				regional(val);
+				val = my("value");
+				repeat(my("maxplaces"), place,
+					// A card is created for every place, so empty slots stay visible
+					offset = (
+						my("maxplaces") - place,
+						1.2*(place - my("offset") - my("maxplaces"))
+					);
+					pc = new Placecard(
+						my("coord") + (my("maxplaces") - place, 0),
+						mod(val,10), place
+					);
+					pc:"parent" = self();
+					pc:"color" = if(my("montessori"), // colorful
+						MONTEPALETTE_(mod(place-1,3) + 1)
+					, // else grey
+						MONTEGREY
+					);
+					new animationobjectwithdelay(
+						pc, "coord",
+						my("coord") + (my("maxplaces") - place, 0),
+						my("coord") + offset,
+						foldtime, "accel", fadetime
+					);
+					new animationobject(
+						pc, "mix",
+						1, // should be 0 for animation
+						1,
+						fadetime, "accel"
+					);
+					setpropertylater(pc, "edit", my("editable")_place, foldtime + foldtime);
+
+					children = [pc] ++ children;
+					val = floor(val/10);
+				); // end repeat
+				self():"children" = children;
+				true; // set my("expanded")
+			); // end if(my("expanded"))
+		); // end "active"-if
+
+		// Check if Color-Button has been clicked
+		if(my("colortoggle"),
+			self():"montessori" = !my("montessori");
+			// Change color attribute of children accordingly
+			forall(my("children"),
+				#:"color" = if(my("montessori"), // colorful
+					MONTEPALETTE_(mod(#:"maxplaces"-1, 3) + 1)
+				, // else grey
+					MONTEGREY
+				);
+			);
+		);
+
+		// handle click on children
+		forall(my("children"), if(#:"ishot", #:"click"));
+
+		// Send results/state to divomath
+		divomath update results();
+	);
+
+	o:"getaction" := if(
+		inrectangle(
+			rectangle(my("coord") - (2,0), 2 + my("maxplaces"), my("height")),
+			mouse().xy
+		),
+		"move",
+		"adjust"
+	);
+
+	o; // Return numbercard.
+);
+
+
+// ================== //
+// D | Initialization //
+// ================== //
+
+// D.1 | Build card templates based on config
+// ==========================================
+'cardtemplates = [];
+repeat('numberofcards,
+	'cardtemplates = 'cardtemplates :> {
+		"c"      : ['cardpositionsx_#, 'cardpositionsy_#],
+		"val"    : 'cardvalues_#,
+		"max"    : 'maxplaces_#,
+		"edit"   : 'editableplaces_#,
+		"unfold" : 'unfoldedatstart_#
+	};
+);
+
+// D.2 | Init numbercards
+// ======================
+forall('cardtemplates, card,
+	regional(thing, children, val, offset, pc);
+
+	thing = new Numbercard( // Create card based on configured array.
+		card:"c",
+		card:"val",
+		card:"max",
+		card:"edit"
+	);
+
+	// Build Placecards for every card.
+	// NOTE: "children" is reset per card - it used to be a global that kept
+	// accumulating, so later cards inherited the placecards of earlier ones.
+	children = [];
+	val = thing:"value";
+	repeat(thing:"maxplaces", place,
+		offset = if(card:"unfold",
+			(thing:"maxplaces" - place, 1.2*(place - thing:"offset" - thing:"maxplaces")),
+			(thing:"maxplaces" - place, 0)
+		);
+		pc = new Placecard( // least significant first
+			thing:"coord" + (thing:"maxplaces" - place, 0),
+			mod(val,10), place
+		);
+
+		pc:"parent" = thing;
+		pc:"color" = if(thing:"montessori", // colorful
+			MONTEPALETTE_(mod(place-1,3) + 1)
+		, // else grey
+			MONTEGREY
+		);
+		pc:"coord" = thing:"coord" + offset;
+		pc:"mix" = 1;
+		pc:"edit" = if(card:"unfold", thing:"editable"_place, false);
+
+		children = [pc] ++ children;
+		val = floor(val/10); // next value
+	); // end repeat
+
+	thing:"alpha" = 'unfoldedalpha;
+	thing:"fadealpha" = 'unfoldedalpha;
+	thing:"children" = children;
+	thing:"expanded" = card:"unfold";
+
+	obj = obj :> thing; // Add card to obj list.
+);
+
+); // End VAM-if

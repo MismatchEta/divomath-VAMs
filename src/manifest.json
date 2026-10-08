@@ -1,0 +1,60 @@
+{
+  "Draw": [
+    "[FW] global drawing"
+  ],
+  "Init": [
+    "[FUN] Divomath",
+    "[FUN] Debug Logging",
+    "[FUN] Event Logging",
+    "[FUN] Object functions",
+    "[FUN] Obj interaction",
+    "[FUN] Strings",
+    "[FUN] Geometry",
+    "[FUN] Drawing",
+    "[FUN] Web Controls",
+    "[FUN] Math-like",
+    "[FUN] Other",
+    "[FUN] Animation",
+    "[FW] Constants",
+    "[FW] Config",
+    "[FW] Init start",
+    "[C] Button",
+    "[C] CoordinateSystem",
+    "[C] Keyboard",
+    "[C] ProgressCircle",
+    "[C] Plottable",
+    "[C] ScrollBar",
+    "[C] TextInput",
+    "[C] Toggle",
+    "[C] VAMobject",
+    "[C] Workbench",
+    "[VAM] default",
+    "[VAM] distributive",
+    "[VAM] divisors",
+    "[_VAM] doublenumberline",
+    "[VAM] numbercards",
+    "[VAM] percentagebar",
+    "[VAM] strapwork",
+    "[VAM] thales",
+    "[_VAM] localderivate",
+    "[FW] Init end"
+  ],
+  "Tick": [
+    "[FW] tick"
+  ],
+  "Mouse down": [
+    "[FW] mousedown"
+  ],
+  "Mouse up": [
+    "[FW] mouseup"
+  ],
+  "Mouse drag": [
+    "[FW] mousedrag"
+  ],
+  "Mouse move": [
+    "[FW] mousemove"
+  ],
+  "Key typed": [
+    "[FW] keypressed"
+  ]
+}

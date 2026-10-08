@@ -1,0 +1,42 @@
+/** v2 *****************************************************************************************
+*
+* Recent changes:
+***********************************************************************************************/
+
+
+// Lokale Ableitungen
+if(VAM == "localderivative",
+
+
+// ================= //
+// A | Documentation //
+// ================= //
+
+//DOCTEXTPOS = [9,15.5];
+DOCTEXT = "...";
+
+
+// ================= //
+// B | Configuration //
+// ================= //
+
+'someParameter = default to(ENVIRONMENTALPARAMS:"someParameter", "default value", false); // TRUE parses the value. Try, if not a string.
+
+
+// ===================== //
+// C | Class Definitions //
+// ===================== //
+
+new ThereIsNothingHereYet() := ();
+
+
+// ================= //
+// D | Initilization //
+// ================= //
+
+obj = obj :> new CoordinateSystem(NADA);
+obj_1:"leftborder" = 2;
+obj_1:"rightborder" = 19;
+obj_1:"upperborder" = 19;
+obj_1:"lowerborder" = 7;
+);
