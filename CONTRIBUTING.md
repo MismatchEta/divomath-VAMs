@@ -5,6 +5,9 @@ For everyone changing the scripts. How to build, test and upload is in the
 conventions, and the traps CindyScript and CindyJS set. Most of the traps below
 took hours to find — read them before your first change.
 
+In VS Code, install the [CindyScript extension](tools/vscode-cindyscript/README.md):
+it shows syntax errors while typing and warns about several of the traps below.
+
 
 ## Where things live
 

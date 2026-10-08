@@ -1,0 +1,69 @@
+{
+  "name": "cindyscript",
+  "displayName": "CindyScript (divoVAM)",
+  "description": "Syntax highlighting, error checking and navigation for the CindyScript sources of divoVAM",
+  "version": "0.1.0",
+  "publisher": "divomath",
+  "private": true,
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "workspaceContains:**/*.cindyscript"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "cindyscript",
+        "aliases": [
+          "CindyScript"
+        ],
+        "extensions": [
+          ".cindyscript"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cindyscript",
+        "scopeName": "source.cindyscript",
+        "path": "./syntaxes/cindyscript.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "CindyScript",
+      "properties": {
+        "cindyscript.lint.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show warnings for common CindyScript traps: unknown functions, multiple assignment, variables named like a drawing modifier. Syntax errors are always shown."
+        },
+        "cindyscript.lint.externalFunctions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "divomathAddResult",
+            "divomathSendResult",
+            "divomathClearResult",
+            "fontfamilies"
+          ],
+          "description": "Functions that exist without a definition in the scripts, so calling them is not reported as unknown. Default: the hooks divomath provides, and fontfamilies(), which only Cinderella has (its call is guarded by ISCINDYJS)."
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[cindyscript]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 2
+      }
+    }
+  }
+}

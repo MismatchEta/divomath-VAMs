@@ -1,0 +1,853 @@
+{
+ "source": "https://github.com/CindyJS/CindyJS/tree/f52f219b1f17269d569b46426b6cee57269e9aae",
+ "functions": {
+  "abs": [
+   1
+  ],
+  "add": [
+   2
+  ],
+  "algorithm": [
+   1
+  ],
+  "allcircles": [
+   0,
+   1
+  ],
+  "allconics": [
+   0,
+   1
+  ],
+  "allelements": [
+   0,
+   1
+  ],
+  "allimages": [
+   0
+  ],
+  "alllines": [
+   0,
+   1
+  ],
+  "allmasses": [
+   0,
+   1
+  ],
+  "allpoints": [
+   0,
+   1
+  ],
+  "allsegments": [
+   0,
+   1
+  ],
+  "allsprings": [
+   0,
+   1
+  ],
+  "alpha": [
+   1
+  ],
+  "and": [
+   2
+  ],
+  "append": [
+   2
+  ],
+  "apply": [
+   2,
+   3,
+   4
+  ],
+  "arccos": [
+   1
+  ],
+  "arcsin": [
+   1
+  ],
+  "arctan": [
+   1
+  ],
+  "arctan2": [
+   1,
+   2
+  ],
+  "area": [
+   3
+  ],
+  "assert": [
+   2
+  ],
+  "autodiff": [
+   3
+  ],
+  "blue": [
+   1
+  ],
+  "cameravideo": [
+   0
+  ],
+  "canvas": [
+   4,
+   5
+  ],
+  "ceil": [
+   1
+  ],
+  "circle": [
+   2
+  ],
+  "clearconsole": [
+   0
+  ],
+  "clearimage": [
+   1
+  ],
+  "clip": [
+   1
+  ],
+  "clrscr": [
+   0
+  ],
+  "color": [
+   1
+  ],
+  "column": [
+   2
+  ],
+  "columnmatrix": [
+   1
+  ],
+  "combinations": [
+   2
+  ],
+  "common": [
+   2
+  ],
+  "compiletowebgl": [
+   1
+  ],
+  "complex": [
+   1
+  ],
+  "concat": [
+   2
+  ],
+  "conjugate": [
+   1
+  ],
+  "connect": [
+   1
+  ],
+  "consecutive": [
+   1
+  ],
+  "contains": [
+   2
+  ],
+  "continuefromhere": [
+   0
+  ],
+  "cos": [
+   1
+  ],
+  "create": [
+   2,
+   3
+  ],
+  "createimage": [
+   3
+  ],
+  "createpoint": [
+   2
+  ],
+  "createtool": [
+   3
+  ],
+  "createvar": [
+   1
+  ],
+  "cross": [
+   2
+  ],
+  "crossratio": [
+   4
+  ],
+  "currentlanguage": [
+   0
+  ],
+  "cycle": [
+   1
+  ],
+  "d": [
+   2
+  ],
+  "date": [
+   0
+  ],
+  "det": [
+   1,
+   3
+  ],
+  "dict": [
+   0
+  ],
+  "directproduct": [
+   2
+  ],
+  "dist": [
+   2
+  ],
+  "div": [
+   2
+  ],
+  "draw": [
+   1,
+   2
+  ],
+  "drawall": [
+   1
+  ],
+  "drawarc": [
+   3
+  ],
+  "drawcircle": [
+   2
+  ],
+  "drawconic": [
+   1
+  ],
+  "drawimage": [
+   2,
+   3,
+   4
+  ],
+  "drawpoly": [
+   1
+  ],
+  "drawpolygon": [
+   1
+  ],
+  "drawtable": [
+   2
+  ],
+  "drawtext": [
+   2
+  ],
+  "dropped": [
+   0
+  ],
+  "droppoint": [
+   0
+  ],
+  "dump": [
+   1
+  ],
+  "eig": [
+   1
+  ],
+  "eigenvalues": [
+   1
+  ],
+  "eigenvectors": [
+   1
+  ],
+  "element": [
+   1
+  ],
+  "elementsatmouse": [
+   0
+  ],
+  "err": [
+   1
+  ],
+  "errc": [
+   1
+  ],
+  "eval": [
+   1
+  ],
+  "exp": [
+   1
+  ],
+  "fill": [
+   1
+  ],
+  "fillarc": [
+   3
+  ],
+  "fillcircle": [
+   2
+  ],
+  "fillpoly": [
+   1
+  ],
+  "fillpolygon": [
+   1
+  ],
+  "flatten": [
+   1
+  ],
+  "floor": [
+   1
+  ],
+  "forall": [
+   2,
+   3,
+   4
+  ],
+  "format": [
+   2
+  ],
+  "gauss": [
+   1
+  ],
+  "generatewebgl": [
+   2
+  ],
+  "get": [
+   2
+  ],
+  "gray": [
+   1
+  ],
+  "green": [
+   1
+  ],
+  "greset": [
+   0
+  ],
+  "grestore": [
+   0
+  ],
+  "grey": [
+   1
+  ],
+  "gsave": [
+   0
+  ],
+  "guess": [
+   1
+  ],
+  "halfplane": [
+   2
+  ],
+  "hue": [
+   1
+  ],
+  "if": [
+   2,
+   3
+  ],
+  "im": [
+   1
+  ],
+  "imageready": [
+   1
+  ],
+  "imagergb": [
+   3,
+   4
+  ],
+  "imagergba": [
+   3,
+   4
+  ],
+  "imagesize": [
+   1
+  ],
+  "import": [
+   1
+  ],
+  "incidences": [
+   1
+  ],
+  "indexof": [
+   2,
+   3
+  ],
+  "inputs": [
+   1
+  ],
+  "international": [
+   1,
+   2
+  ],
+  "inverse": [
+   1
+  ],
+  "isbool": [
+   1
+  ],
+  "isbouncer": [
+   1
+  ],
+  "iscircle": [
+   1
+  ],
+  "iscomplex": [
+   1
+  ],
+  "isconic": [
+   1
+  ],
+  "iseven": [
+   1
+  ],
+  "isgeometric": [
+   1
+  ],
+  "isinteger": [
+   1
+  ],
+  "isjson": [
+   1
+  ],
+  "isline": [
+   1
+  ],
+  "islist": [
+   1
+  ],
+  "ismass": [
+   1
+  ],
+  "ismatrix": [
+   1
+  ],
+  "isnumbermatrix": [
+   1
+  ],
+  "isnumbervector": [
+   1
+  ],
+  "isodd": [
+   1
+  ],
+  "ispoint": [
+   1
+  ],
+  "isreal": [
+   1
+  ],
+  "isspring": [
+   1
+  ],
+  "isstring": [
+   1
+  ],
+  "issun": [
+   1
+  ],
+  "isundefined": [
+   1
+  ],
+  "javascript": [
+   1
+  ],
+  "join": [
+   2
+  ],
+  "kernel": [
+   1
+  ],
+  "key": [
+   0
+  ],
+  "keycode": [
+   0
+  ],
+  "keys": [
+   1
+  ],
+  "layer": [
+   1
+  ],
+  "length": [
+   1
+  ],
+  "line": [
+   1
+  ],
+  "linearsolve": [
+   2
+  ],
+  "linecolor": [
+   1
+  ],
+  "linereflect": [
+   1
+  ],
+  "linesize": [
+   1
+  ],
+  "load": [
+   2,
+   3
+  ],
+  "local": [
+   "*"
+  ],
+  "log": [
+   1
+  ],
+  "map": [
+   2,
+   4,
+   6,
+   8
+  ],
+  "matrixrowcolumn": [
+   1
+  ],
+  "max": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "meet": [
+   2
+  ],
+  "merge": [
+   2
+  ],
+  "min": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "mincostmatching": [
+   1
+  ],
+  "mod": [
+   2
+  ],
+  "mouse": [
+   0
+  ],
+  "mover": [
+   0
+  ],
+  "moveto": [
+   2
+  ],
+  "mult": [
+   2
+  ],
+  "multiid": [
+   0
+  ],
+  "multiidlist": [
+   0
+  ],
+  "not": [
+   1
+  ],
+  "or": [
+   2
+  ],
+  "pairs": [
+   1
+  ],
+  "para": [
+   2
+  ],
+  "parallel": [
+   2
+  ],
+  "parse": [
+   1
+  ],
+  "parsecsv": [
+   1
+  ],
+  "pauseanimation": [
+   0
+  ],
+  "pausevideo": [
+   1
+  ],
+  "perp": [
+   1,
+   2
+  ],
+  "perpendicular": [
+   1,
+   2
+  ],
+  "pixelsize": [
+   1
+  ],
+  "playanimation": [
+   0
+  ],
+  "playfunction": [
+   1
+  ],
+  "playsin": [
+   0,
+   1
+  ],
+  "playvideo": [
+   1
+  ],
+  "playwave": [
+   1
+  ],
+  "plot": [
+   1,
+   2
+  ],
+  "plotx": [
+   1
+  ],
+  "point": [
+   1
+  ],
+  "pointcolor": [
+   1
+  ],
+  "pointreflect": [
+   1
+  ],
+  "pointsize": [
+   1
+  ],
+  "polygon": [
+   1
+  ],
+  "pow": [
+   2
+  ],
+  "prepend": [
+   2
+  ],
+  "print": [
+   1
+  ],
+  "println": [
+   1
+  ],
+  "product": [
+   1,
+   2,
+   3
+  ],
+  "put": [
+   3
+  ],
+  "random": [
+   0,
+   1
+  ],
+  "randombool": [
+   0
+  ],
+  "randomint": [
+   1
+  ],
+  "randominteger": [
+   1
+  ],
+  "randomnormal": [
+   0
+  ],
+  "rank": [
+   1
+  ],
+  "re": [
+   1
+  ],
+  "readpixels": [
+   1
+  ],
+  "red": [
+   1
+  ],
+  "regional": [
+   "*"
+  ],
+  "release": [
+   "*"
+  ],
+  "remove": [
+   2
+  ],
+  "removeat": [
+   2
+  ],
+  "removeelement": [
+   1
+  ],
+  "removevar": [
+   1
+  ],
+  "repaint": [
+   0
+  ],
+  "repeat": [
+   2,
+   3
+  ],
+  "replace": [
+   2,
+   3
+  ],
+  "resetclock": [
+   0
+  ],
+  "reverse": [
+   1
+  ],
+  "roots": [
+   1
+  ],
+  "rotate": [
+   1
+  ],
+  "round": [
+   1
+  ],
+  "row": [
+   2
+  ],
+  "rowmatrix": [
+   1
+  ],
+  "scale": [
+   1
+  ],
+  "screen": [
+   0
+  ],
+  "screenbounds": [
+   0
+  ],
+  "screenresolution": [
+   0
+  ],
+  "seconds": [
+   0
+  ],
+  "seedrandom": [
+   1
+  ],
+  "select": [
+   2,
+   3,
+   4
+  ],
+  "self": [
+   0
+  ],
+  "set": [
+   1
+  ],
+  "setsimulationaccuracy": [
+   1
+  ],
+  "setsimulationquality": [
+   1
+  ],
+  "setsimulationspeed": [
+   1
+  ],
+  "settimeout": [
+   2
+  ],
+  "simulationtime": [
+   0
+  ],
+  "sin": [
+   1
+  ],
+  "sort": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "sqrt": [
+   1
+  ],
+  "stopanimation": [
+   0
+  ],
+  "stopsound": [
+   0
+  ],
+  "sub": [
+   2
+  ],
+  "submatrix": [
+   3
+  ],
+  "substring": [
+   3
+  ],
+  "sum": [
+   1,
+   2,
+   3
+  ],
+  "take": [
+   2
+  ],
+  "tan": [
+   1
+  ],
+  "tangent": [
+   2
+  ],
+  "text": [
+   1
+  ],
+  "textsize": [
+   1
+  ],
+  "time": [
+   0
+  ],
+  "timestamp": [
+   0
+  ],
+  "tokenize": [
+   2
+  ],
+  "translate": [
+   1
+  ],
+  "transpose": [
+   1
+  ],
+  "triples": [
+   1
+  ],
+  "unicode": [
+   1
+  ],
+  "use": [
+   1
+  ],
+  "values": [
+   1
+  ],
+  "version": [
+   0
+  ],
+  "while": [
+   2
+  ],
+  "xor": [
+   2
+  ],
+  "zeromatrix": [
+   2
+  ],
+  "zerovector": [
+   1
+  ]
+ }
+}
