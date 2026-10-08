@@ -86,7 +86,7 @@ COPY_FIELDS = ["defaultAppearance", "angleUnit", "geometry", "animation",
 # Freehand drawing overlay, activated with ?draw
 # The tool is a self contained JS overlay: it puts a second canvas on top of
 # #CSCanvas and draws there. Deployed as a separate file next to the HTML.
-FREEHAND_SRC = "js/freehand-drawing.js"   # relative to this script
+FREEHAND_SRC = "js/freehand-drawing.js"   # relative to the repo root
 FREEHAND_URL = "freehand-drawing.js"      # how the HTML references it
 
 # ==========================================================================
@@ -560,7 +560,7 @@ def main():
         patched, changed = patch_html(html_raw, build_number_from_html(target))
 
         # Copy the freehand tool next to the HTML so it can be uploaded together
-        src = pathlib.Path(__file__).parent / FREEHAND_SRC
+        src = pathlib.Path(__file__).resolve().parent.parent / FREEHAND_SRC
         if src.is_file():
             (out_dir / FREEHAND_URL).write_text(src.read_text(encoding="utf-8"),
                                                 encoding="utf-8")
