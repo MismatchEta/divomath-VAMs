@@ -7,13 +7,12 @@ page.
 
 Current build: see [src/BUILD](src/BUILD), every build counts it up.
 
-
 ## The two deliverables
 
 One source tree, two targets. `tools/build.py` produces both from `src/`:
 
 | Output | Goes to | What it is |
-|---|---|---|
+| --- | --- | --- |
 | `out/divoVAM.html` | `abako.dzlm.de/cindy/vam/` | Self-contained page, configured through URL parameters |
 | `out/freehand-drawing.js` | next to the HTML | Pen overlay, only loaded with `?draw` |
 | `out/divoVAM.cdyjs` | divomath import | Module form, configured through the divomath editor |
@@ -33,6 +32,7 @@ of them.
 - `thales`: Thales' theorem and its inverse
 
 Two more are under construction but unfinished and should not be used in production:
+
 - `doublenumberline`
 - `localderivate`.
 
@@ -78,7 +78,6 @@ Two more are under construction but unfinished and should not be used in product
 └─ README.md # this file
 ```
 
-
 ## Build
 
 ```bash
@@ -117,7 +116,7 @@ in file names (`< > : " / \ | ? *`).
 ### Options
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `--out DIR` | Output directory (default `out`) |
 | `--img-base URL` | Base URL the `.cdyjs` loads icons from |
 | `--rect A,B,C,D` | `visibleRect` written into the `.cdyjs` |
@@ -160,7 +159,6 @@ pixel by pixel with the stored one. References are kept in `.local/screenshots/`
 `<widget>.new.png`. `--vam a,b` limits the widgets, `--query "rect=classic"`
 compares another view.
 
-
 ## URL parameters (standalone build)
 
 Widget parameters are documented in [docs/doc-german.md](docs/doc-german.md).
@@ -168,7 +166,7 @@ The ones below belong to the page itself and are handled in `src/template.html`,
 which also holds the `rect` presets:
 
 | Parameter | Effect |
-|---|---|
+| --- | --- |
 | `?vam=<name>` | Which widget to show |
 | `?full` | Canvas fills the browser window |
 | `?rect=divomath` | 24.5 × 18.9 world units (default) |
@@ -178,10 +176,8 @@ which also holds the `rect` presets:
 | `?draw` | Freehand pen overlay, plus `drawpen`, `drawerase`, `drawpos`, `drawdir`, `drawmoveable` |
 
 There is a form-based link generator for these at
-<https://abako.dzlm.de/cindy/vam/>. That page has to be updated by hand 
+<https://abako.dzlm.de/cindy/vam/>. That page has to be updated by hand
 when new parameters are added.
-
-
 
 ## Working on the framework
 
