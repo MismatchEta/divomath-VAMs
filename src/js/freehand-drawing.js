@@ -575,9 +575,9 @@ class DrawingApp {
 /**
  * Start the overlay once the page has finished loading.
  *
- * Guarded against running twice: build.py injects the configuration and then
- * loads this file, so a page that somehow includes it twice would otherwise end
- * up with two canvases stacked on each other.
+ * Guarded against running twice: the page (src/template.html) sets the
+ * configuration and then loads this file, so a page that somehow includes it
+ * twice would otherwise end up with two canvases stacked on each other.
  *
  * NOTE: an earlier version had a second "articulate" mode that kept one drawing
  * per Articulate Storyline slide, using a MutationObserver on Storyline's

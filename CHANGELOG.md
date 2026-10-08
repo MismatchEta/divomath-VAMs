@@ -3,6 +3,31 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7b443
+
+- GENERAL:
+  - **New source layout**: the scripts live as plain text in `src/cindyscript/`,
+    one file per script and one folder per Cinderella event, their order in
+    `src/manifest.json`. Diffs, reviews and merges now work on the scripts
+    themselves instead of a binary `.cdy`. `divoVAM.cdy` and the HTML export are
+    gone from the repo.
+  - **Build without Cinderella**: `tools/build.py` builds everything from `src/`
+    — the HTML from `src/template.html`, the CindyJS settings from
+    `src/cindyjs.json`, the `.cdyjs`, a `.cdy` for Cinderella as by-product and
+    `out/img/` with the icons for divomath. Patching the export is no longer
+    needed.
+  - **tools/build.py unpack** takes changes made in Cinderella back into `src/`.
+    The build refuses to overwrite an `out/divoVAM.cdy` changed in Cinderella.
+  - The build number lives in `src/BUILD` and is counted up by every build.
+  - The `.cdyjs` now separates its scripts with `;` like Cinderella's export
+    does. Before, it relied on every script ending in `;` itself.
+  - Tests for the build (`tools/test_build.py`) and a screenshot comparison of
+    all widgets (`tools/screenshots.py`).
+  - Unfinished widgets are marked `[_VAM]` instead of `[VAM*]`: Windows does not
+    allow `*` in file names.
+  - The shipped icons moved to `src/resources/images/`. `assets/img/` keeps the
+    Inkscape sources and drafts.
+
 ## v7b437
 - VAM:
   - percentagebar: Parameter für Positionierung der Toggles hinzugefügt.
