@@ -52,7 +52,7 @@ Two more are under construction but unfinished and should not be used in product
 ├─ src/ # the source — everything the build reads
     ├─ manifest.json # order of the scripts, per event
     ├─ cindyscript/ # one file per script, one folder per Cinderella event
-        ├─ Init/ # framework and widgets, see "Working on the framework"
+        ├─ Init/ # framework and widgets, see CONTRIBUTING.md
         └─ Draw/, Tick/, Mouse down/, ... # one framework script each
     ├─ template.html # the standalone page around the scripts
     ├─ cindyjs.json # CindyJS settings: appearance, animation, ...
@@ -74,6 +74,7 @@ Two more are under construction but unfinished and should not be used in product
     ├─ storyline/ # Storyline embedding
     └─ web/ # example web usage
 ├─ CHANGELOG.md # Version history
+├─ CONTRIBUTING.md # how the code is organised, conventions, CindyScript traps
 └─ README.md # this file
 ```
 
@@ -184,71 +185,9 @@ when new parameters are added.
 
 ## Working on the framework
 
-Everything lives in the **Init** event, `src/cindyscript/Init/`, one file per
-section. The prefix tells you what a section is:
-
-| Prefix | Contents |
-|---|---|
-| `[FUN]` | Free functions — drawing, geometry, strings, logging, divomath interface |
-| `[FW]` | Constants, configuration, init entry and exit |
-| `[C]` | Classes — `Button`, `Toggle`, `TextInput`, `Keyboard`, `ScrollBar`, `Workbench`, … |
-| `[VAM]` | One section per widget. `[_VAM]` marks unfinished ones |
-
-Order matters: sections run in the order of `src/manifest.json`, so a constant
-has to be defined above its first use at init time.
-
-### Conventions
-
-- **Comments in English, user-facing documentation in German.** The audience 
-for the docs is the German-speaking editorial team.
-- **Global widget configuration** uses an apostrophe prefix: `'barwidth`,
-`'showincolor`. Speaking names, no abbreviations.
-- **Modifier parameters** use a `mod'` prefix — `mod'color`, `mod'font`. Without
-  it an unset modifier captures a same-named variable from the surrounding scope.
-- **Never name a variable** `color`, `size`, `alpha`, `font` or `bold`. Those
-  shadow the drawing modifiers of the same name.
-- **Scaling factors** (`FONTSCALE`, `UISCALE`, `IMGREFRESOLUTION`) are applied at
-  exactly one point in the inheritance chain — where the size first comes into
-  existence, and nowhere else.
-
-### Debug keys
-
-The running widget listens for a few keys, defined in the `[FW] keypressed`
-script:
-
-| Key | Effect |
-|---|---|
-| `y` | Dump the settings — `ISCINDYJS`, `screenbounds()`, `ENVIRONMENTALPARAMS`, `BGCOLOR`, `LOGLEVEL`, and the whole divomath block |
-| `x` | Call `divomath set state()` and `divomath update results()` and print what they return |
-| `c` | Print the stored log messages (`MAXLOGMESSAGES` of them) |
-| `s` | Push results and state to divomath, as an interaction would |
-| `+` / `-` | Raise or lower `LOGLEVEL` at runtime, clamped to 0..3 |
-
-From level 2 upwards the widgets draw their own hitboxes; level 3 adds
-`VISIBLERECT`, distance circles around the origin and the widget's docstring.
-`?debuglevel=3` sets the same thing from the URL.
-
-The build ships with `csconsole: false` (see `src/cindyjs.json`), so there is no
-console element on the page — but `println` still reaches the **browser's
-JavaScript console**, so the keys are useful in the browser and not just in
-Cinderella.
-
-### CindyScript is not CindyJS
-
-The scripts run in two engines that disagree in ways Cinderella hides. Anything
-that gets drawn or serialised has to be checked in the browser, because plenty of
-things look right in the Cinderella window and are not:
-
-| | Cinderella | CindyJS |
-|---|---|---|
-| `apply()` over a dictionary | returns the values | returns nothing — use `values()` |
-| `if(___, a, b)` | — | runs *neither* branch, silently |
-| `length(___)` | `0` | undefined |
-| `pixelsize(..., font->)` | evaluates | "Modifier not supported" |
-| `drawimage(..., ref->)` | anchors the image | ignored, image stays centred |
-
-Function names are case- and space-insensitive (`list or` is `listor`); variable
-names are case-sensitive.
+Where the code lives, the conventions, the debug keys and the traps CindyScript
+and CindyJS set are described in **[CONTRIBUTING.md](CONTRIBUTING.md)**. Read it
+before your first change to a script.
 
 ---
 
@@ -258,6 +197,8 @@ names are case-sensitive.
   divomath state and validation model, the standalone URL parameters. In German,
   written for the people configuring the widgets rather than building them.
   Published at <https://abako.dzlm.de/cindy/vam/README.md>.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — for developers: code organisation,
+  conventions, CindyScript and CindyJS traps
 - **[CHANGELOG.md](CHANGELOG.md)** — version history
 
 ---
