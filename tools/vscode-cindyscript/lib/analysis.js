@@ -517,6 +517,14 @@ class Index {
         return [...this.files.keys()];
     }
 
+    /** Offset of a position (0-based line and character) in a file's text. */
+    offset(file, line, character) {
+        const entry = this.files.get(file);
+        if (!entry) return 0;
+        const starts = entry.map.starts;
+        return starts[Math.max(0, Math.min(line, starts.length - 1))] + character;
+    }
+
     // --- 2. Look up definitions. ---
 
     definitionsByKey() {

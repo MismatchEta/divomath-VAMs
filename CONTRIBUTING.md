@@ -5,9 +5,9 @@ For everyone changing the scripts. How to build, test and upload is in the
 conventions, and the traps CindyScript and CindyJS set. Most of the traps below
 took hours to find — read them before your first change.
 
-In VS Code, install the [CindyScript extension](tools/vscode-cindyscript/README.md):
-it shows syntax errors while typing and warns about several of the traps below.
-
+In VS Code, install the [CindyScript extension](tools/vscode-cindyscript/README.md),
+in Neovim the [CindyScript plugin](tools/nvim-cindyscript/README.md): they show
+syntax errors while typing and warn about several of the traps below.
 
 ## Where things live
 
@@ -16,7 +16,7 @@ section. The other events (`Draw`, `Tick`, `Mouse down`, …) hold one framework
 script each. The prefix tells you what a section is:
 
 | Prefix | Contents |
-|---|---|
+| --- | --- |
 | `[FUN]` | Free functions — drawing, geometry, strings, logging, divomath interface |
 | `[FW]` | Constants, configuration, init entry and exit |
 | `[C]` | Classes — `Button`, `Toggle`, `TextInput`, `Keyboard`, `ScrollBar`, `Workbench`, … |
@@ -35,7 +35,6 @@ in the global list `obj`. Classes are constructor functions returning a
 dictionary, usually built on `new VAMobject(type)`; methods are fields defined
 with `:=` (`o:"draw" := …`, `o:"click" := …`). The draw script draws `obj` in the
 order of `typeorder`.
-
 
 ## Conventions
 
@@ -109,14 +108,13 @@ in new code.
 `rounded rectangle()` builds four circles, two polygons and a CSG shape on every
 call. With many objects use `rounded rectangle poly()` and `fillpoly` instead.
 
-
 ## Debug keys
 
 The running widget listens for a few keys, defined in the `[FW] keypressed`
 script:
 
 | Key | Effect |
-|---|---|
+| --- | --- |
 | `y` | Dump the settings — `ISCINDYJS`, `screenbounds()`, `ENVIRONMENTALPARAMS`, `BGCOLOR`, `LOGLEVEL`, and the whole divomath block |
 | `x` | Call `divomath set state()` and `divomath update results()` and print what they return |
 | `c` | Print the stored log messages (`MAXLOGMESSAGES` of them) |
@@ -131,7 +129,6 @@ The build ships with `csconsole: false` (see `src/cindyjs.json`), so there is no
 console element on the page — but `println` still reaches the **browser's
 JavaScript console**, so the keys are useful in the browser and not just in
 Cinderella.
-
 
 ## CindyScript traps
 
@@ -162,7 +159,6 @@ None of these raise an error. They just quietly do the wrong thing.
 - **Variables are case-sensitive, functions are not.** `nada` and `NADA` are two
   variables; `list or` and `listor` are the same function, spaces don't count.
 
-
 ## Cinderella is not CindyJS
 
 The scripts run in two engines that disagree in ways Cinderella hides. Anything
@@ -170,7 +166,7 @@ that gets drawn or serialised has to be checked in the browser, because plenty
 of things look right in the Cinderella window and are not:
 
 | | Cinderella | CindyJS |
-|---|---|---|
+| --- | --- | --- |
 | `apply()` over a dictionary | returns the values | returns nothing — use `values()` |
 | `if(___, a, b)` | — | runs *neither* branch, silently |
 | `length(___)` | `0` | undefined |
@@ -183,7 +179,6 @@ of things look right in the Cinderella window and are not:
 `length(___)` in particular: never apply it unchecked to something that can be
 undefined. That was the cause of the `to json` error in divomath.
 
-
 ## Embedding
 
 **Never use `?full` for Storyline.** Without a fixed canvas size the ratio of
@@ -191,7 +186,6 @@ text to objects depends on the embedding. The fixed 885 × 519 is the normal cas
 and right. Storyline loads local web objects without URL parameters, so use an
 `index.html` that redirects with the parameters — see
 `usage examples/storyline/`.
-
 
 ## Versioning
 

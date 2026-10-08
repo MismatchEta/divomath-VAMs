@@ -21,7 +21,7 @@ the scripts with the parser of CindyJS itself, the engine they run in.
   Ctrl+T for every function in the workspace.
 - **Editing** — indentation while typing (tabs, width 2, like the existing
   scripts), bracket pairs, Ctrl+/ for comments, folding of brackets, block
-  comments and sections, `* ` continued inside `/** … */`.
+  comments and sections, `*` continued inside `/** … */`.
 
 The Problems panel lists the findings of all scripts, not only the open ones.
 
@@ -36,16 +36,16 @@ extension, **Developer: Reload Window** is enough.
 ## Settings
 
 | Setting | Default | |
-|---|---|---|
+| --- | --- | --- |
 | `cindyscript.lint.enable` | `true` | Show the warnings. Syntax errors are always shown. |
 | `cindyscript.lint.externalFunctions` | divomath hooks, `fontfamilies` | Functions that exist without a definition in the scripts. |
 
 ## Files
 
 | File | |
-|---|---|
+| --- | --- |
 | `extension.js` | VS Code side: keeps the index up to date, shows its results |
-| `lib/analysis.js` | everything else: tokens, warnings, index of definitions, outline. Knows nothing about VS Code |
+| `lib/analysis.js` | everything else: tokens, warnings, index of definitions, outline. Knows nothing about VS Code — the [Neovim plugin](../nvim-cindyscript/README.md)'s language server uses it too |
 | `lib/Parser.js`, `lib/builtins.json` | from the CindyJS sources, written by `update_cindyjs.py` |
 | `syntaxes/cindyscript.tmLanguage.json` | grammar for the highlighting |
 | `language-configuration.json` | brackets, comments, indentation |
