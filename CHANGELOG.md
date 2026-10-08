@@ -29,6 +29,7 @@ across major versions and is also stamped into the header of every built file.
     Inkscape sources and drafts.
 
 ## v7b437
+
 - VAM:
   - percentagebar: Parameter für Positionierung der Toggles hinzugefügt.
 
@@ -167,7 +168,7 @@ across major versions and is also stamped into the header of every built file.
 ## v5.194
 
 - GENERAL:
-  - Version scheme changed to <main>.<build> (currently version 5, build 194)
+  - Version scheme changed to `<main>.<build>` (currently version 5, build 194)
   - The build number keeps counting across versions
 - FRAMEWORK:
   - helper functions:
@@ -266,9 +267,9 @@ across major versions and is also stamped into the header of every built file.
 
 - VAM:
   - new widget: (percentagebar, ) distributive
-  - divisors: 
+  - divisors:
     - Workaround implemented for the divomath problem of not reporting state values back correctly
-  - strapwork: 
+  - strapwork:
     - Workaround implemented for the divomath problem of not reporting state values back correctly
     - Fix: the separator was not included in the result for a whole row.
     - Fix: polygons were reordered incorrectly when inserted through the pattern container
@@ -280,70 +281,70 @@ across major versions and is also stamped into the header of every built file.
     - The PatternContainer is now multiline
     - The PatternContainer can be given a limit; state variable **patternlimit** added.
 - CLASS:
-  - Button: 
+  - Button:
     - Fix: wrong colour rendering
     - Feature: isfloating flag, to toggle whether the button can be moved
 - FW:
-  - draw: 
+  - draw:
     - Debug information adjusted
     - 'firstdraw flag for tracking whether the draw function is being called for the first time
-  - constants: 
+  - constants:
     - Images added along with the corresponding constant for image references (ICONS)
     - CDOT changed, now contains a space before and after
-  - divomathconfig: 
+  - divomathconfig:
     - usedivomath added as a flag for switching to the storyline/web config
     - 'dmdefaultstate added, for direct access to the cindyjs object from the divomath editor state description. As opposed to 'dmstate, the state last saved when leaving a slide.
-  - helper functions: 
+  - helper functions:
     - inpoly(): check added for whether the solution of linearsolve() is defined
     - +postValue(): posts a message for communicating with the browser (or the SL player)
     - +incircle(): checks whether a point lies inside a circle
     - +getURLparam() and getURLparams(): read the URL search parameters and return them
-  - configuration: 
+  - configuration:
     - +'urlparams: stores all URL search parameters as a dictionary.
     - the vam switch for the widget to play out is configurable through 'urlparams
     - 'debuglevel likewise
     - debugging output added
-  - mousedown: 
+  - mousedown:
     - set the mousedown variable to true
-  - mouseup: 
+  - mouseup:
     - set the mousedown variable to false
-  - keydown: 
+  - keydown:
     - "k/K": manual call of divomathUpdateResults()
     - "+/-": increment and decrement 'debuglevel (numpad only?)
 - build process for the divomath code moved into a separate script
 
 ## v3.1.0
 
-- VAM: 
-  - divisors: 
+- VAM:
+  - divisors:
     - Fix: the UI at the bottom is separated visually from the upper part by a horizontal line rather than a rectangle
     - Fix: blobs are created at random positions inside the world viewport, not somewhere on the screen
     - Buttons can now be hidden individually (~~drawbuttons~~ --> drawblobbuttons & drawdivbuttons)
     - The vertical bar for setting the divisor can be shown or hidden (drawbar)
     - default timing changed from 1 to .5
     - fix: the bar disappeared when the page was reloaded
-  - numbercards: 
+  - numbercards:
     - Fix: the alpha value is set to 1 when the page is opened again
     - Fix: always show place cards, including above the number card at start
     - Fix: wrong colours and colour changes when collapsing (defined incorrectly in constants)
     - divomathUpdateResults() bound to button presses
     - Workaround implemented for the divomath problem of not reporting state values back correctly
-  - strapwork: 
+  - strapwork:
     - The pattern container is no longer fixed in size. It adapts to its contents.
     - Appearance of the separator adjusted (ellipse instead of circle)
     - divomathUpdateResults() bound to the movepolysintoplace() method
     - divoYellow background added for the base polygons
     - Layout adjusted (container at the bottom, pattern container at the top)
     - Submission reporting for a whole row added (as row1, row2, ...)
-- FW: 
-  - global drawing: 
+- FW:
+  - global drawing:
     - divomathUpdateResults() is called when 'fristdraw==true
-  - configuration; 
+  - configuration;
     - 'firstdraw flag added, set to false at the end of the draw script.
-  - constants: 
+  - constants:
     - DIVOYELLOW added as a colour
     - Fix: the colour definitions of DIVORED and DIVOBLUE were swapped
-  - helper functions: 
+  - helper functions:
     - values() added: returns the values of all keys of an object as a list
     - ellipse() added: draws ellipses based on axes and rotation angle
     - defaultto() added: assigns a default value to a variable
@@ -353,62 +354,54 @@ across major versions and is also stamped into the header of every built file.
     - tobool() and isbool() added, for converting to bool and checking the type easily
   - **new** *keypressed*
     - Mainly for debugging; currently shows some mostly divomath-specific information when "k" is pressed.
-- CLASS: 
-  - Button: 
+- CLASS:
+  - Button:
     - Attributes labelheight and fontfamily added
-  - TextInput: 
+  - TextInput:
     - Attributes labelpadding and fontfamily added
 
 ## v3.0.0
 
 - new widget: percentagebar as a preview
 
-- VAM: 
+- VAM:
   
-  - divisors: 
-    
+  - divisors:
     - Configuration for the appearance of the UI buttons added (**drawbuttons**)
     - Fix: **color** configuration
   
-  - numbercards: 
-    
+  - numbercards:
     - Colour button changed. It is now grey when the cards are grey too, and coloured when the cards are coloured.
-    - Click behaviour of the number cards changed: 
+    - Click behaviour of the number cards changed:
       - Child place cards are no longer deleted after the animation to form one whole card. Instead the place cards are kept and only animated in position. (~ line 503, setpropertylater() commented out)
       - Colours are no longer faded when expanding and collapsing either. Place cards (and colours) stay visible in the collapsed state as well. (~ lines 523 and 562 commented out, but the animation construct kept)
   
-  - strapwork: 
-    
+  - strapwork:
     - RegPolys are "equally sized". For polygons with an even number of vertices, opposite edges are 2*RADIUS apart; with an odd number of vertices every vertex is 2*RADIUS from its opposite edge. Previously they all shared the same circumcircle with RADIUS.
     - RegPolys are aligned with their bottom edge parallel to the x axis, unless "rotation" is specified (not configurable from divomath)
     - If a RegPoly is a circle it is no longer handled as a circle but as a 100-gon, for consistency. "shape" and "draw" adjusted accordingly
-    - dm config: 
+    - dm config:
       - **vertices**: polygons can only be given as a list of vertex counts, no longer alternatively as a number. So only e.g. [3,6,9] for a triangle, a hexagon and a nonagon. No longer e.g. "4" to build four polygons with increasing vertex counts (circle, triangle, quadrilateral, pentagon)
       - **colors**: the same applies to colours. A list *MUST* be given that has the same length as **vertices**, or NOTHING at all. In that case the list [1,2,3,...] is used (the default order of the DIVOMATH colour palette).
       - NEW **state** ([ ] \<string>): defines which of the polygons declared through **vertices** and **colors** are in the container at start. For **vertices**=[0,3,4] and **rows**=3, ["1,2,2", "3,3,3", ""] sets the container so that the first of the three strips holds polygons 1-2-2 (circle, triangle, triangle), the second holds 3-3-3 (quadrilateral three times) and the third is empty.
       - NEW **drawpatterncontainer** (\<bool>): true if the PatternContainer should be drawn.
       - **borders** renamed to **drawborders**. Same function.
   
-  - FW: 
-    
-    - mousedown handler: 
-      
-      - Line 41 removed, which brought the hot element to the front. In **strapwork** it otherwise pulled containers in front of polygons. 
-        
+  - FW:
+    - mousedown handler:
+      - Line 41 removed, which brought the hot element to the front. In **strapwork** it otherwise pulled containers in front of polygons.
         > **@Todo**: replace with a layer system and a "movetofront" attribute (check with Ulli, is that backwards compatible?).
-  
-  - CLASS: 
-    
-    - Scrollbar: 
+  - CLASS:
+    - Scrollbar:
       - "script" is no longer triggered on "moveend" (in addition to "move") but on "click" (in addition to "move"), since otherwise the "value" from BEFORE the change was always used.
 
 ## v2.1.1
 
-- VAM: 
-  - numbercards: 
+- VAM:
+  - numbercards:
     - Fix: arrangement of the Montessori colours corrected
     - Fix: divomath setting for whether a card is shown collapsed or not ("unfold" attribute)
-  - divisors: 
+  - divisors:
     - new divomath configuration: "stripmargin"
     - divomath config "padding" renamed to "blobmargin"
     - Alignment of the polygons adjusted (odd vertex count => point up, even => edge up)
@@ -416,71 +409,71 @@ across major versions and is also stamped into the header of every built file.
     - Behaviour of the movable bar adjusted
     - fix: the movable bar snaps to the strips when released
     - Attributes "width" and "height" added for strips
-  - CLASS: 
-    - *new* Key: 
+  - CLASS:
+    - *new* Key:
       - A single key for a keyboard (inherits from Button)
-    - *new* Keyboard: 
+    - *new* Keyboard:
       - A (currently numeric only) keyboard that can be shown when a text field is clicked or similar
-    - *new* TextInput: 
+    - *new* TextInput:
       - A quasi text box that can drive a "Keyboard" for input when selected.
-    - *new* Toggle: 
+    - *new* Toggle:
       - Toggle button whose "state" can be used as a bool. Calls its "script" on "click".
-    - *new* Scrollbar: 
+    - *new* Scrollbar:
       - Scrollbar whose "value" can be used to configure other components.
-- FW: 
-  - constants: 
+- FW:
+  - constants:
     - unicode added for various arrows (LEFTARROW, RIGHTARROW, ...)
-  - helper functions: 
+  - helper functions:
     - incircle(): checks whether a point lies inside a circle
 
 ## v2.1.0
 
-- VAM: 
-  - strapwork: 
+- VAM:
+  - strapwork:
     - Animation behaviour adjusted
     - Scrollbar added
     - Reset button added
-- CLASS: 
-  - Button: 
+- CLASS:
+  - Button:
     - "hasborder" (bool) added as an attribute
-  - *new* Scrollbar: 
+  - *new* Scrollbar:
     - A scrollbar for moving content. Moving the scrollbar updates its value. What should happen with it (at the end of a move event) has to be configured through the "script" attribute. "max" and "min" attributes can be set individually (default: 100 and 0). The current value is available through the "value" attribute. "value" changes linearly with the position of the scrollbar.
 
 ## v2.0.0
 
 - new widget: "divisors"
-- VAM: 
-  - numbercards: 
+- VAM:
+  - numbercards:
     - Fix: lists passed as lists (e.g. for x and y) are now processed correctly.
     - Styling adjusted: narrower border, rounded rectangle for the expand/collapse button, one colour button per card and new styling, new layout for the +/- buttons, colours adapted to the Montessori colours
     - Separator between groups of three digits added, configurable from the editor ("separator")
     - Documentation adjusted
-  - strapwork: 
+  - strapwork:
     - divomath state definition adjusted
     - Choice between fixed and flexible container length added
     - Deleting the last component when the container is full added
-- FW 
-  - draw: 
+- FW
+  - draw:
     - Fix: removed the debug function that drew nadas everywhere while debugging
     - objpreview removed, not needed
-  - constants: 
-    - colors: 
+  - constants:
+    - colors:
       - changed: DIVOBLUE from (120,147,194) to (83,125,156)
       - changed: DIVORED from (255,84,84) to (235,85,78)
       - changed: DIVOGREY from (165,165,165) to (130,149,192) --> rather blue
       - added: MONTERED, MONTEGREEN, MONTEBLUE, MONTEGREY for the Montessori colours. Plus MONTEPALETTE as a list of all Montessori colours
     - VALUEMAP: maps the numbers 1 to 12 to the words "Einer", "Zweier" ... "Zwölfer"
     - HEXMAP: maps the strings "0" to "9" and "A" to "F" respectively "a" to "f" to the numbers 1 to 15
-    - COLORMAP: contains most of the predefined colours 
+    - COLORMAP: contains most of the predefined colours
       - Colours: "DARKRED", "DARKBLUE", "DARKGREEN",    "DZLMCOLORGOLD", "DZLMCOLORDARK", "PLACECOLORGREEN", "PLACECOLORBLUE","PLACECOLORRED", "DIVOGREEN", "DIVOVIOLET", "DIVOGREY", "DIVOBLACK", "DIVORED", "DIVOBLUE"
-  - helper functions: 
+  - helper functions:
     - list(\<any>): forces a list from any input (number, object). nada stays nada, a list stays a list, a string becomes a char array.
-    - centroid: 
+    - centroid:
       - centroid(list): computes the centroid of a list of points (geometric mean)
-    - centerofmass: 
+    - centerofmass:
       - centerofmass(list): computes the arithmetic mean of a list of points
-- CLASS 
-  - Button: 
+- CLASS
+  - Button:
     - Button shadow changed from a generic rectangle to the actual button shape (shape attribute)
     - Attribute "show" added, for showing and hiding the button
     - Flag "hasshadow" added, to control whether the shadow is drawn
