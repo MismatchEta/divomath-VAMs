@@ -27,11 +27,18 @@ The Problems panel lists the findings of all scripts, not only the open ones.
 
 ## Install
 
-1. Command palette (Ctrl+Shift+P): **Developer: Install Extension from Location...**
-2. Choose the folder `tools/vscode-cindyscript`.
+Package the extension as a VSIX from the repository root:
 
-VS Code uses the folder in place, so after a `git pull` that changes the
-extension, **Developer: Reload Window** is enough.
+```bash
+cd tools/vscode-cindyscript
+npx --yes @vscode/vsce package --out cindyscript-0.1.0.vsix
+```
+
+In Code OSS, open the Extensions view, choose **Install from VSIX...** from
+the `...` menu, and select `tools/vscode-cindyscript/cindyscript-0.1.0.vsix`.
+Reload the window and open a `.cindyscript` file to activate the editor
+support. Code OSS 1.74 or later is required. After pulling extension changes,
+package and install the VSIX again.
 
 ## Settings
 
