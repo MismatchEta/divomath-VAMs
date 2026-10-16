@@ -1,0 +1,39 @@
+/** v1 ******************************************************************************************
+* Class for ResetButton: an ImageButton with the reset icon that asks before it resets (see
+* [C] ConfirmDialog). Every VAM overwrites "reset" with what a reset means for it.
+*
+* Usage:
+*   btn = new ResetButton(coord, size);
+*   btn:"reset" := my vam reset();
+*   obj = obj :> btn;
+*
+* Recent changes:
+* 2026-10-16 Created for distributive
+************************************************************************************************/
+
+new ResetButton(coord, size) := (
+	regional(btn);
+	btn = new ImageButton(coord, size, size, ICONS:"reset2");
+
+	// --- Question before resetting ---
+	btn:"confirm" = true; // false: reset right away
+	btn:"question" = "Alles zurücksetzen?";
+	btn:"confirmlabel" = "Zurücksetzen";
+	btn:"cancellabel" = "Abbrechen";
+
+	// --- What a reset does, up to the VAM ---
+	// No "" inside strings: CindyJS 0.8.29, which divomath uses, can not parse it
+	btn:"reset" := warn at("ResetButton", "Overwrite the reset method in the VAM, nothing has been reset."); // @overwrite
+
+	btn:"script" := if(my("confirm"),
+		regional(dialog);
+		dialog = new ConfirmDialog(my("question"), my("confirmlabel"), my("cancellabel"));
+		dialog:"button" = self();
+		dialog:"onconfirm" := my("button"):"reset";
+		dialog:"open";
+	,
+		my("reset");
+	);
+
+	btn; // Return the button.
+);

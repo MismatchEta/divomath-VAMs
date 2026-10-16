@@ -3,6 +3,30 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7b446
+
+- FRAMEWORK:
+  - **ConfirmDialog** (`[C] ConfirmDialog`): a question with a confirm and a
+    cancel button over the dimmed VAM. While it is open only the dialog gets
+    mouse input — new flag **MODAL**, respected by the mouse scripts.
+  - **ResetButton** (`[C] ResetButton`): ImageButton with the reset icon that
+    asks through a ConfirmDialog before resetting. Every VAM overwrites `reset`.
+  - **initial params()** in `[FUN] Divomath`: the parameters of the first visit
+    of a slide — editor defaults and `__` references, without the learner's
+    stored state and last submission. Standalone: the URL parameters.
+- VAM:
+  - distributive: **reset button**, hidden by default — `drawresetbutton`,
+    `resetbuttonsize`, `resetbuttonx`, `resetbuttony`. After a confirmation it
+    resets to the state of the first visit, which then counts right away for
+    the stored state and the results.
+  - distributive: configuration and building moved into
+    `distributive configure()` and `distributive build()`, which the reset
+    repeats.
+  - distributive: the tool button is built once instead of on every access.
+- GENERAL:
+  - The standalone page is titled "VAM Framework".
+  - Link generator: fields for the reset button.
+
 ## v7b443
 
 - GENERAL:

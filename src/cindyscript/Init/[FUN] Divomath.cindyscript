@@ -1,4 +1,4 @@
-/** v4 ******************************************************************************************
+/** v5 ******************************************************************************************
 * Fields and functions for interacting with the divomath platform. divomath uses the following hooks
 * - divomath get var state				- Hook for divomath callbackfunction
 * - divomathAddResult(key, value)	- Adds a submission to the result
@@ -66,6 +66,7 @@
 * 2026-08-09 Add json serializing to divomath get var state(1).
 * 2026-08-09 Add guards to divomath put results(2).
 * 2026-08-19 Fix divomath get params() method missing the handling of stored states since the refactor - whoops
+* 2026-10-16 Add initial params() for resetting a VAM to the state of the first visit
 ************************************************************************************************/
 
 // ==================================== //
@@ -289,4 +290,52 @@ divomath get params() := if(ISDIVOMATH,
 	debug at("divomath get params()", "Finished getting parameters. State of ENVIRONMENTALPARAMS: " + ENVIRONMENTALPARAMS);
 
 	ENVIRONMENTALPARAMS; // Return (altough changes in place)
+);
+
+
+// ===================== //
+// Parameters for resets //
+// ===================== //
+
+/**
+* Parameters a VAM starts with on the first visit of a slide, used to reset it.
+* - in divomath: references to earlier slides ("__" keys) and the defaults
+*   from the editor, in the same order as "divomath get params()", but
+*   without the learner's last submission and stored state
+* - standalone: the URL parameters
+* - in Cinderella: none
+**/
+initial params() := (
+	regional(params);
+	params = {};
+
+	// Standalone --> the URL is all there is.
+	if(!ISDIVOMATH,
+		if(ISCINDYJS, params = get url params());
+	);
+
+	if(ISDIVOMATH,
+		// --- 1. References (dunder keys), the cindyjs object wins over the top level ---
+		forall([DIVOMATH'CINDYJSSTATEDEF, DIVOMATH'BLOB], source,
+			regional(dunderkeys);
+			dunderkeys = if(isundefined(source) % islist(source), [], select(keys(source), key, starts with(key, "__")));
+
+			forall(dunderkeys, key,
+				regional(plainkey);
+				plainkey = substring(key, 2, length(key));
+				if(!contains(keys(params), plainkey), params:plainkey = source:key);
+			);
+		);
+
+		// --- 2. Defaults from the editor ---
+		if(!isundefined(DIVOMATH'CINDYJSSTATEDEF) & !islist(DIVOMATH'CINDYJSSTATEDEF),
+			forall(keys(DIVOMATH'CINDYJSSTATEDEF), key,
+				if(!contains(keys(params), key), params:key = DIVOMATH'CINDYJSSTATEDEF:key);
+			);
+		);
+	);
+
+	debug at("initial params()", "Parameters for a reset: " + params);
+
+	params; // Return
 );

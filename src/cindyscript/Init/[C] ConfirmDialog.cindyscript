@@ -1,0 +1,117 @@
+/** v1 ******************************************************************************************
+* Class for ConfirmDialog: a question with a confirm and a cancel button, in a box over the
+* dimmed VAM. While it is open only the dialog gets mouse input (MODAL, see [FW] mousedown and
+* [FW] mouseup). A click on "confirm" closes it and runs "onconfirm", a click on "cancel" or
+* next to the box only closes it.
+*
+* Usage:
+*   dialog = new ConfirmDialog("Alles zurücksetzen?", "Zurücksetzen", "Abbrechen");
+*   dialog:"onconfirm" := ...; // evaluated with self() being the dialog
+*   dialog:"open";
+*
+* Recent changes:
+* 2026-10-16 Created for the ResetButton
+************************************************************************************************/
+
+new ConfirmDialog(question, confirmlabel, cancellabel) := (
+	regional(dialog, confirm, cancel);
+	dialog = new VAMobject("ConfirmDialog");
+
+	dialog:"question" = question;
+	dialog:"ismodal" = true; // the only object that gets mouse input while open
+	dialog:"ismoveable" = false;
+
+	// --- Look ---
+	dialog:"fontsize" := 16 * FONTSCALE * UISCALE;
+	dialog:"padding" = .6 * UISCALE; // inside the box
+	dialog:"gap" = .5 * UISCALE; // between question and buttons, and between the buttons
+	dialog:"buttonheight" = 1.2 * UISCALE;
+	dialog:"buttonpadding" = .5 * UISCALE; // left and right of a button's label
+	dialog:"cornerradius" = .3 * UISCALE;
+	dialog:"color" = grey(1);
+	dialog:"bordercolor" = DZLMCOLORDARK;
+	dialog:"fontcolor" = DZLMCOLORDARK;
+	dialog:"dimalpha" = .25; // how much the VAM behind the dialog is darkened
+
+	// --- Buttons, drawn and hit tested by the dialog, never in obj themselves ---
+	// Button scales width and height by UISCALE itself, so both are set here
+	// after construction, where they are already scaled.
+	confirm = new Button(NADA, 1, 1, confirmlabel, 14);
+	confirm:"dialog" = dialog;
+	confirm:"width" := my("dialog"):"buttonwidth";
+	confirm:"height" := my("dialog"):"buttonheight";
+	confirm:"coord" := my("dialog"):"boxcoord" + [my("dialog"):"boxwidth"/2 - my("dialog"):"gap"/2 - my("width"), my("dialog"):"padding"];
+
+	cancel = new Button(NADA, 1, 1, cancellabel, 14);
+	cancel:"dialog" = dialog;
+	cancel:"width" := my("dialog"):"buttonwidth";
+	cancel:"height" := my("dialog"):"buttonheight";
+	cancel:"coord" := my("dialog"):"boxcoord" + [my("dialog"):"boxwidth"/2 + my("dialog"):"gap"/2, my("dialog"):"padding"];
+
+	dialog:"confirmbutton" = confirm;
+	dialog:"cancelbutton" = cancel;
+
+	// --- Layout, centred in the visible area ---
+	// [width, height, baseline] of the question in world units
+	dialog:"textsize" := pixelsize(my("question"), size->my("fontsize")) / screenresolution();
+
+	dialog:"buttonwidth" := max(my("confirmbutton"):"labelwidth", my("cancelbutton"):"labelwidth") + 2*my("buttonpadding");
+	dialog:"boxwidth" := max(my("textsize")_1, 2*my("buttonwidth") + my("gap")) + 2*my("padding");
+	dialog:"boxheight" := my("padding") + my("buttonheight") + my("gap") + my("textsize")_2 + my("padding");
+	dialog:"boxcoord" := .5*(VRBOTTOMLEFT + VRTOPRIGHT) - .5*[my("boxwidth"), my("boxheight")]; // lower left corner
+	dialog:"box" := rectangle(my("boxcoord"), my("boxwidth"), my("boxheight"));
+
+	// Baseline of the question, centred above the buttons
+	dialog:"textcoord" := my("boxcoord") + [
+		(my("boxwidth") - my("textsize")_1)/2,
+		my("boxheight") - my("padding") - my("textsize")_2 + my("textsize")_3
+	];
+
+	// --- Drawing ---
+	dialog:"draw" := (
+		regional(shape);
+
+		// Darken the VAM behind
+		fill(screen(), color->[0,0,0], alpha->my("dimalpha"));
+
+		// Box with shadow and border
+		shape = rounded rectangle poly(my("boxcoord"), my("boxwidth"), my("boxheight"), my("cornerradius"), 4);
+		fillpoly(apply(shape, # + [.05,-.08]*UISCALE), color->[0,0,0], alpha->.2);
+		fillpoly(shape, color->my("color"));
+		drawpoly(shape, color->my("bordercolor"));
+
+		// Question and buttons
+		draw label(my("textcoord"), my("question"), my("fontsize"), mod'color->my("fontcolor"));
+		my("confirmbutton"):"draw";
+		my("cancelbutton"):"draw";
+	);
+
+	// --- Mouse ---
+	dialog:"ishot" := true; // covers everything, a click next to the box cancels
+
+	dialog:"click" := (
+		if(my("confirmbutton"):"ishot",
+			my("close");
+			my("onconfirm");
+		,
+			if(my("cancelbutton"):"ishot" % !in rectangle(my("box"), mouse().xy),
+				my("close");
+			);
+		);
+	);
+
+	// --- Open and close ---
+	dialog:"open" := (
+		obj = obj :> self(); // last in obj, so drawn on top
+		MODAL = true;
+	);
+
+	dialog:"close" := (
+		obj = obj -- [self()];
+		MODAL = false;
+	);
+
+	dialog:"onconfirm" := NADA; // @overwrite
+
+	dialog; // Return the dialog.
+);

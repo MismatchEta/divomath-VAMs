@@ -1,4 +1,4 @@
-/** v20 *****************************************************************************************
+/** v21 *****************************************************************************************
 * Rectangle of blobs to explore distributive properties.
 *
 * Recent changes:
@@ -12,6 +12,9 @@
 * 2026-08-05: Introduce base rounded rectangle poly which all Atoms just translate for EVEN MOAR PERFORMANCE
 * 2026-08-09: Adjust divomath functions to new json serialization pipeline
 * 2026-08-19: Change tool button to be proper ImageButton
+* 2026-10-16: Add reset button (drawresetbutton, resetbuttonx, resetbuttony, resetbuttonsize)
+* 2026-10-16: Read configuration and build objects in functions, so a reset can repeat both
+* 2026-10-16: Build the tool button once instead of on every access
 ************************************************************************************************/
 
 // Rechteckfeld
@@ -29,90 +32,106 @@ DOCTEXT = "...";
 // B | Configuration //
 // ================= //
 
-// --- Grid: structure ---
-'gridposition					= default to(ENVIRONMENTALPARAMS:"gridposition", [10,8], true); // Grid position at init
-'rows									= default to(ENVIRONMENTALPARAMS:"rows", 5, true); // Initial number of rows in grid
-'cols									= default to(ENVIRONMENTALPARAMS:"cols", 7, true); // Initial number of cols in grid
-'gridmoveable					= default to(ENVIRONMENTALPARAMS:"gridmoveable", true, true); // Determines if grid is moveable
- 
-// --- Atoms: Size and spacing ---
-'atomsize							= default to(ENVIRONMENTALPARAMS:"size", 1, true); // General size of atoms
-'atomradius						= default to(ENVIRONMENTALPARAMS:"cornerradius", .5, true); // Corner radius of Atoms
-'atomverticalpadding	= default to(ENVIRONMENTALPARAMS:"verticalpadding", .1, true); // Vertical padding between Atoms
-'atomhorizontalpadding= default to(ENVIRONMENTALPARAMS:"horizontalpadding", .1, true); // Horizontal padding between Atoms
-'groupspacing					= default to(ENVIRONMENTALPARAMS:"groupspacing", .2, true); // Spacing for grouping on click
-'cutwidth							= default to(ENVIRONMENTALPARAMS:"cutwidth", .3, true); // Spacing when cutting
-'animationspeed				= default to(ENVIRONMENTALPARAMS:"animationspeed", .15, true); // Speed modifier for animations
- 
-// --- Initial state: grouping, coloring, cutting ---
-'groupingtype					= default to(ENVIRONMENTALPARAMS:"groupingtype", "ROWCOL", false); // "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
-'groupby							= default to(ENVIRONMENTALPARAMS:"groupby", "NONE", false); // "NONE", "ROW", "COL"/"COLUMN" - Grouping at init
-'coloredrowindex			= default to(ENVIRONMENTALPARAMS:"coloredrowindex", NADA, true);
-'coloredcolindex			= default to(ENVIRONMENTALPARAMS:"coloredcolindex", NADA, true);
-'cuthorizontally			= default to(ENVIRONMENTALPARAMS:"cuthorizontally", false, true);
-'cutvertically				= default to(ENVIRONMENTALPARAMS:"cutvertically", false, true);
-'requiregrouping			= default to(ENVIRONMENTALPARAMS:"requiregrouping", true, true); // Allow coloring and cutting only after grouping
- 
-// --- Tool-Button ---
-'tool									= default to(ENVIRONMENTALPARAMS:"tool", "hand", false); // "hand", "bucket" or "scissors"
-'drawtoolbutton				= default to(ENVIRONMENTALPARAMS:"drawtoolbutton", true, true);
-'buttonsize						= default to(ENVIRONMENTALPARAMS:"buttonsize", 2, true);
-'buttonpadding				= default to(ENVIRONMENTALPARAMS:"buttonpadding", .4, true);
-'toolbuttonx					= default to(ENVIRONMENTALPARAMS:"toolbuttonx", NADA, true); // NADA = right edge
-'toolbuttony					= default to(ENVIRONMENTALPARAMS:"toolbuttony", NADA, true); // NADA = upper edge
- 
-// --- Text output (verbal and expression) ---
-'fontsize							= default to(ENVIRONMENTALPARAMS:"fontsize", 18, true);
-'lblpadding						= default to(ENVIRONMENTALPARAMS:"labelpadding", 10.3, true);
-'drawexpression				= default to(ENVIRONMENTALPARAMS:"drawexpression", true, true); // Show expression
-'expressionposition		= default to(ENVIRONMENTALPARAMS:"expressionposition", NADA, true);
-'expressionmoveable		= default to(ENVIRONMENTALPARAMS:"expressionmoveable", false, true);
-'drawverbal						= default to(ENVIRONMENTALPARAMS:"drawverbal", true, true); // Show verbal description
-'verbalposition				= default to(ENVIRONMENTALPARAMS:"verbalposition", NADA, true);
-'verbalmoveable				= default to(ENVIRONMENTALPARAMS:"verbalmoveable", false, true);
-'showexpressiontoggle	= default to(ENVIRONMENTALPARAMS:"showexpressiontoggle", false, true);
-'expressiontogglestate= default to(ENVIRONMENTALPARAMS:"expressiontogglestate", true, true);
- 
-// --- Other ---
-'picturemode					= default to(ENVIRONMENTALPARAMS:"picturemode", false, true); // Removes interactivity from VAM
+// Read in a function, so a reset can read it again from the initial
+// parameters (see distributive reset()).
+distributive configure(params) := (
 
-// Handle empty Strings from divomath (is "" instead of NADA)
-if(isstring('coloredrowindex), 'coloredrowindex = NADA);
-if(isstring('coloredcolindex), 'coloredcolindex = NADA);
-if(isstring('toolbuttonx), 'toolbuttonx = NADA);
-if(isstring('toolbuttony), 'toolbuttony = NADA);
+	// --- Grid: structure ---
+	'gridposition					= default to(params:"gridposition", [10,8], true); // Grid position at init
+	'rows									= default to(params:"rows", 5, true); // Initial number of rows in grid
+	'cols									= default to(params:"cols", 7, true); // Initial number of cols in grid
+	'gridmoveable					= default to(params:"gridmoveable", true, true); // Determines if grid is moveable
+ 
+	// --- Atoms: Size and spacing ---
+	'atomsize							= default to(params:"size", 1, true); // General size of atoms
+	'atomradius						= default to(params:"cornerradius", .5, true); // Corner radius of Atoms
+	'atomverticalpadding	= default to(params:"verticalpadding", .1, true); // Vertical padding between Atoms
+	'atomhorizontalpadding= default to(params:"horizontalpadding", .1, true); // Horizontal padding between Atoms
+	'groupspacing					= default to(params:"groupspacing", .2, true); // Spacing for grouping on click
+	'cutwidth							= default to(params:"cutwidth", .3, true); // Spacing when cutting
+	'animationspeed				= default to(params:"animationspeed", .15, true); // Speed modifier for animations
+ 
+	// --- Initial state: grouping, coloring, cutting ---
+	'groupingtype					= default to(params:"groupingtype", "ROWCOL", false); // "NONE", "ROW", "COL" or "ROWCOL" - determines what groupings are possible
+	'groupby							= default to(params:"groupby", "NONE", false); // "NONE", "ROW", "COL"/"COLUMN" - Grouping at init
+	'coloredrowindex			= default to(params:"coloredrowindex", NADA, true);
+	'coloredcolindex			= default to(params:"coloredcolindex", NADA, true);
+	'cuthorizontally			= default to(params:"cuthorizontally", false, true);
+	'cutvertically				= default to(params:"cutvertically", false, true);
+	'requiregrouping			= default to(params:"requiregrouping", true, true); // Allow coloring and cutting only after grouping
+ 
+	// --- Tool-Button ---
+	'tool									= default to(params:"tool", "hand", false); // "hand", "bucket" or "scissors"
+	'drawtoolbutton				= default to(params:"drawtoolbutton", true, true);
+	'buttonsize						= default to(params:"buttonsize", 2, true);
+	'buttonpadding				= default to(params:"buttonpadding", .4, true);
+	'toolbuttonx					= default to(params:"toolbuttonx", NADA, true); // NADA = right edge
+	'toolbuttony					= default to(params:"toolbuttony", NADA, true); // NADA = upper edge
+ 
+	// --- Reset button ---
+	'drawresetbutton				= default to(params:"drawresetbutton", false, true); // Hidden by default
+	'resetbuttonsize				= default to(params:"resetbuttonsize", 'buttonsize, true);
+	'resetbuttonx					= default to(params:"resetbuttonx", NADA, true); // NADA = right edge
+	'resetbuttony					= default to(params:"resetbuttony", NADA, true); // NADA = below the tool button
+ 
+	// --- Text output (verbal and expression) ---
+	'fontsize							= default to(params:"fontsize", 18, true);
+	'lblpadding						= default to(params:"labelpadding", 10.3, true);
+	'drawexpression				= default to(params:"drawexpression", true, true); // Show expression
+	'expressionposition		= default to(params:"expressionposition", NADA, true);
+	'expressionmoveable		= default to(params:"expressionmoveable", false, true);
+	'drawverbal						= default to(params:"drawverbal", true, true); // Show verbal description
+	'verbalposition				= default to(params:"verbalposition", NADA, true);
+	'verbalmoveable				= default to(params:"verbalmoveable", false, true);
+	'showexpressiontoggle	= default to(params:"showexpressiontoggle", false, true);
+	'expressiontogglestate= default to(params:"expressiontogglestate", true, true);
+ 
+	// --- Other ---
+	'picturemode					= default to(params:"picturemode", false, true); // Removes interactivity from VAM
 
-// Normalize booleans (divomath returns "" instead of false maybe probably)
-'gridmoveable 					= tobool('gridmoveable);
-'cuthorizontally 				= tobool('cuthorizontally);
-'cutvertically 					= tobool('cutvertically);
-'drawtoolbutton 				= tobool('drawtoolbutton);
-'drawexpression 				= tobool('drawexpression);
-'drawverbal 						= tobool('drawverbal);
-'expressionmoveable 		= tobool('expressionmoveable);
-'verbalmoveable 				= tobool('verbalmoveable);
-'showexpressiontoggle 	= tobool('showexpressiontoggle);
-'expressiontogglestate 	= tobool('expressiontogglestate);
-'picturemode 						= tobool('picturemode);
-'requiregrouping 				= tobool('requiregrouping);
+	// Handle empty Strings from divomath (is "" instead of NADA)
+	if(isstring('coloredrowindex), 'coloredrowindex = NADA);
+	if(isstring('coloredcolindex), 'coloredcolindex = NADA);
+	if(isstring('toolbuttonx), 'toolbuttonx = NADA);
+	if(isstring('toolbuttony), 'toolbuttony = NADA);
+	if(isstring('resetbuttonx), 'resetbuttonx = NADA);
+	if(isstring('resetbuttony), 'resetbuttony = NADA);
 
-// Normalize other values
-if('groupby == "COL", 'groupby = "COLUMN"); // Tolerate the groupingtype spelling
-if(!contains(["NONE","ROW","COLUMN"], 'groupby),
-	err("groupby must be one of 'NONE', 'ROW', 'COLUMN'. Set to 'NONE'.");
-	'groupby = "NONE";
+	// Normalize booleans (divomath returns "" instead of false maybe probably)
+	'gridmoveable 					= tobool('gridmoveable);
+	'cuthorizontally 				= tobool('cuthorizontally);
+	'cutvertically 					= tobool('cutvertically);
+	'drawtoolbutton 				= tobool('drawtoolbutton);
+	'drawexpression 				= tobool('drawexpression);
+	'drawverbal 						= tobool('drawverbal);
+	'expressionmoveable 		= tobool('expressionmoveable);
+	'verbalmoveable 				= tobool('verbalmoveable);
+	'showexpressiontoggle 	= tobool('showexpressiontoggle);
+	'expressiontogglestate 	= tobool('expressiontogglestate);
+	'picturemode 						= tobool('picturemode);
+	'requiregrouping 				= tobool('requiregrouping);
+	'drawresetbutton 				= tobool('drawresetbutton);
+
+	// Normalize other values
+	if('groupby == "COL", 'groupby = "COLUMN"); // Tolerate the groupingtype spelling
+	if(!contains(["NONE","ROW","COLUMN"], 'groupby),
+		err("groupby must be one of 'NONE', 'ROW', 'COLUMN'. Set to 'NONE'.");
+		'groupby = "NONE";
+	);
+
+
+	// Some constants
+	'ROUNDEDPOLYRESOLUTION = 10; // Number of points for rounded rectangles (since there polys now)
+	'ATOMSHAPE = rounded rectangle poly([0,0], 'atomsize, 'atomsize, 'atomradius, 4); // One shape for all atoms, translated on draw (size is identical anyway)
+	'ATOMCOLORS = {
+		"blue" : (40,111,255)/255,
+		"green" : (50,202,48)/255,
+		"orange" : (255,129,29)/255,
+		"purple" : (165,57,255)/255
+	};
 );
 
-
-// Some constants
-'ROUNDEDPOLYRESOLUTION = 10; // Number of points for rounded rectangles (since there polys now)
-'ATOMSHAPE = rounded rectangle poly([0,0], 'atomsize, 'atomsize, 'atomradius, 4); // One shape for all atoms, translated on draw (size is identical anyway)
-'ATOMCOLORS = {
-	"blue" : (40,111,255)/255,
-	"green" : (50,202,48)/255,
-	"orange" : (255,129,29)/255,
-	"purple" : (165,57,255)/255
-};
+distributive configure(ENVIRONMENTALPARAMS);
 
 
 
@@ -1083,7 +1102,7 @@ new Grid(c, rows, cols) := (
 
 	// === UI: Tool button
 	grid:"tool" = 'tool; // Initial tools name
-	grid:"toolbutton" := (
+	grid:"toolbutton" = (
 		regional(btn, c);
 
 		c = VRTOPRIGHT - ('buttonsize+'buttonpadding) * [1,1];
@@ -1091,7 +1110,7 @@ new Grid(c, rows, cols) := (
 		if(!isundefined('toolbuttony), c_2 = 'toolbuttony);
 		btn = new ImageButton(c, 'buttonsize, 'buttonsize, NADA);
 
-		btn:"parent" = self();
+		btn:"parent" = grid;
 		btn:"label" := ICONS:(my("tool"));
 		btn:"center" := my("coord") + .5*[my("width"),my("height")];
 		
@@ -1239,64 +1258,96 @@ new Grid(c, rows, cols) := (
 // D | Initialization //
 // ================== //
 
-// === Build grid ===
-grid = new Grid('gridposition,'rows,'cols);
+// Built in a function, so a reset can build everything again.
+distributive build() := (
 
-// === Set initial coloring ===
-if(tobool('coloredrowindex > 0), grid:"flags":"color-row" = 'coloredrowindex);
-if(tobool('coloredcolindex > 0), grid:"flags":"color-col" = grid:"cols" - 'coloredcolindex + 1);
-grid:"repaint";
+	// === Build grid ===
+	grid = new Grid('gridposition,'rows,'cols);
 
-// === Set initial cutting ===
-if('cuthorizontally & !grid:"flags":"cut-row" & tobool('coloredrowindex > 0),
-	eval(
-		grid:"cutgrid",
-		'activeindex->grid:"flags":"color-row",
-		'direction->"HORIZONTAL"
-	)
-);
-if('cutvertically & !grid:"flags":"cut-col" & tobool('coloredcolindex > 0),
-	eval(
-		grid:"cutgrid",
-		'activeindex->grid:"flags":"color-col",
-		'direction->"VERTICAL"
-	)
-);
+	// === Set initial coloring ===
+	if(tobool('coloredrowindex > 0), grid:"flags":"color-row" = 'coloredrowindex);
+	if(tobool('coloredcolindex > 0), grid:"flags":"color-col" = grid:"cols" - 'coloredcolindex + 1);
+	grid:"repaint";
 
-// === Set initial grouping ===
-grid:"flags":"group-by" = 'groupby;
-grid:"groupatoms";
-
-// === Reevaluate Expressions ===
-grid:"updateexpression";
-
-// === Set up Toggle for hiding/showing expressions ===
-regional(togglepadding, togglesize, togglepos);
-togglepadding = .3;
-togglesize = 1;
-togglepos = VRTOPLEFT - [0,.5*togglesize];
-togglepos = togglepos + [togglepadding, -togglepadding];
-toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Sprache/Term anzeigen", 12*togglesize);
-toggle:"script" := (
-	if(my("state"),
-		if(grid:"drawexpression", obj = obj :> obj_1:"expression");
-		if(grid:"drawverbal", obj = obj :> obj_1:"verbal");
-	,
-		obj = obj -- [grid:"expression"];
-		obj = obj -- [grid:"verbal"];
+	// === Set initial cutting ===
+	if('cuthorizontally & !grid:"flags":"cut-row" & tobool('coloredrowindex > 0),
+		eval(
+			grid:"cutgrid",
+			'activeindex->grid:"flags":"color-row",
+			'direction->"HORIZONTAL"
+		)
 	);
+	if('cutvertically & !grid:"flags":"cut-col" & tobool('coloredcolindex > 0),
+		eval(
+			grid:"cutgrid",
+			'activeindex->grid:"flags":"color-col",
+			'direction->"VERTICAL"
+		)
+	);
+
+	// === Set initial grouping ===
+	grid:"flags":"group-by" = 'groupby;
+	grid:"groupatoms";
+
+	// === Reevaluate Expressions ===
+	grid:"updateexpression";
+
+	// === Set up Toggle for hiding/showing expressions ===
+	regional(togglepadding, togglesize, togglepos, resetcoord);
+	togglepadding = .3;
+	togglesize = 1;
+	togglepos = VRTOPLEFT - [0,.5*togglesize];
+	togglepos = togglepos + [togglepadding, -togglepadding];
+	toggle = new Toggle(togglepos, togglesize, 'expressiontogglestate, "Sprache/Term anzeigen", 12*togglesize);
+	toggle:"script" := (
+		if(my("state"),
+			if(grid:"drawexpression", obj = obj :> obj_1:"expression");
+			if(grid:"drawverbal", obj = obj :> obj_1:"verbal");
+		,
+			obj = obj -- [grid:"expression"];
+			obj = obj -- [grid:"verbal"];
+		);
+	);
+
+	// === Set up expressions ===
+	if(!isundefined('expressionposition), grid:"expression":"coord" = 'expressionposition);
+	if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
+
+	// === Reset button, below the tool button unless placed elsewhere ===
+	if('drawresetbutton & !'picturemode,
+		resetcoord = VRTOPRIGHT - ('resetbuttonsize+'buttonpadding) * [1,1];
+		if('drawtoolbutton, resetcoord = resetcoord - [0, 'buttonsize+'buttonpadding]);
+		if(!isundefined('resetbuttonx), resetcoord_1 = 'resetbuttonx);
+		if(!isundefined('resetbuttony), resetcoord_2 = 'resetbuttony);
+		resetbutton = new ResetButton(resetcoord, 'resetbuttonsize);
+		resetbutton:"reset" := distributive reset();
+	);
+
+	// === Build ===
+	obj = obj :> grid;
+	obj = obj :> obj_1:"vbar";
+	obj = obj :> obj_1:"hbar";
+	if('showexpressiontoggle, obj = obj :> toggle);
+	if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
+	if('drawresetbutton & !'picturemode, obj = obj :> resetbutton);
+	if('expressiontogglestate & 'drawexpression, obj = obj :> obj_1:"expression");
+	if('expressiontogglestate & 'drawverbal, obj = obj :> obj_1:"verbal");
 );
 
-// === Set up expressions ===
-if(!isundefined('expressionposition), grid:"expression":"coord" = 'expressionposition);
-if(!isundefined('verbalposition), grid:"verbal":"coord" = 'verbalposition);
+// Back to the state of the first visit: the parameters from the editor
+// (or the URL) and references to earlier slides, without anything the
+// learner did or submitted.
+distributive reset() := (
+	animations = []; // they belong to the objects about to be replaced
+	oldaction = NADA; // a sticky drag of an old object
+	hot = NADA;
+	obj = [];
 
-// === Build ===
-obj = obj :> grid;
-obj = obj :> obj_1:"vbar";
-obj = obj :> obj_1:"hbar";
-if('showexpressiontoggle, obj = obj :> toggle);
-if('drawtoolbutton, obj = obj :> obj_1:"toolbutton");
-if('expressiontogglestate & 'drawexpression, obj = obj :> obj_1:"expression");
-if('expressiontogglestate & 'drawverbal, obj = obj :> obj_1:"verbal");
+	distributive configure(initial params());
+	distributive build();
+
+	divomath push results(); // the reset state counts right away
+);
+
+distributive build();
 ); // End VAM if
