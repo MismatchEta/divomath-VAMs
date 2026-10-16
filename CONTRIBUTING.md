@@ -36,6 +36,13 @@ dictionary, usually built on `new VAMobject(type)`; methods are fields defined
 with `:=` (`o:"draw" := …`, `o:"click" := …`). The draw script draws `obj` in the
 order of `typeorder`.
 
+**Dialogs and resets.** `new ConfirmDialog(question, confirmlabel, cancellabel)`
+asks before something that cannot be undone. While it is open, the flag `MODAL`
+limits mouse input to objects with `ismodal`. `new ResetButton(coord, size)`
+builds on it: a VAM only overwrites its `reset`, typically by reading its
+configuration again from `initial params()` and building anew — see
+`distributive reset()` in `[VAM] distributive`.
+
 ## Conventions
 
 - **Comments in English, user-facing documentation in German.** The audience
