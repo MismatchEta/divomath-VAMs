@@ -1,4 +1,4 @@
-/** v21 *****************************************************************************************
+/** v22 *****************************************************************************************
 * Rectangle of blobs to explore distributive properties.
 *
 * Recent changes:
@@ -15,6 +15,7 @@
 * 2026-10-16: Add reset button (drawresetbutton, resetbuttonx, resetbuttony, resetbuttonsize)
 * 2026-10-16: Read configuration and build objects in functions, so a reset can repeat both
 * 2026-10-16: Build the tool button once instead of on every access
+* 2026-10-28: Place atoms right away when building instead of animating the initial grouping
 ************************************************************************************************/
 
 // Rechteckfeld
@@ -530,14 +531,14 @@ new Grid(c, rows, cols) := (
 		regional(state);
 		state = my("flags"):"group-by";
 
-		// 1. Animate Atoms accordingly
-		regional(refatom, atom, newcoord); 
-		refatom = my("grid")_1_1;
+		// 1. Move Atoms accordingly: animated, or right away when evaled with 'instant->true
+		regional(refcoord, atom, newcoord);
+		refcoord = my("grid")_1_1:"coord"; // read once: placing right away may move this atom too
 		apply(1..my("rows"), rowindex, apply(1..my("cols"), colindex,
 			atom = my("grid")_rowindex_colindex;
 
 			// Calculate basis for new coordinate without groupspacing (ROW or COLUMN)
-			newcoord = refatom:"coord" + [(colindex-1)*('atomsize+'atomhorizontalpadding),0]; // x-offset normally;
+			newcoord = refcoord + [(colindex-1)*('atomsize+'atomhorizontalpadding),0]; // x-offset normally;
 			newcoord = newcoord + [0,(rowindex-1)*('atomsize+'atomhorizontalpadding)]; // x-offset with groupspacing;
 
 			if(to bool(my("flags"):"cut-row" & my("flags"):"color-row" < rowindex), newcoord = newcoord + [0,'cutwidth]); // add row cutting offset
@@ -547,8 +548,12 @@ new Grid(c, rows, cols) := (
 			if(state == "ROW", newcoord = newcoord + [0,(rowindex-1)*'groupspacing]);
 			if(state == "COLUMN",newcoord = newcoord + [(colindex-1)*'groupspacing,0]);
 			
-			// Animate Atom
-			new animationobject(atom, "coord", atom:"coord", newcoord, 'animationspeed, "accel");
+			// Place or animate Atom
+			if(tobool('instant),
+				atom:"coord" = newcoord;
+			,
+				new animationobject(atom, "coord", atom:"coord", newcoord, 'animationspeed, "accel");
+			);
 		)); // END applys
 	);
 
@@ -1286,8 +1291,11 @@ distributive build() := (
 	);
 
 	// === Set initial grouping ===
+	// Placed right away, not animated: the first frame has to show the grouping
+	// already. In picturemode nothing would trigger it later, and divomath may
+	// show the VAM (e.g. dropped into a dropzone) before an animation ran.
 	grid:"flags":"group-by" = 'groupby;
-	grid:"groupatoms";
+	eval(grid:"groupatoms", 'instant->true);
 
 	// === Reevaluate Expressions ===
 	grid:"updateexpression";

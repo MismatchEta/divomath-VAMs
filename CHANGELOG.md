@@ -3,6 +3,15 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7b448
+
+- VAM:
+  - Fix distributive: with `groupby` set, the rows or columns only moved apart
+    through an animation after the start. Where that animation did not run —
+    in `picturemode` as drag element dropped into a divomath dropzone — they
+    stayed together. The initial grouping is now placed right away; grouping
+    by a click still animates.
+
 ## v7b446
 
 - FRAMEWORK:
