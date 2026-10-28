@@ -1,9 +1,10 @@
-/* v4 ******************************************************************************************
+/* v5 ******************************************************************************************
 * FW handling for mouse release.
 * Basically executes "click"-events and "~end" events.
 *
 * recent changes:
 * - 2026-06-20: Fixed breaking ifs from CindyJS 0.8.45 update.
+* - 2026-10-16: While a dialog is open (MODAL) only its objects get drop and click events.
 ************************************************************************************************/
 
 log mouse up();
@@ -17,7 +18,7 @@ if(!isundefined(hot),
 
   //Allgemeiner "drop on" event – entscheiden, ob der vor, nach oder vor und nach act(...) sein soll.
   if(!isundefined(action),
-		forall(select(obj,o,eval(o:"ishot",coord->mouse())),droptarget, 
+		forall(select(obj,o,tobool(eval(o:"ishot",coord->mouse())) & (!MODAL % tobool(o:"ismodal"))),droptarget,
 			eval(droptarget:"dropevent", dropobject->hot);
 		); 
 	);
@@ -44,8 +45,12 @@ if(tobool(hot:"sticky"), oldaction = hot);
 if(tobool(dist(startmouse,mouse().xy)<pinchsensitivity),
 // then click
 
+	// Remember whether a dialog was open: a click into it may close it, the
+	// objects after it in the list must still not get this click.
+	wasmodal = MODAL;
+
 	forall(obj,o,
-		if(tobool(o:"ishot"),
+		if(tobool(o:"ishot") & (!wasmodal % tobool(o:"ismodal")),
 			if(isundefined(o:"deletecopyifnotmovedandsubstitutebyoriginal"), 
 				o:"click"; 
 				,

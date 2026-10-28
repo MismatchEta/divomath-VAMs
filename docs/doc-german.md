@@ -399,6 +399,22 @@ Term und seine verbale Beschreibung, die sich mit jeder Handlung mitverändern
   - Feste Position. Ohne Angabe sitzt der Knopf oben rechts.
   - default NADA
 
+**Reset-Knopf**
+
+Setzt das Arbeitsmittel nach einer Rückfrage auf den Zustand zurück, mit dem
+die Folie zum ersten Mal aufgerufen wird: die Einstellungen aus dem Editor und
+die Werte, die aus früheren Folien übernommen werden (`__`-Referenzen). Was die
+Lernenden verändert oder abgegeben haben, wird verworfen. Der zurückgesetzte
+Zustand gilt sofort, auch beim Verlassen und Wiederkommen der Folie und für die
+Auswertung. Im Standalone-Betrieb wird auf die Parameter der URL zurückgesetzt.
+
+- `drawresetbutton`: *\<bool>* — Knopf zeichnen oder nicht. Im `picturemode` erscheint er nie. default false
+- `resetbuttonsize`: *\<float>* — Größe des Knopfs. default wie `buttonsize`
+- `resetbuttonx`, `resetbuttony`: *\<float>*
+  - Feste Position. Ohne Angabe sitzt der Knopf unter dem Werkzeug-Knopf, ohne
+    Werkzeug-Knopf oben rechts.
+  - default NADA
+
 **Term und Beschreibung**
 
 - `drawexpression`: *\<bool>* — Term zeichnen. default true

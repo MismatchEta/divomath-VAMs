@@ -1,4 +1,4 @@
-/** v5 ******************************************************************************************
+/** v6 ******************************************************************************************
 * Init of general variables for use in the framework.
 *
 * Recent changes:
@@ -7,6 +7,7 @@
 * 2026-07-27: Fix parsing issues for LOGLEVEL and MAXLOGMESSAGES
 * 2026-07-29: Add access to LOGGINGENABLED via ENVIRONMENTALPARAMS
 * 2026-08-17 Add UISCALE
+* 2026-10-16 Add MODAL flag for dialogs
 ************************************************************************************************/
 
 // =========================== //
@@ -44,6 +45,7 @@ FIRSTDRAW					= true;		// For handling stuff that should only happen on first ca
 MOUSEDOWN					= false;	// Toggles in relevant mouse scripts
 MOUSEPRESSEDTIME	= false;
 INITDONE					= false;	// Signal when init script is done
+MODAL							= false;	// While a dialog is open only objects with "ismodal" get mouse input (see [C] ConfirmDialog)
 
 
 // ========== //
