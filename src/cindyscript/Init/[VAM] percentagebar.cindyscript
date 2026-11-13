@@ -1,4 +1,4 @@
-/** v21 *****************************************************************************************
+/** v22 *****************************************************************************************
 *
 * Recent changes:
 * 2026-06-20: Fix breaking ifs from CindyJS 0.8.45 update.
@@ -18,6 +18,7 @@
 * 2026-08-07: Draw plus and minus Buttons without symbol, but with geometry
 * 2026-09-07: Add handles por manual position of Toggles
 * 2026-09-15: Add handles por manual setting the state of Toggles
+* 2026-11-13: Fix position parameters for some Toggles  
 ************************************************************************************************/
 
 
@@ -625,7 +626,7 @@ offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply([tog
 anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
 
 toggles:"showtf-perc"	= new Toggle(
-	if(!isundefined(posshowperc), posshowperc,anchorpoint + 3 * offsety),
+	if(!isundefined(posshowtfperc), posshowtfperc,anchorpoint + 3 * offsety),
 	togglesize, stateshowtfperc, "Eingabe Anteil", 14
 );
 toggles:"showtf-value" = new Toggle(
@@ -633,7 +634,7 @@ toggles:"showtf-value" = new Toggle(
 	togglesize, stateshowtfvalue, "Eingabe Teil", 14
 );
 toggles:"showtf-base"	= new Toggle(
-	if(!isundefined(posshowtfvalue), posshowtfvalue,anchorpoint + 1* offsety),
+	if(!isundefined(posshowtfbase), posshowtfbase,anchorpoint + 1* offsety),
 	togglesize, stateshowtfbase, "Eingabe Ganzes", 14
 );
 toggles:"overflow" = new Toggle(

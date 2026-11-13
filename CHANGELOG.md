@@ -3,6 +3,11 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7b449
+
+- VAM:
+  - percentagebar: Fix positioning parameters of some toggles
+
 ## v7b448
 
 - VAM:
