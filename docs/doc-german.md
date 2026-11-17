@@ -638,6 +638,8 @@ zweite fest und die dritte rechnet sich neu.
     in %), **showtf-divvalue** (Schrittgröße), **showtf-perc** (Eingabe Anteil),
     **showtf-value** (Eingabe Teil), **showtf-base** (Eingabe Ganzes),
     **overflow**
+  - Die Namen dürfen auch ohne Bindestrich stehen (*showtfdiv* statt
+    *showtf-div*), so wie bei `pos<togglename>` und `state<togglename>`.
   - default []
 - `scaffoldbasevalue`, `scaffoldvalue`, `scaffoldpercentage`: *\<bool>*
   - Verdecken Grundwert, Prozentwert bzw. Prozentsatz mit einem grauen Feld — als
@@ -645,7 +647,12 @@ zweite fest und die dritte rechnet sich neu.
   - default false
 - `pos<togglename>`: *\<list>*
   - Positionierung `[x,y]` der einzelnen Toggles.
-  - Zulässige Werte für \<togglename> siehe `hidetoggles`
+  - \<togglename> wie bei `hidetoggles`, aber **ohne Bindestrich**, z. B.
+    *posarch*, *posshowtfdiv*, *posshowtfdivpercentage*
+- `state<togglename>`: *\<bool>*
+  - Ob der einzelne Schalter zu Beginn eingeschaltet ist.
+  - \<togglename> wie bei `pos<togglename>`, z. B. *stateshowtfdiv*
+  - default false, nur *statearch* true
 
 #### Rückgabewerte
 

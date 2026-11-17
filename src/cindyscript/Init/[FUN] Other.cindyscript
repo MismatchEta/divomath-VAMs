@@ -1,9 +1,10 @@
-/** v2 ******************************************************************************************
+/** v3 ******************************************************************************************
 * Functions that don't fall in a specific category (yet).
 *
 * Recent changes:
 * 2026-07-27: Add default parse to(2) and default to(3)
 * 2026-08-06: Remove object case from list(1) since that is already done by values(1)
+* 2026-11-17: Fix list(1) returning undefined for lists, which also broke to key list(1) for lists
 ************************************************************************************************/
 
 datetime() := date() ++ time();
@@ -33,6 +34,9 @@ is defined(thing) := !isundefined(thing);
 list(thing) := (
 	regional(list);
 	list = NADA;
+
+	// Already a list: return it unchanged.
+	if(islist(thing), list = thing);
 
 	if(!islist(thing),
 
