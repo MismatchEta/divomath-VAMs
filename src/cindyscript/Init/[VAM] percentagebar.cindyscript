@@ -1,4 +1,4 @@
-/** v22 *****************************************************************************************
+/** v23 *****************************************************************************************
 *
 * Recent changes:
 * 2026-06-20: Fix breaking ifs from CindyJS 0.8.45 update.
@@ -19,6 +19,8 @@
 * 2026-09-07: Add handles por manual position of Toggles
 * 2026-09-15: Add handles por manual setting the state of Toggles
 * 2026-11-13: Fix position parameters for some Toggles  
+* 2026-11-17: hidetoggles accepts toggle names with or without hyphen, like pos... and state...
+* 2026-11-17: Read hidetoggles the same way in divomath and standalone
 ************************************************************************************************/
 
 
@@ -72,12 +74,8 @@ keepstable						= default to(ENVIRONMENTALPARAMS:"keepstable", "basevalue", fals
 showbuttons						= default to(ENVIRONMENTALPARAMS:"showbuttons", true, true);
 overflow							= default to(ENVIRONMENTALPARAMS:"overflow", false, true);
 
-if(ISDIVOMATH, // already comes as list
-	hidetoggles					= default to(ENVIRONMENTALPARAMS:"hidetoggles", [], true); // just parse list as normal
-, // else: parse as string that looks like a list
-	hidetoggles					= default to(ENVIRONMENTALPARAMS:"hidetoggles", [], false); // no parse, see to key list()
-	hidetoggles					= to key list(hidetoggles);
-);
+hidetoggles						= default to(ENVIRONMENTALPARAMS:"hidetoggles", [], false); // divomath: list or text, URL: text
+if(!islist(hidetoggles), hidetoggles = to key list(hidetoggles)); // text never through parse(), see to key list()
 
 pospercentage					= default to(ENVIRONMENTALPARAMS:"pospercentage", NADA, true);
 pospart								= default to(ENVIRONMENTALPARAMS:"pospart", NADA, true);
@@ -1160,9 +1158,12 @@ forall(bars, bar,
 'generictextfieldhandle = bars_1;
 
 obj = obj ++ if(showbuttons, values(toggles), []);
+// Names may be written with or without hyphen ("showtf-div" or "showtfdiv"), the
+// parameters pos... and state... use them without.
 forall(hidetoggles, togglekey,
-	if(contains(keys(toggles), togglekey),
-		obj = obj -- [toggles:togglekey];
+	hidekeys = select(keys(toggles), replace(#, "-", "") == replace(togglekey, "-", ""));
+	if(length(hidekeys) > 0,
+		obj = obj -- [toggles:(hidekeys_1)];
 	,
 		warn at("VAM percentagebar", "hidetoggles: unbekannter Schlüssel '" + togglekey + "'");
 	);
