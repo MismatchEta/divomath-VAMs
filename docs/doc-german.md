@@ -1,6 +1,6 @@
 # divoVAM Nutzerdokumentation
 
-> Stand 7b428
+> Stand 7b450
 
 divoVAM ist eine Sammlung virtueller Arbeitsmittel für den Mathematikunterricht,
 umgesetzt als CindyJS-Widgets. Alle Arbeitsmittel stecken in einer einzigen
@@ -633,7 +633,7 @@ zweite fest und die dritte rechnet sich neu.
   - Blendet einzelne Schalter aus, während die übrigen bleiben. Wirkt nur bei
     *showbuttons* true.
   - Zulässig: **percentage** (Anteil), **part** (Teil), **basevalue** (Ganzes),
-    **parts** (Werte unten), **percentages** (Prozente oben), **arch** (Bögen),
+    **parts** (Werte unten), **percentages** (Prozente oben), **arch** (Bögen),**div** (Schritte),
     **showtf-div** (Anzahl der Schritte), **showtf-divpercentage** (Schrittgröße
     in %), **showtf-divvalue** (Schrittgröße), **showtf-perc** (Eingabe Anteil),
     **showtf-value** (Eingabe Teil), **showtf-base** (Eingabe Ganzes),
