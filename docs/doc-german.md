@@ -1,6 +1,6 @@
 # divoVAM Nutzerdokumentation
 
-> Stand 7b450
+> Stand 7b454
 
 divoVAM ist eine Sammlung virtueller Arbeitsmittel für den Mathematikunterricht,
 umgesetzt als CindyJS-Widgets. Alle Arbeitsmittel stecken in einer einzigen
@@ -633,11 +633,13 @@ zweite fest und die dritte rechnet sich neu.
   - Blendet einzelne Schalter aus, während die übrigen bleiben. Wirkt nur bei
     *showbuttons* true.
   - Zulässig: **percentage** (Anteil), **part** (Teil), **basevalue** (Ganzes),
-    **parts** (Werte unten), **percentages** (Prozente oben), **arch** (Bögen),**div** (Schritte),
+    **parts** (Werte unten), **percentages** (Prozente oben), **arch** (Bögen), **div** (Schritte),
     **showtf-div** (Anzahl der Schritte), **showtf-divpercentage** (Schrittgröße
     in %), **showtf-divvalue** (Schrittgröße), **showtf-perc** (Eingabe Anteil),
     **showtf-value** (Eingabe Teil), **showtf-base** (Eingabe Ganzes),
     **overflow**
+  - Die Namen dürfen auch ohne Bindestrich stehen (*showtfdiv* statt
+    *showtf-div*), so wie bei `pos<togglename>` und `state<togglename>`.
   - default []
 - `scaffoldbasevalue`, `scaffoldvalue`, `scaffoldpercentage`: *\<bool>*
   - Verdecken Grundwert, Prozentwert bzw. Prozentsatz mit einem grauen Feld — als
@@ -645,7 +647,12 @@ zweite fest und die dritte rechnet sich neu.
   - default false
 - `pos<togglename>`: *\<list>*
   - Positionierung `[x,y]` der einzelnen Toggles.
-  - Zulässige Werte für \<togglename> siehe `hidetoggles`
+  - \<togglename> wie bei `hidetoggles`, aber **ohne Bindestrich**, z. B.
+    *posarch*, *posshowtfdiv*, *posshowtfdivpercentage*
+- `state<togglename>`: *\<bool>*
+  - Ob der einzelne Schalter zu Beginn eingeschaltet ist.
+  - \<togglename> wie bei `pos<togglename>`, z. B. *stateshowtfdiv*
+  - default false, nur *statearch* true
 
 #### Rückgabewerte
 
