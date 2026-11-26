@@ -8,6 +8,8 @@ across major versions and is also stamped into the header of every built file.
 - VAM
   - precentagebar: add new Toggle **div** to show the dividers between
     steps, separately from the Textfields-Toggles in the second column.
+  - precentagebar: remove parameter `alwaysdrawarches` since it was not 
+    used anywhere and parameter `statearch` can be used instead.
 
 ## v7b453
 

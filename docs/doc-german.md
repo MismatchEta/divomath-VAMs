@@ -601,14 +601,6 @@ zweite fest und die dritte rechnet sich neu.
 
 **Bögen und Beschriftungen**
 
-- `alwaysdrawarches`: *\<bool>*
-  - Bögen von Anfang an anzeigen. Der Schalter bleibt dabei sichtbar und lässt
-    sich weiter umschalten.
-  - **Hinweis**: Bögen erscheinen nur, solange auch die Schritte angezeigt
-    werden. Beide sind gekoppelt: Geht der letzte Schritte-Schalter aus, gehen
-    die Bögen mit; wird der Bögen-Schalter eingeschaltet, geht die
-    Schrittanzeige mit an.
-  - default true
 - `leftoutpercentages`, `leftoutvalues`: *\<list of floats>*
   - Anteile aus [0,1], deren Prozent- bzw. Wertbeschriftung **nicht** gezeichnet wird
   - default []
@@ -652,6 +644,10 @@ zweite fest und die dritte rechnet sich neu.
 - `state<togglename>`: *\<bool>*
   - Ob der einzelne Schalter zu Beginn eingeschaltet ist.
   - \<togglename> wie bei `pos<togglename>`, z. B. *stateshowtfdiv*
+  - **Hinweis** zu `statearch`: Bögen erscheinen nur, solange auch die Schritte angezeigt
+    werden. Beide sind gekoppelt: Geht der letzte Schritte-Schalter aus, gehen
+    die Bögen mit; wird der Bögen-Schalter eingeschaltet, geht die
+    Schrittanzeige mit an.
   - default false, nur *statearch* true
 
 #### Rückgabewerte
