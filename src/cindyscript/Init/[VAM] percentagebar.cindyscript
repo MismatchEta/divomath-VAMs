@@ -1,4 +1,4 @@
-/** v22 *****************************************************************************************
+/** v23 *****************************************************************************************
 *
 * Recent changes:
 * 2026-06-20: Fix breaking ifs from CindyJS 0.8.45 update.
@@ -18,7 +18,8 @@
 * 2026-08-07: Draw plus and minus Buttons without symbol, but with geometry
 * 2026-09-07: Add handles por manual position of Toggles
 * 2026-09-15: Add handles por manual setting the state of Toggles
-* 2026-11-13: Fix position parameters for some Toggles  
+* 2026-11-13: Fix position parameters for some Toggles
+* 2026-11-26: Add new (separate) Toggle to control if the dividers between steps are shown
 ************************************************************************************************/
 
 
