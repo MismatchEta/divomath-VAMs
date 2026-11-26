@@ -3,6 +3,25 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7b453
+
+- FRAMEWORK:
+  - Fix **list()** in `[FUN] Other`: for a value that already is a list it
+    returned undefined instead of the list. **to key list()** inherited this, so
+    a real list or a missing value came back undefined.
+- VAM:
+  - Fix percentagebar: **hidetoggles** did not know the step and input toggles
+    when written without hyphen (`showtfdivpercentage` instead of
+    `showtf-divpercentage`), which is how `pos…` and `state…` spell them. Both
+    spellings now work.
+  - percentagebar: in divomath, **hidetoggles** given as text is now read
+    through **to key list()** as in the standalone page; a real list is taken
+    as it is. Before, text such as `arch, overflow` went through `parse()`
+    there and had no effect.
+- GENERAL:
+  - Docs: percentagebar `pos<togglename>` names corrected (without hyphen),
+    `state<togglename>` added.
+
 ## v7b449
 
 - VAM:
