@@ -1217,6 +1217,9 @@ toggles:"showtf-div":"script";
 toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
 
+// Call script for arch-Toggle to set the div-Toggle state if necessary
+toggles:"arch":"script";
+
 // Remove divisions textfield and buttons if buttons are not showing.
 if(!showbuttons % contains(hidetoggles,"showtf-div"),
 	obj = obj -- [textfields:"divisions", buttons:"plusdiv", buttons:"minusdiv"];
