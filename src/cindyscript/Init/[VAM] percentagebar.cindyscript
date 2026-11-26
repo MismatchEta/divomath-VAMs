@@ -21,6 +21,7 @@
 * 2026-11-13: Fix position parameters for some Toggles  
 * 2026-11-17: hidetoggles accepts toggle names with or without hyphen, like pos... and state...
 * 2026-11-17: Read hidetoggles the same way in divomath and standalone
+* 2026-11-26: Add new (separate) Toggle to control if the dividers between steps are shown
 ************************************************************************************************/
 
 
@@ -65,7 +66,6 @@ scaffoldbasevalue			= default to(ENVIRONMENTALPARAMS:"scaffoldbasevalue", false,
 scaffoldvalue					= default to(ENVIRONMENTALPARAMS:"scaffoldvalue", false, true);
 scaffoldpercentage		= default to(ENVIRONMENTALPARAMS:"scaffoldpercentage", false, true);
 isbardraggable				= default to(ENVIRONMENTALPARAMS:"isbardraggable", true, true);
-alwaysdrawarches			= default to(ENVIRONMENTALPARAMS:"alwaysdrawarches", true, true); // Draw arches from the start
 snapbar								= default to(ENVIRONMENTALPARAMS:"snapbar", false, true);
 decimalspercentage		= default to(ENVIRONMENTALPARAMS:"decimalspercentage", 2, true);
 decimalsvalue					= default to(ENVIRONMENTALPARAMS:"decimalsvalue", 2, true);
@@ -83,6 +83,7 @@ posbasevalue					= default to(ENVIRONMENTALPARAMS:"posbasevalue", NADA, true);
 posparts							= default to(ENVIRONMENTALPARAMS:"posparts", NADA, true);
 pospercentages				= default to(ENVIRONMENTALPARAMS:"pospercentages", NADA, true);
 posarch								= default to(ENVIRONMENTALPARAMS:"posarch", NADA, true);
+posdiv								= default to(ENVIRONMENTALPARAMS:"posdiv", NADA, true);
 posshowtfdiv					= default to(ENVIRONMENTALPARAMS:"posshowtfdiv", NADA, true);
 posshowtfdivpercentage= default to(ENVIRONMENTALPARAMS:"posshowtfdivpercentage", NADA, true);
 posshowtfdivvalue			= default to(ENVIRONMENTALPARAMS:"posshowtfdivvalue", NADA, true);
@@ -96,7 +97,8 @@ statepart								= default to(ENVIRONMENTALPARAMS:"statepart", false, true);
 statebasevalue					= default to(ENVIRONMENTALPARAMS:"statebasevalue", false, true);
 stateparts							= default to(ENVIRONMENTALPARAMS:"stateparts", false, true);
 statepercentages				= default to(ENVIRONMENTALPARAMS:"statepercentages", false, true);
-statearch								= default to(ENVIRONMENTALPARAMS:"statearch", true, true); // Does not do a thing, since toggles:"showtf-div":"script" sets corresponding field to false anyway.
+statearch								= default to(ENVIRONMENTALPARAMS:"statearch", true, true);
+statediv								= default to(ENVIRONMENTALPARAMS:"statediv", false, true);
 stateshowtfdiv					= default to(ENVIRONMENTALPARAMS:"stateshowtfdiv", false, true);
 stateshowtfdivpercentage= default to(ENVIRONMENTALPARAMS:"stateshowtfdivpercentage", false, true);
 stateshowtfdivvalue			= default to(ENVIRONMENTALPARAMS:"stateshowtfdivvalue", false, true);
@@ -127,9 +129,6 @@ if(!contains(["basevalue", "value", "percentage"], keepstable),
 // Helper functions //
 // ================ //
 
-anystepsactive() := toggles:"showtf-div":"state"
-	% toggles:"showtf-divpercentage":"state"
-	% toggles:"showtf-divvalue":"state";
 
 
 // ===================== //
@@ -468,6 +467,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		if(toggles:"parts":"state" != self():"drawvaluelabels", toggles:"parts":"click");
 		if(toggles:"percentages":"state" != self():"drawpercentagelabels", toggles:"percentages":"click");
 		if(toggles:"arch":"state" != self():"drawarches", toggles:"arch":"click");
+		if(toggles:"div":"state" != self():"drawsteps", toggles:"div":"click");
 		if(toggles:"overflow":"state" != self():"canoverflow", toggles:"overflow":"click");
 		
 		self():"drawcurrentpercentage"	:= toggles:"percentage":"state";
@@ -477,7 +477,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 		self():"drawpercentagelabels"		:= toggles:"percentages":"state";
 		self():"drawarches"							:= toggles:"arch":"state";
 		self():"canoverflow"						:= toggles:"overflow":"state";
-		self():"drawsteps" 							:= anystepsactive();
+		self():"drawsteps" 							:= toggles:"div":"state";
 
 		textfields:"divisions":"value" = my("divisions") + "";
 		textfields:"divisions-value":"value" =  my("basevalue")/my("divisions") + "";
@@ -498,7 +498,7 @@ new Percentagebar(coord, width, height, value, precision, divisions, baseval, un
 			self():"drawpercentagelabels"		= toggles:"percentages":"state";
 			self():"drawarches"							= toggles:"arch":"state";
 			self():"canoverflow"						= toggles:"overflow":"state";
-			self():"drawsteps" 							= anystepsactive();
+			self():"drawsteps" 							= toggles:"div":"state";
 		);
 		
 		self():"isactive" = false;
@@ -602,8 +602,12 @@ offsetx = [togglepad+togglesize*UISCALE+toggles:"part":"labelpad"+max(apply(valu
 anchorpoint = anchorpoint + offsetx;// bottom left corner for col 2.
 
 toggles:"arch" = new Toggle(
-	if(!isundefined(posarch), posarch,anchorpoint + 3 * offsety),
+	if(!isundefined(posarch), posarch,anchorpoint + 4 * offsety),
 	togglesize, statearch, "Bögen", 14
+);
+toggles:"div" = new Toggle(
+	if(!isundefined(posdiv), posdiv,anchorpoint + 3 * offsety),
+	togglesize, statediv, "Schritte", 14
 );
 toggles:"showtf-div" = new Toggle(
 	if(!isundefined(posshowtfdiv), posshowtfdiv,anchorpoint + 2 * offsety),
@@ -642,7 +646,7 @@ toggles:"overflow" = new Toggle(
 
 // D.2 | Init Text Inputs for (sub)divisions and base value
 // =======================================================
-offsetx = [togglepad+max(apply([toggles:"arch", toggles:"showtf-div", toggles:"showtf-divpercentage", toggles:"showtf-divvalue"], #:"labelwidth")),0];
+offsetx = [togglepad+max(apply([toggles:"arch", toggles:"div", toggles:"showtf-div", toggles:"showtf-divpercentage", toggles:"showtf-divvalue"], #:"labelwidth")),0];
 
 textfields = {
 	// for COL 2
@@ -1057,28 +1061,34 @@ toggles:"showtf-perc":"script" := if(my("state"),
 );
 
 toggles:"showtf-div":"script" := if(my("state"),
-	obj = obj ++ [textfields:"divisions"];
+  eval(toggles:"div":"setstate", 'newstate->true);
+	
+  obj = obj ++ [textfields:"divisions"];
 	obj = obj ++ [buttons:"plusdiv"];
 	obj = obj ++ [buttons:"minusdiv"];
 ,
 	obj = obj -- [textfields:"divisions"];
 	obj = obj -- [buttons:"plusdiv"];
 	obj = obj -- [buttons:"minusdiv"];
-	if(!anystepsactive(), eval(toggles:"arch":"setstate", 'newstate->false));
 );
 
 toggles:"showtf-divpercentage":"script" := if(my("state"),
-	obj = obj ++ [textfields:"divisions-percentage"];
+
+	eval(toggles:"div":"setstate", 'newstate->true);
+
+  obj = obj ++ [textfields:"divisions-percentage"];
 	obj = obj ++ [buttons:"plusdiv-percentage"];
 	obj = obj ++ [buttons:"minusdiv-percentage"];
 ,
 	obj = obj -- [textfields:"divisions-percentage"];
 	obj = obj -- [buttons:"plusdiv-percentage"];
 	obj = obj -- [buttons:"minusdiv-percentage"];
-	if(!anystepsactive(), eval(toggles:"arch":"setstate", 'newstate->false));
 );
 
 toggles:"showtf-divvalue":"script" := if(my("state"),
+
+  eval(toggles:"div":"setstate", 'newstate->true);
+
 	obj = obj ++ [textfields:"divisions-value"];
 	obj = obj ++ [buttons:"plusdiv-value"];
 	obj = obj ++ [buttons:"minusdiv-value"];
@@ -1086,11 +1096,18 @@ toggles:"showtf-divvalue":"script" := if(my("state"),
 	obj = obj -- [textfields:"divisions-value"];
 	obj = obj -- [buttons:"plusdiv-value"];
 	obj = obj -- [buttons:"minusdiv-value"];
-	if(!anystepsactive(), eval(toggles:"arch":"setstate", 'newstate->false));
 );
 
-toggles:"arch":"script" := if(my("state") & !anystepsactive(),
-	eval(toggles:"showtf-div":"setstate", 'newstate->true);
+toggles:"arch":"script" := if(my("state"),
+	eval(toggles:"div":"setstate", 'newstate->true);
+);
+
+toggles:"div":"script" := if(!my("state"),
+
+	eval(toggles:"showtf-div":"setstate", 'newstate->false);
+	eval(toggles:"showtf-divvalue":"setstate", 'newstate->false);
+	eval(toggles:"showtf-divpercentage":"setstate", 'newstate->false);
+	eval(toggles:"arch":"setstate", 'newstate->false);
 );
 
 
@@ -1136,7 +1153,7 @@ forall(bars, bar,
 	bar:"drawcurrentvalue"			= toggles:"part":"state";
 	bar:"drawarches"						= toggles:"arch":"state";
 	bar:"canoverflow"						= toggles:"overflow":"state";
-	bar:"drawsteps" 						= anystepsactive();
+	bar:"drawsteps" 						= toggles:"div":"state";
 
 	bar:"standardTicks"	= 'standardTicks;
 	
@@ -1198,6 +1215,9 @@ toggles:"showtf-perc":"script";
 toggles:"showtf-div":"script";
 toggles:"showtf-divpercentage":"script";
 toggles:"showtf-divvalue":"script";
+
+// Call script for arch-Toggle to set the div-Toggle state if necessary
+toggles:"arch":"script";
 
 // Remove divisions textfield and buttons if buttons are not showing.
 if(!showbuttons % contains(hidetoggles,"showtf-div"),

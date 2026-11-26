@@ -3,6 +3,14 @@
 Version scheme since v5: `<major>b<build>`. The build number keeps counting
 across major versions and is also stamped into the header of every built file.
 
+## v7b454
+
+- VAM
+  - precentagebar: add new Toggle **div** to show the dividers between
+    steps, separately from the Textfields-Toggles in the second column.
+  - precentagebar: remove parameter `alwaysdrawarches` since it was not 
+    used anywhere and parameter `statearch` can be used instead.
+
 ## v7b453
 
 - FRAMEWORK:
