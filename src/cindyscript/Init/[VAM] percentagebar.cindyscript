@@ -608,7 +608,7 @@ toggles:"arch" = new Toggle(
 	togglesize, statearch, "Bögen", 14
 );
 toggles:"div" = new Toggle(
-	if(!isundefined(posdiv), posshowtfdiv,anchorpoint + 3 * offsety),
+	if(!isundefined(posdiv), posdiv,anchorpoint + 3 * offsety),
 	togglesize, statediv, "Schritte", 14
 );
 toggles:"showtf-div" = new Toggle(
